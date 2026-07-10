@@ -1,0 +1,6 @@
+{
+  "name": "Placify",
+  "description": "An AI-powered placement preparation and coding practice platform integrating coding arenas, learning roads, resume analysis, and real-time AI mock interviews.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
