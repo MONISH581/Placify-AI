@@ -27631,6 +27631,22 @@
       "scores": [],
       "feedback": [],
       "createdAt": "2026-06-06T16:20:10.241Z"
+    },
+    {
+      "id": "interview-1784950234397",
+      "userId": "std-1",
+      "type": "HR",
+      "status": "In Progress",
+      "currentQuestionIndex": 0,
+      "questions": [
+        "Tell me about yourself and your absolute key technical achievements.",
+        "Why do you want to join this organization, and how do you handle collaborative stress?",
+        "Describe a situation where you had a conflict during a group project. How did you resolve it?"
+      ],
+      "answers": [],
+      "scores": [],
+      "feedback": [],
+      "createdAt": "2026-07-25T03:30:34.397Z"
     }
   ],
   "discussions": [

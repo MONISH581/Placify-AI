@@ -1294,6 +1294,63 @@ Return the result in JSON matching this exact schema:
     }
   });
 
+  // ── ML Microservice Proxy Routes ──────────────────────────────────────────
+  // All /api/ml/* and /api/rag/* routes are proxied to Python FastAPI at :8000
+  const ML_SERVICE_URL = "http://localhost:8000";
+
+  async function proxyToML(req: express.Request, res: express.Response, mlPath: string) {
+    try {
+      const body = req.method === "POST" ? JSON.stringify(req.body) : undefined;
+      const fetchFn = (globalThis as any).fetch;
+      const mlRes = await fetchFn(`${ML_SERVICE_URL}${mlPath}`, {
+        method: req.method,
+        headers: { "Content-Type": "application/json" },
+        body,
+        signal: AbortSignal.timeout(15000),
+      });
+      const data = await mlRes.json();
+      res.status(mlRes.status).json(data);
+    } catch (err: any) {
+      const msg = err?.cause?.code === "ECONNREFUSED"
+        ? "ML service offline. Start ml_service/start.bat first."
+        : err?.message || "ML service error";
+      console.error(`[ML Proxy] ${mlPath} → ${msg}`);
+      res.status(503).json({ error: msg, hint: "Run ml_service/start.bat to start the ML server." });
+    }
+  }
+
+  // 1. Placement Readiness Score
+  app.post("/api/ml/placement-score", async (req, res) => {
+    await proxyToML(req, res, "/ml/placement-score");
+  });
+
+  // 2. Problem Recommendation
+  app.post("/api/ml/recommend-problems", async (req, res) => {
+    await proxyToML(req, res, "/ml/recommend-problems");
+  });
+
+  // 3. Difficulty Prediction
+  app.post("/api/ml/difficulty-predict", async (req, res) => {
+    await proxyToML(req, res, "/ml/difficulty-predict");
+  });
+
+  // 4. Interview Answer Scoring (ML-based)
+  app.post("/api/ml/interview-score", async (req, res) => {
+    await proxyToML(req, res, "/ml/interview-score");
+  });
+
+  // 5. RAG Mentor
+  app.post("/api/rag/mentor-ask", async (req, res) => {
+    await proxyToML(req, res, "/rag/mentor-ask");
+  });
+
+  // 6. ML Service Health
+  app.get("/api/ml/health", async (req, res) => {
+    await proxyToML(req, res, "/");
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   // Vite development vs production asset handler
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

@@ -1,0 +1,1154 @@
+[
+  {
+    "id": "py-intro",
+    "text": "[Python Track] Introduction to Python & Setup: Python is a high-level, interpreted programming language known for readability and simplicity. Setting up requires installing Python from python.org. Use virtual environments (venv) to isolate project dependencies. Python uses indentation for code blocks.",
+    "source": "Python Track",
+    "topic": "Introduction to Python & Setup"
+  },
+  {
+    "id": "py-variables",
+    "text": "[Python Track] Variables and Scope: Variables in Python are dynamically typed. Local scope exists inside functions. Global scope persists throughout the module. Use the 'global' keyword to modify global variables inside functions. 'nonlocal' modifies enclosing scope variables in nested functions.",
+    "source": "Python Track",
+    "topic": "Variables and Scope"
+  },
+  {
+    "id": "py-datatypes",
+    "text": "[Python Track] Core Data Types & Casting: Python has int, float, complex, bool, str, list, tuple, dict, set, frozenset. Use int(), float(), str() for explicit casting. Python auto-converts compatible types. Strings are immutable sequences of Unicode characters.",
+    "source": "Python Track",
+    "topic": "Core Data Types & Casting"
+  },
+  {
+    "id": "py-loops",
+    "text": "[Python Track] Loops (For, While) & Control: For loops iterate over iterables. While loops run while condition is True. Break exits loop. Continue skips current iteration. Else block in loops runs when loop completes normally (without break). range() generates number sequences.",
+    "source": "Python Track",
+    "topic": "Loops (For, While) & Control"
+  },
+  {
+    "id": "py-functions",
+    "text": "[Python Track] Functions & Variable Arguments: Functions are defined with 'def'. *args collects positional arguments as tuple. **kwargs collects keyword arguments as dict. Default parameters are evaluated once at definition. Lambda creates anonymous single-expression functions.",
+    "source": "Python Track",
+    "topic": "Functions & Variable Arguments"
+  },
+  {
+    "id": "py-recursion",
+    "text": "[Python Track] Recursion & Stack Frames: Recursion calls function within itself. Base case stops recursion. Stack frames accumulate on the call stack. Python default recursion limit is 1000. sys.setrecursionlimit() can increase it. Tail call optimization is NOT done in Python.",
+    "source": "Python Track",
+    "topic": "Recursion & Stack Frames"
+  },
+  {
+    "id": "py-oop",
+    "text": "[Python Track] OOP: Classes, Inheritance, Polymorphism: Classes are defined with 'class'. __init__ is the constructor. 'self' refers to the instance. Inheritance uses parentheses: class Child(Parent). super() calls parent methods. Python supports multiple inheritance. Method resolution uses MRO (C3 linearization). Polymorphism via duck typing.",
+    "source": "Python Track",
+    "topic": "OOP: Classes, Inheritance, Polymorphism"
+  },
+  {
+    "id": "py-decorators",
+    "text": "[Python Track] Decorators & Closures: Decorators wrap functions to add behavior without modifying the original. They use @syntax. Closures capture variables from enclosing scope. functools.wraps preserves wrapped function metadata. Common decorators: @property, @staticmethod, @classmethod.",
+    "source": "Python Track",
+    "topic": "Decorators & Closures"
+  },
+  {
+    "id": "py-generators",
+    "text": "[Python Track] Generators & Yield Statement: Generators produce values lazily using yield. They save memory compared to lists. Generator expressions use () instead of []. yield from delegates to another generator. Generators implement the iterator protocol (__iter__ and __next__).",
+    "source": "Python Track",
+    "topic": "Generators & Yield Statement"
+  },
+  {
+    "id": "py-async",
+    "text": "[Python Track] Asyncio & Async Programming: async def defines a coroutine. await suspends execution until awaitable completes. asyncio.run() starts the event loop. asyncio.gather() runs multiple coroutines concurrently. aiohttp for async HTTP. Do not use blocking calls inside async functions.",
+    "source": "Python Track",
+    "topic": "Asyncio & Async Programming"
+  },
+  {
+    "id": "py-ml",
+    "text": "[Python Track] Machine Learning: Regression & Classification: scikit-learn provides ML algorithms. Linear regression fits y = mx + b. Logistic regression classifies with sigmoid function. Decision trees split on feature thresholds. Random Forest combines multiple trees. XGBoost uses gradient boosting. train_test_split() divides data. cross_val_score() evaluates with K-fold CV.",
+    "source": "Python Track",
+    "topic": "Machine Learning: Regression & Classification"
+  },
+  {
+    "id": "dsa-arrays",
+    "text": "[DSA] Arrays & Sliding Window: Arrays store elements contiguously. Sliding window maintains a window of elements, expanding and contracting. Use for subarray problems: max sum, longest substring without repeat. Time complexity O(n). Two pointers technique uses left and right indices moving toward each other.",
+    "source": "DSA",
+    "topic": "Arrays & Sliding Window"
+  },
+  {
+    "id": "dsa-strings",
+    "text": "[DSA] Strings & Pattern Matching: Strings are sequences of characters. Common operations: reverse, palindrome check, anagram detection, substring search. KMP algorithm searches pattern in O(n+m). Rabin-Karp uses hashing. Z-algorithm finds all pattern occurrences. Use frequency maps for character counting.",
+    "source": "DSA",
+    "topic": "Strings & Pattern Matching"
+  },
+  {
+    "id": "dsa-linked-list",
+    "text": "[DSA] Linked Lists: Singly linked list has nodes with data and next pointer. Doubly linked list has prev and next. Common problems: reverse linked list, detect cycle (Floyd's tortoise and hare), find middle node (slow/fast pointers), merge two sorted lists. Time: O(n) traversal, O(1) insertion at head.",
+    "source": "DSA",
+    "topic": "Linked Lists"
+  },
+  {
+    "id": "dsa-stacks",
+    "text": "[DSA] Stacks & Queues: Stack is LIFO. Queue is FIFO. Monotonic stack maintains elements in monotone order. Use stack for: balanced parentheses, next greater element, evaluate expressions. Deque supports O(1) operations at both ends. Priority queue (min-heap) extracts minimum in O(log n).",
+    "source": "DSA",
+    "topic": "Stacks & Queues"
+  },
+  {
+    "id": "dsa-trees",
+    "text": "[DSA] Binary Trees & BST: Binary tree: each node has at most two children. BST: left < node < right. Traversals: in-order (LNR) gives sorted output, pre-order (NLR), post-order (LRN). BFS uses queue for level-order. DFS uses recursion or stack. Height, diameter, LCA are classic tree problems.",
+    "source": "DSA",
+    "topic": "Binary Trees & BST"
+  },
+  {
+    "id": "dsa-graphs",
+    "text": "[DSA] Graphs: BFS, DFS, Shortest Path: Graph: nodes connected by edges. BFS explores level by level using queue. DFS explores depth-first using recursion/stack. Dijkstra finds shortest path in weighted graph with non-negative edges. Bellman-Ford handles negative edges. Floyd-Warshall finds all-pairs shortest paths. Topological sort for DAGs.",
+    "source": "DSA",
+    "topic": "Graphs: BFS, DFS, Shortest Path"
+  },
+  {
+    "id": "dsa-dp",
+    "text": "[DSA] Dynamic Programming: Dynamic programming solves problems by breaking into overlapping subproblems. Memoization (top-down): cache recursive results. Tabulation (bottom-up): fill DP table iteratively. Classic problems: Fibonacci, knapsack 0/1, longest common subsequence, coin change, longest increasing subsequence, edit distance.",
+    "source": "DSA",
+    "topic": "Dynamic Programming"
+  },
+  {
+    "id": "dsa-hashing",
+    "text": "[DSA] Hashing & Hash Maps: Hash map provides O(1) average lookup, insert, delete. Collision resolution: chaining (linked lists) or open addressing (linear probing). Common uses: two-sum, group anagrams, frequency count, cache design (LRU uses OrderedDict in Python or HashMap + DoublyLinkedList in Java).",
+    "source": "DSA",
+    "topic": "Hashing & Hash Maps"
+  },
+  {
+    "id": "dsa-heaps",
+    "text": "[DSA] Heaps & Priority Queues: Min-heap: parent <= children. Max-heap: parent >= children. heapq module in Python is a min-heap. Push: O(log n). Pop: O(log n). Build heap: O(n). Use for: K largest elements, K smallest, median maintenance (two heaps), Dijkstra's algorithm, task scheduling.",
+    "source": "DSA",
+    "topic": "Heaps & Priority Queues"
+  },
+  {
+    "id": "dsa-backtracking",
+    "text": "[DSA] Backtracking: Backtracking explores all possibilities, pruning invalid paths. Template: choose, explore, un-choose. Use for: N-Queens, permutations, combinations, subsets, sudoku solver, word search on grid. Time often O(n!) or O(2^n) but pruning helps. Visualize as a decision tree.",
+    "source": "DSA",
+    "topic": "Backtracking"
+  },
+  {
+    "id": "dsa-binary-search",
+    "text": "[DSA] Binary Search: Binary search requires sorted array. Bisect left/right find insertion points. Template: lo=0, hi=n-1, while lo<=hi: mid=(lo+hi)//2. Search space reduction: apply binary search on answer (monotonic functions). Common: search rotated array, find peak element, minimum in rotated array.",
+    "source": "DSA",
+    "topic": "Binary Search"
+  },
+  {
+    "id": "dsa-sorting",
+    "text": "[DSA] Sorting Algorithms: Comparison sorts: QuickSort O(n log n) avg, MergeSort O(n log n) stable, HeapSort O(n log n). Non-comparison: CountingSort O(n+k), RadixSort O(nk). Python's sort is Timsort (stable, O(n log n)). QuickSort pivot selection affects performance (choose median of three).",
+    "source": "DSA",
+    "topic": "Sorting Algorithms"
+  },
+  {
+    "id": "dsa-tries",
+    "text": "[DSA] Tries (Prefix Trees): Trie stores strings character by character. Each node represents a character. Insert: O(m) where m=string length. Search: O(m). Space: O(ALPHABET_SIZE * m * n). Use for: autocomplete, spell check, IP routing, word prefix problems. Compressed trie (Radix Tree) merges single-child nodes.",
+    "source": "DSA",
+    "topic": "Tries (Prefix Trees)"
+  },
+  {
+    "id": "dsa-segment-trees",
+    "text": "[DSA] Segment Trees & Fenwick Trees: Segment tree supports range queries and point updates in O(log n). Build: O(n). Query and Update: O(log n). Use for: range sum, range minimum/maximum, range GCD. Fenwick tree (BIT) simpler for prefix sums. Lazy propagation extends segment trees to range updates.",
+    "source": "DSA",
+    "topic": "Segment Trees & Fenwick Trees"
+  },
+  {
+    "id": "dsa-bit",
+    "text": "[DSA] Bit Manipulation: AND (&), OR (|), XOR (^), NOT (~), left shift (<<), right shift (>>). XOR: a^a=0, a^0=a. Find single number in array. Count set bits: Brian Kernighan's algorithm. Check bit i: n & (1<<i). Set bit: n | (1<<i). Clear bit: n & ~(1<<i). Power of 2: n & (n-1) == 0.",
+    "source": "DSA",
+    "topic": "Bit Manipulation"
+  },
+  {
+    "id": "sys-cache",
+    "text": "[System Design] Caching & Redis: Cache stores frequently accessed data in fast storage. Cache hit: data found. Cache miss: load from DB, store in cache. Eviction policies: LRU (least recently used), LFU (least frequently used), FIFO. Redis supports strings, hashes, lists, sets, sorted sets. TTL (time-to-live) auto-expires keys.",
+    "source": "System Design",
+    "topic": "Caching & Redis"
+  },
+  {
+    "id": "sys-load-balancer",
+    "text": "[System Design] Load Balancers & Scaling: Load balancer distributes traffic across servers. Algorithms: round robin, least connections, IP hash. Horizontal scaling adds more servers. Vertical scaling upgrades existing server. Stateless servers enable easy horizontal scaling. Sticky sessions route user to same server. CDN caches static content near users.",
+    "source": "System Design",
+    "topic": "Load Balancers & Scaling"
+  },
+  {
+    "id": "sys-db-design",
+    "text": "[System Design] Database Design & Sharding: Normalization reduces redundancy (1NF, 2NF, 3NF). Denormalization improves read performance. Sharding splits data across multiple DBs by shard key. Consistent hashing minimizes resharding. Replication copies data to replicas for read scaling and fault tolerance. CQRS separates read and write models.",
+    "source": "System Design",
+    "topic": "Database Design & Sharding"
+  },
+  {
+    "id": "sys-api",
+    "text": "[System Design] API Design & REST: REST APIs use HTTP methods: GET (read), POST (create), PUT/PATCH (update), DELETE. Stateless: each request contains all needed info. JSON is standard format. Rate limiting prevents abuse. API versioning via URL (/v1/) or headers. Pagination with cursor or offset. GraphQL allows clients to specify required fields.",
+    "source": "System Design",
+    "topic": "API Design & REST"
+  },
+  {
+    "id": "sys-messaging",
+    "text": "[System Design] Message Queues & Event-Driven Systems: Message queues (Kafka, RabbitMQ) decouple producers and consumers. Topics in Kafka are partitioned for parallelism. Consumers in groups share partition workload. At-least-once vs exactly-once delivery. Event sourcing stores state as sequence of events. CQRS reads from projection, writes to event log.",
+    "source": "System Design",
+    "topic": "Message Queues & Event-Driven Systems"
+  },
+  {
+    "id": "interview-coding",
+    "text": "[Interview Tips] Coding Interview Strategy: Clarify the problem before coding. Discuss edge cases. Start with brute force, then optimize. Think aloud. Analyze time and space complexity. Write clean code with meaningful variable names. Test with examples. Practice on LeetCode, HackerRank, Codeforces. Common patterns: two pointers, sliding window, BFS/DFS, DP.",
+    "source": "Interview Tips",
+    "topic": "Coding Interview Strategy"
+  },
+  {
+    "id": "interview-hr",
+    "text": "[Interview Tips] HR Interview Preparation: Tell me about yourself: structure as background + achievements + future goals. STAR method: Situation, Task, Action, Result for behavioral questions. Research the company and role. Prepare questions to ask the interviewer. Common: Why this company? Tell me about a challenge. Describe a conflict and how you resolved it.",
+    "source": "Interview Tips",
+    "topic": "HR Interview Preparation"
+  },
+  {
+    "id": "interview-system-design",
+    "text": "[Interview Tips] System Design Interview: Framework: Clarify requirements → Estimate scale → API design → Data model → High-level design → Deep dive → Discuss trade-offs. Know CAP theorem. Common designs: URL shortener, chat system, Twitter, Netflix, Uber, rate limiter. Study Grokking the System Design Interview.",
+    "source": "Interview Tips",
+    "topic": "System Design Interview"
+  },
+  {
+    "id": "interview-resume",
+    "text": "[Interview Tips] Resume & ATS Optimization: Use action verbs: built, designed, optimized, reduced, implemented. Quantify impact: 'Reduced load time by 40%'. Include links to GitHub and projects. ATS-friendly: use standard section names, avoid tables/graphics. Tailor resume keywords to job description. Keep to 1 page for freshers.",
+    "source": "Interview Tips",
+    "topic": "Resume & ATS Optimization"
+  },
+  {
+    "id": "company-tcs",
+    "text": "[Company Prep] TCS Ninja/Digital Preparation: TCS Ninja: verbal ability, quantitative aptitude, programming logic, coding (easy-medium). TCS Digital: advanced coding, advanced aptitude, communication assessment, technical interview. Focus on: Java/Python basics, DBMS concepts, OS fundamentals, OOPS, SQL queries. Practice on TCS iON platform.",
+    "source": "Company Prep",
+    "topic": "TCS Ninja/Digital Preparation"
+  },
+  {
+    "id": "company-infosys",
+    "text": "[Company Prep] Infosys Preparation: Infosys InfyTQ: online assessment includes reasoning, math, verbal, coding. Focus on: coding in Java/Python, pseudocode analysis, logical reasoning puzzles. Technical interview covers DSA basics, DBMS SQL, OS, project discussion. HR round: standard behavioral questions.",
+    "source": "Company Prep",
+    "topic": "Infosys Preparation"
+  },
+  {
+    "id": "company-wipro",
+    "text": "[Company Prep] Wipro ELITE Preparation: Wipro ELITE: online test with reasoning, English, quant, coding (2 problems). Problems are usually easy-medium. Technical interview covers OOPs, DBMS, OS, CN, and one project. HR round: standard questions about yourself, teamwork, strengths. Wipro values communication skills.",
+    "source": "Company Prep",
+    "topic": "Wipro ELITE Preparation"
+  },
+  {
+    "id": "company-google",
+    "text": "[Company Prep] Google SWE Interview Preparation: Google interviews: phone screen + 4-5 onsite rounds. Focus: algorithms, data structures, system design (senior), coding. Problems are medium-hard LeetCode level. Think aloud, discuss time/space complexity. System design: discuss trade-offs. Google values correctness, efficiency, and communication. Practice with Google's interview guide.",
+    "source": "Company Prep",
+    "topic": "Google SWE Interview Preparation"
+  },
+  {
+    "id": "company-amazon",
+    "text": "[Company Prep] Amazon SDE Interview Preparation: Amazon: 14 Leadership Principles are core to behavioral interviews. OLP questions use STAR format. Coding: 2 rounds of DSA (medium-hard). System design: 1 round. Use OLPs in behavioral answers: ownership, customer obsession, deliver results. Bar raiser round evaluates overall fit. Practice Amazon's leadership principles.",
+    "source": "Company Prep",
+    "topic": "Amazon SDE Interview Preparation"
+  },
+  {
+    "id": "company-microsoft",
+    "text": "[Company Prep] Microsoft SWE Interview Preparation: Microsoft interviews: 4-5 rounds of coding + design + behavioral. Focus on problem-solving, code quality, and communication. Medium-hard DSA questions. System design for senior roles. Behavioral around teamwork and dealing with ambiguity. Final round with 'As Appropriate' (AA) person assesses cross-group collaboration.",
+    "source": "Company Prep",
+    "topic": "Microsoft SWE Interview Preparation"
+  },
+  {
+    "id": "prob-prob-arrays-two-sum",
+    "text": "[Problem: Two Sum (Easy)] Tags: Arrays Uber Salesforce. Given an array of integers `nums` and an integer `target`, return the indices of the two numbers such that they add up to `target`. You may assume that each input would have exactly one solution. Hints: Level 1: Try checking target - nums[i] complement. | Level 2: Use a hash map to search complement values in O(1) time. | Level 3: Store elements and their indices while scanning. | Level 4: FOR i from 0 to N:\n  comp = target - nums[i]\n  IF comp in map return [map[comp], i]\n  map[nums[i]] = i | Level 5: Verify with negative values in the array.. Editorial: Using a hash table, we can complete the lookup in O(N) time complexity.",
+    "source": "Problem Bank",
+    "topic": "Two Sum (Easy)"
+  },
+  {
+    "id": "prob-prob-arrays-best-time-to-buy-and-sell-stock",
+    "text": "[Problem: Best Time to Buy and Sell Stock (Easy)] Tags: Arrays Google Salesforce Intel. You are given an array `prices` where `prices[i]` is the price of a given stock on the `i`-th day. You want to maximize your profit by choosing a single day to buy one stock and choosing a different d Hints: Level 1: Track the minimum price seen so far. | Level 2: Calculate potential profit at each day. | Level 3: Keep the maximum profit. | Level 4: FOR price in prices:\n  min_price = min(min_price, price)\n  max_profit = max(max_profit, price - min_price) | Level 5: Check edge cases with strictly decreasing prices.. Editorial: Single pass tracking minimum price and updating max profit.",
+    "source": "Problem Bank",
+    "topic": "Best Time to Buy and Sell Stock (Easy)"
+  },
+  {
+    "id": "prob-prob-arrays-3sum",
+    "text": "[Problem: 3Sum (Medium)] Tags: Arrays Twitter Microsoft. Given an array `nums` of `n` integers, find all unique triplets `[a, b, c]` in the array such that `a + b + c = 0`. Hints: Level 1: Sort the array first. | Level 2: Use two pointers approach to search pairs. | Level 3: Avoid processing duplicate values. | Level 4: For each nums[i], set two pointers at i+1 and N-1. | Level 5: Ensure unique triplets.. Editorial: Sort and then run dual pointer search, skipping duplicate indices.",
+    "source": "Problem Bank",
+    "topic": "3Sum (Medium)"
+  },
+  {
+    "id": "prob-prob-strings-valid-palindrome",
+    "text": "[Problem: Valid Palindrome (Easy)] Tags: Strings Square. Given a string `s`, determine if it is a palindrome, considering only alphanumeric characters and ignoring cases. Hints: Level 1: Ignore non-alphanumeric chars. | Level 2: Lower case everything. | Level 3: Two pointers comparison.. Editorial: Basic two pointers search.",
+    "source": "Problem Bank",
+    "topic": "Valid Palindrome (Easy)"
+  },
+  {
+    "id": "prob-prob-strings-valid-anagram",
+    "text": "[Problem: Valid Anagram (Easy)] Tags: Strings Google Microsoft Airbnb. Given two strings `s` and `t`, return `true` if `t` is an anagram of `s`, and `false` otherwise. Hints: Level 1: Sort both strings. | Level 2: Or count char frequencies.. Editorial: Verify anagram by counting character frequencies of both strings.",
+    "source": "Problem Bank",
+    "topic": "Valid Anagram (Easy)"
+  },
+  {
+    "id": "prob-prob-strings-longest-substring-without-repeating-characters",
+    "text": "[Problem: Longest Substring Without Repeating Characters (Medium)] Tags: Strings Meta Lyft. Given a string `s`, find the length of the longest substring without repeating characters. Hints: Level 1: Sliding window. | Level 2: Set of seen characters.. Editorial: Maintain sliding window window set, shift left bound.",
+    "source": "Problem Bank",
+    "topic": "Longest Substring Without Repeating Characters (Medium)"
+  },
+  {
+    "id": "prob-prob-linkedLists-reverse-linked-list",
+    "text": "[Problem: Reverse Linked List (Easy)] Tags: Linked Lists PayPal Microsoft Goldman Sachs. Reverse a singly linked list. Return space-separated values of the reversed list. Hints: Level 1: Change next pointer to prev.. Editorial: Re-point pointers.",
+    "source": "Problem Bank",
+    "topic": "Reverse Linked List (Easy)"
+  },
+  {
+    "id": "prob-prob-linkedLists-merge-two-sorted-lists",
+    "text": "[Problem: Merge Two Sorted Lists (Easy)] Tags: Linked Lists Amazon Atlassian. Merge two sorted linked lists and return it as a sorted list. Hints: Level 1: Iteratively merge.. Editorial: Merge values by advancing pointers.",
+    "source": "Problem Bank",
+    "topic": "Merge Two Sorted Lists (Easy)"
+  },
+  {
+    "id": "prob-prob-linkedLists-add-two-numbers",
+    "text": "[Problem: Add Two Numbers (Medium)] Tags: Linked Lists Intel Meta Uber. Add two numbers represented as linked lists. Hints: Level 1: Track carry.. Editorial: Standard sum carry.",
+    "source": "Problem Bank",
+    "topic": "Add Two Numbers (Medium)"
+  },
+  {
+    "id": "prob-prob-stacks-valid-parentheses",
+    "text": "[Problem: Valid Parentheses (Easy)] Tags: Stacks Atlassian Adobe. Determine if braces configuration is correct. Hints: Level 1: Use Stack.. Editorial: Verify with stack.",
+    "source": "Problem Bank",
+    "topic": "Valid Parentheses (Easy)"
+  },
+  {
+    "id": "prob-prob-stacks-evaluate-reverse-polish-notation",
+    "text": "[Problem: Evaluate Reverse Polish Notation (Medium)] Tags: Stacks Atlassian. Evaluate RPN expression. Hints: Level 1: Stack pop evaluation.. Editorial: Pop two values on operator.",
+    "source": "Problem Bank",
+    "topic": "Evaluate Reverse Polish Notation (Medium)"
+  },
+  {
+    "id": "prob-prob-stacks-largest-rectangle-in-histogram",
+    "text": "[Problem: Largest Rectangle in Histogram (Hard)] Tags: Stacks Bloomberg. Find maximum rectangle area in histogram. Hints: Level 1: Monotonic stack.. Editorial: Stack-based indices comparison.",
+    "source": "Problem Bank",
+    "topic": "Largest Rectangle in Histogram (Hard)"
+  },
+  {
+    "id": "prob-prob-queues-implement-queue-using-stacks",
+    "text": "[Problem: Implement Queue using Stacks (Easy)] Tags: Queues Amazon Airbnb Google. Implement a first-in first-out (FIFO) queue using only two stacks. Hints: Level 1: Use push stack and pop stack. | Level 2: Transfer elements to reverse.. Editorial: Amortized stack shift.",
+    "source": "Problem Bank",
+    "topic": "Implement Queue using Stacks (Easy)"
+  },
+  {
+    "id": "prob-prob-queues-design-circular-queue",
+    "text": "[Problem: Design Circular Queue (Medium)] Tags: Queues Twitter Atlassian. Design circular buffer FIFO queue. Hints: Level 1: Modulo wraps.. Editorial: Array wrap pointer.",
+    "source": "Problem Bank",
+    "topic": "Design Circular Queue (Medium)"
+  },
+  {
+    "id": "prob-prob-queues-sliding-window-maximum",
+    "text": "[Problem: Sliding Window Maximum (Hard)] Tags: Queues Oracle Microsoft Cisco. Sliding window max on array sizes k. Hints: Level 1: Monotonic deque.. Editorial: Monotonic indices queues.",
+    "source": "Problem Bank",
+    "topic": "Sliding Window Maximum (Hard)"
+  },
+  {
+    "id": "prob-prob-hashing-contains-duplicate",
+    "text": "[Problem: Contains Duplicate (Easy)] Tags: Hashing Salesforce. Check if array contains duplicates. Hints: Level 1: Use Set.. Editorial: Hash Set unique check.",
+    "source": "Problem Bank",
+    "topic": "Contains Duplicate (Easy)"
+  },
+  {
+    "id": "prob-prob-hashing-intersection-of-two-arrays",
+    "text": "[Problem: Intersection of Two Arrays (Easy)] Tags: Hashing Oracle Goldman Sachs Uber. Find intersection of two arrays. Hints: Level 1: Sets intersection.. Editorial: Store in set and look up.",
+    "source": "Problem Bank",
+    "topic": "Intersection of Two Arrays (Easy)"
+  },
+  {
+    "id": "prob-prob-hashing-longest-consecutive-sequence",
+    "text": "[Problem: Longest Consecutive Sequence (Medium)] Tags: Hashing Cisco Meta ByteDance. Find longest consecutive elements sequence length. Hints: Level 1: Hash set elements. | Level 2: Find start of sequence.. Editorial: Only check sequences starting with value - 1 missing.",
+    "source": "Problem Bank",
+    "topic": "Longest Consecutive Sequence (Medium)"
+  },
+  {
+    "id": "prob-prob-trees-invert-binary-tree",
+    "text": "[Problem: Invert Binary Tree (Easy)] Tags: Trees Oracle. Invert binary tree nodes. Hints: Level 1: Swap recursive.. Editorial: Recursive nodes swap.",
+    "source": "Problem Bank",
+    "topic": "Invert Binary Tree (Easy)"
+  },
+  {
+    "id": "prob-prob-trees-same-tree",
+    "text": "[Problem: Same Tree (Easy)] Tags: Trees Bloomberg. Verify if two binary trees are same. Hints: Level 1: Compare values recursively.. Editorial: Match root, then left and right.",
+    "source": "Problem Bank",
+    "topic": "Same Tree (Easy)"
+  },
+  {
+    "id": "prob-prob-trees-binary-tree-level-order-traversal",
+    "text": "[Problem: Binary Tree Level Order Traversal (Medium)] Tags: Trees Twitter Salesforce Amazon. Level order traversal. Hints: Level 1: BFS queue.. Editorial: Queue based level iterations.",
+    "source": "Problem Bank",
+    "topic": "Binary Tree Level Order Traversal (Medium)"
+  },
+  {
+    "id": "prob-prob-bst-sample-easy-bst",
+    "text": "[Problem: Sample Easy BST (Easy)] Tags: Binary Search Trees Cisco Oracle Meta. Given input data, solve this Easy algorithm challenge for bst. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Easy bst.",
+    "source": "Problem Bank",
+    "topic": "Sample Easy BST (Easy)"
+  },
+  {
+    "id": "prob-prob-bst-sample-medium-bst",
+    "text": "[Problem: Sample Medium BST (Medium)] Tags: Binary Search Trees Salesforce Square Goldman Sachs. Given input data, solve this Medium algorithm challenge for bst. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Medium bst.",
+    "source": "Problem Bank",
+    "topic": "Sample Medium BST (Medium)"
+  },
+  {
+    "id": "prob-prob-bst-sample-hard-bst",
+    "text": "[Problem: Sample Hard BST (Hard)] Tags: Binary Search Trees Salesforce Adobe Square. Given input data, solve this Hard algorithm challenge for bst. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Hard bst.",
+    "source": "Problem Bank",
+    "topic": "Sample Hard BST (Hard)"
+  },
+  {
+    "id": "prob-prob-heaps-sample-easy-heaps",
+    "text": "[Problem: Sample Easy HEAPS (Easy)] Tags: Heaps Twitter. Given input data, solve this Easy algorithm challenge for heaps. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Easy heaps.",
+    "source": "Problem Bank",
+    "topic": "Sample Easy HEAPS (Easy)"
+  },
+  {
+    "id": "prob-prob-heaps-sample-medium-heaps",
+    "text": "[Problem: Sample Medium HEAPS (Medium)] Tags: Heaps Stripe Twitter. Given input data, solve this Medium algorithm challenge for heaps. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Medium heaps.",
+    "source": "Problem Bank",
+    "topic": "Sample Medium HEAPS (Medium)"
+  },
+  {
+    "id": "prob-prob-heaps-sample-hard-heaps",
+    "text": "[Problem: Sample Hard HEAPS (Hard)] Tags: Heaps Google Lyft. Given input data, solve this Hard algorithm challenge for heaps. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Hard heaps.",
+    "source": "Problem Bank",
+    "topic": "Sample Hard HEAPS (Hard)"
+  },
+  {
+    "id": "prob-prob-graphs-sample-easy-graphs",
+    "text": "[Problem: Sample Easy GRAPHS (Easy)] Tags: Graphs Amazon Bloomberg. Given input data, solve this Easy algorithm challenge for graphs. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Easy graphs.",
+    "source": "Problem Bank",
+    "topic": "Sample Easy GRAPHS (Easy)"
+  },
+  {
+    "id": "prob-prob-graphs-sample-medium-graphs",
+    "text": "[Problem: Sample Medium GRAPHS (Medium)] Tags: Graphs Uber Intel. Given input data, solve this Medium algorithm challenge for graphs. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Medium graphs.",
+    "source": "Problem Bank",
+    "topic": "Sample Medium GRAPHS (Medium)"
+  },
+  {
+    "id": "prob-prob-graphs-sample-hard-graphs",
+    "text": "[Problem: Sample Hard GRAPHS (Hard)] Tags: Graphs Square Goldman Sachs Meta. Given input data, solve this Hard algorithm challenge for graphs. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Hard graphs.",
+    "source": "Problem Bank",
+    "topic": "Sample Hard GRAPHS (Hard)"
+  },
+  {
+    "id": "prob-prob-recursion-sample-easy-recursion",
+    "text": "[Problem: Sample Easy RECURSION (Easy)] Tags: Recursion Intel Amazon Cisco. Given input data, solve this Easy algorithm challenge for recursion. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Easy recursion.",
+    "source": "Problem Bank",
+    "topic": "Sample Easy RECURSION (Easy)"
+  },
+  {
+    "id": "prob-prob-recursion-sample-medium-recursion",
+    "text": "[Problem: Sample Medium RECURSION (Medium)] Tags: Recursion Meta. Given input data, solve this Medium algorithm challenge for recursion. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Medium recursion.",
+    "source": "Problem Bank",
+    "topic": "Sample Medium RECURSION (Medium)"
+  },
+  {
+    "id": "prob-prob-recursion-sample-hard-recursion",
+    "text": "[Problem: Sample Hard RECURSION (Hard)] Tags: Recursion Square. Given input data, solve this Hard algorithm challenge for recursion. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Hard recursion.",
+    "source": "Problem Bank",
+    "topic": "Sample Hard RECURSION (Hard)"
+  },
+  {
+    "id": "prob-prob-backtracking-sample-easy-backtracking",
+    "text": "[Problem: Sample Easy BACKTRACKING (Easy)] Tags: Backtracking ByteDance Uber. Given input data, solve this Easy algorithm challenge for backtracking. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Easy backtracking.",
+    "source": "Problem Bank",
+    "topic": "Sample Easy BACKTRACKING (Easy)"
+  },
+  {
+    "id": "prob-prob-backtracking-sample-medium-backtracking",
+    "text": "[Problem: Sample Medium BACKTRACKING (Medium)] Tags: Backtracking Microsoft Salesforce Goldman Sachs. Given input data, solve this Medium algorithm challenge for backtracking. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Medium backtracking.",
+    "source": "Problem Bank",
+    "topic": "Sample Medium BACKTRACKING (Medium)"
+  },
+  {
+    "id": "prob-prob-backtracking-sample-hard-backtracking",
+    "text": "[Problem: Sample Hard BACKTRACKING (Hard)] Tags: Backtracking ByteDance Twitter Meta. Given input data, solve this Hard algorithm challenge for backtracking. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Hard backtracking.",
+    "source": "Problem Bank",
+    "topic": "Sample Hard BACKTRACKING (Hard)"
+  },
+  {
+    "id": "prob-prob-greedy-sample-easy-greedy",
+    "text": "[Problem: Sample Easy GREEDY (Easy)] Tags: Greedy Algorithms Google. Given input data, solve this Easy algorithm challenge for greedy. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Easy greedy.",
+    "source": "Problem Bank",
+    "topic": "Sample Easy GREEDY (Easy)"
+  },
+  {
+    "id": "prob-prob-greedy-sample-medium-greedy",
+    "text": "[Problem: Sample Medium GREEDY (Medium)] Tags: Greedy Algorithms Uber Apple. Given input data, solve this Medium algorithm challenge for greedy. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Medium greedy.",
+    "source": "Problem Bank",
+    "topic": "Sample Medium GREEDY (Medium)"
+  },
+  {
+    "id": "prob-prob-greedy-sample-hard-greedy",
+    "text": "[Problem: Sample Hard GREEDY (Hard)] Tags: Greedy Algorithms Meta Amazon Microsoft. Given input data, solve this Hard algorithm challenge for greedy. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Hard greedy.",
+    "source": "Problem Bank",
+    "topic": "Sample Hard GREEDY (Hard)"
+  },
+  {
+    "id": "prob-prob-dp-sample-easy-dp",
+    "text": "[Problem: Sample Easy DP (Easy)] Tags: Dynamic Programming Apple Airbnb Netflix. Given input data, solve this Easy algorithm challenge for dp. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Easy dp.",
+    "source": "Problem Bank",
+    "topic": "Sample Easy DP (Easy)"
+  },
+  {
+    "id": "prob-prob-dp-sample-medium-dp",
+    "text": "[Problem: Sample Medium DP (Medium)] Tags: Dynamic Programming Adobe. Given input data, solve this Medium algorithm challenge for dp. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Medium dp.",
+    "source": "Problem Bank",
+    "topic": "Sample Medium DP (Medium)"
+  },
+  {
+    "id": "prob-prob-dp-sample-hard-dp",
+    "text": "[Problem: Sample Hard DP (Hard)] Tags: Dynamic Programming Lyft Microsoft Square. Given input data, solve this Hard algorithm challenge for dp. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Hard dp.",
+    "source": "Problem Bank",
+    "topic": "Sample Hard DP (Hard)"
+  },
+  {
+    "id": "prob-prob-tries-sample-easy-tries",
+    "text": "[Problem: Sample Easy TRIES (Easy)] Tags: Tries Apple Salesforce Meta. Given input data, solve this Easy algorithm challenge for tries. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Easy tries.",
+    "source": "Problem Bank",
+    "topic": "Sample Easy TRIES (Easy)"
+  },
+  {
+    "id": "prob-prob-tries-sample-medium-tries",
+    "text": "[Problem: Sample Medium TRIES (Medium)] Tags: Tries PayPal Oracle. Given input data, solve this Medium algorithm challenge for tries. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Medium tries.",
+    "source": "Problem Bank",
+    "topic": "Sample Medium TRIES (Medium)"
+  },
+  {
+    "id": "prob-prob-tries-sample-hard-tries",
+    "text": "[Problem: Sample Hard TRIES (Hard)] Tags: Tries Lyft Cisco. Given input data, solve this Hard algorithm challenge for tries. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Hard tries.",
+    "source": "Problem Bank",
+    "topic": "Sample Hard TRIES (Hard)"
+  },
+  {
+    "id": "prob-prob-segmentTrees-sample-easy-segmenttrees",
+    "text": "[Problem: Sample Easy SEGMENTTREES (Easy)] Tags: Segment Trees Adobe. Given input data, solve this Easy algorithm challenge for segmentTrees. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Easy segmentTrees.",
+    "source": "Problem Bank",
+    "topic": "Sample Easy SEGMENTTREES (Easy)"
+  },
+  {
+    "id": "prob-prob-segmentTrees-sample-medium-segmenttrees",
+    "text": "[Problem: Sample Medium SEGMENTTREES (Medium)] Tags: Segment Trees Stripe. Given input data, solve this Medium algorithm challenge for segmentTrees. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Medium segmentTrees.",
+    "source": "Problem Bank",
+    "topic": "Sample Medium SEGMENTTREES (Medium)"
+  },
+  {
+    "id": "prob-prob-segmentTrees-sample-hard-segmenttrees",
+    "text": "[Problem: Sample Hard SEGMENTTREES (Hard)] Tags: Segment Trees Amazon. Given input data, solve this Hard algorithm challenge for segmentTrees. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Hard segmentTrees.",
+    "source": "Problem Bank",
+    "topic": "Sample Hard SEGMENTTREES (Hard)"
+  },
+  {
+    "id": "prob-prob-bitManipulation-sample-easy-bitmanipulation",
+    "text": "[Problem: Sample Easy BITMANIPULATION (Easy)] Tags: Bit Manipulation PayPal Netflix. Given input data, solve this Easy algorithm challenge for bitManipulation. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Easy bitManipulation.",
+    "source": "Problem Bank",
+    "topic": "Sample Easy BITMANIPULATION (Easy)"
+  },
+  {
+    "id": "prob-prob-bitManipulation-sample-medium-bitmanipulation",
+    "text": "[Problem: Sample Medium BITMANIPULATION (Medium)] Tags: Bit Manipulation Uber PayPal. Given input data, solve this Medium algorithm challenge for bitManipulation. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Medium bitManipulation.",
+    "source": "Problem Bank",
+    "topic": "Sample Medium BITMANIPULATION (Medium)"
+  },
+  {
+    "id": "prob-prob-bitManipulation-sample-hard-bitmanipulation",
+    "text": "[Problem: Sample Hard BITMANIPULATION (Hard)] Tags: Bit Manipulation ByteDance Goldman Sachs Twitter. Given input data, solve this Hard algorithm challenge for bitManipulation. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Hard bitManipulation.",
+    "source": "Problem Bank",
+    "topic": "Sample Hard BITMANIPULATION (Hard)"
+  },
+  {
+    "id": "prob-prob-slidingWindow-sample-easy-slidingwindow",
+    "text": "[Problem: Sample Easy SLIDINGWINDOW (Easy)] Tags: Sliding Window ByteDance. Given input data, solve this Easy algorithm challenge for slidingWindow. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Easy slidingWindow.",
+    "source": "Problem Bank",
+    "topic": "Sample Easy SLIDINGWINDOW (Easy)"
+  },
+  {
+    "id": "prob-prob-slidingWindow-sample-medium-slidingwindow",
+    "text": "[Problem: Sample Medium SLIDINGWINDOW (Medium)] Tags: Sliding Window Goldman Sachs. Given input data, solve this Medium algorithm challenge for slidingWindow. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Medium slidingWindow.",
+    "source": "Problem Bank",
+    "topic": "Sample Medium SLIDINGWINDOW (Medium)"
+  },
+  {
+    "id": "prob-prob-slidingWindow-sample-hard-slidingwindow",
+    "text": "[Problem: Sample Hard SLIDINGWINDOW (Hard)] Tags: Sliding Window Bloomberg Uber. Given input data, solve this Hard algorithm challenge for slidingWindow. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Hard slidingWindow.",
+    "source": "Problem Bank",
+    "topic": "Sample Hard SLIDINGWINDOW (Hard)"
+  },
+  {
+    "id": "prob-prob-twoPointers-sample-easy-twopointers",
+    "text": "[Problem: Sample Easy TWOPOINTERS (Easy)] Tags: Two Pointers Bloomberg Goldman Sachs. Given input data, solve this Easy algorithm challenge for twoPointers. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Easy twoPointers.",
+    "source": "Problem Bank",
+    "topic": "Sample Easy TWOPOINTERS (Easy)"
+  },
+  {
+    "id": "prob-prob-twoPointers-sample-medium-twopointers",
+    "text": "[Problem: Sample Medium TWOPOINTERS (Medium)] Tags: Two Pointers Adobe Netflix Oracle. Given input data, solve this Medium algorithm challenge for twoPointers. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Medium twoPointers.",
+    "source": "Problem Bank",
+    "topic": "Sample Medium TWOPOINTERS (Medium)"
+  },
+  {
+    "id": "prob-prob-twoPointers-sample-hard-twopointers",
+    "text": "[Problem: Sample Hard TWOPOINTERS (Hard)] Tags: Two Pointers Salesforce PayPal. Given input data, solve this Hard algorithm challenge for twoPointers. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Hard twoPointers.",
+    "source": "Problem Bank",
+    "topic": "Sample Hard TWOPOINTERS (Hard)"
+  },
+  {
+    "id": "prob-prob-advanced-sample-easy-advanced",
+    "text": "[Problem: Sample Easy ADVANCED (Easy)] Tags: Advanced Interview Problems Netflix Google. Given input data, solve this Easy algorithm challenge for advanced. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Easy advanced.",
+    "source": "Problem Bank",
+    "topic": "Sample Easy ADVANCED (Easy)"
+  },
+  {
+    "id": "prob-prob-advanced-sample-medium-advanced",
+    "text": "[Problem: Sample Medium ADVANCED (Medium)] Tags: Advanced Interview Problems Atlassian Lyft Goldman Sachs. Given input data, solve this Medium algorithm challenge for advanced. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Medium advanced.",
+    "source": "Problem Bank",
+    "topic": "Sample Medium ADVANCED (Medium)"
+  },
+  {
+    "id": "prob-prob-advanced-sample-hard-advanced",
+    "text": "[Problem: Sample Hard ADVANCED (Hard)] Tags: Advanced Interview Problems Google Apple Stripe. Given input data, solve this Hard algorithm challenge for advanced. Hints: Level 1: Read carefully. | Level 2: Implement logic. | Level 3: Verify output.. Editorial: Standard solution for Hard advanced.",
+    "source": "Problem Bank",
+    "topic": "Sample Hard ADVANCED (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-001",
+    "text": "[Problem: Amazon Array Window Balancer 1 (Easy)] Tags: Arrays Amazon Meta Company Wise. Amazon placement-style challenge focused on Arrays. You are given a compact assessment input and must apply prefix sums, hashing, and careful index bounds. Explain your approach, handle edge cases, an Hints: Identify the Arrays pattern before coding. | Use prefix sums, hashing, and careful index bounds instead of brute force whenever possible. | Write down the invariant for the Amazon round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Amazon Array Window Balancer 1, the intended solution is to recognize the Arrays pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Amazon Array Window Balancer 1 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-002",
+    "text": "[Problem: Google String Pattern Normalizer 1 (Medium)] Tags: Strings Google Salesforce Company Wise. Google placement-style challenge focused on Strings. You are given a compact assessment input and must apply frequency tables, two pointers, and case handling. Explain your approach, handle edge cases Hints: Identify the Strings pattern before coding. | Use frequency tables, two pointers, and case handling instead of brute force whenever possible. | Write down the invariant for the Google round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Google String Pattern Normalizer 1, the intended solution is to recognize the Strings pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Google String Pattern Normalizer 1 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-003",
+    "text": "[Problem: Microsoft Linked List Pointer Repair 1 (Hard)] Tags: Linked Lists Microsoft Cognizant Company Wise. Microsoft placement-style challenge focused on Linked Lists. You are given a compact assessment input and must apply slow-fast pointers and safe node relinking. Explain your approach, handle edge case Hints: Identify the Linked Lists pattern before coding. | Use slow-fast pointers and safe node relinking instead of brute force whenever possible. | Write down the invariant for the Microsoft round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Microsoft Linked List Pointer Repair 1, the intended solution is to recognize the Linked Lists pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Microsoft Linked List Pointer Repair 1 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-004",
+    "text": "[Problem: Meta Stack Sequence Validator 1 (Easy)] Tags: Stacks Meta Intel Company Wise. Meta placement-style challenge focused on Stacks. You are given a compact assessment input and must apply monotonic stacks and bracket-style simulation. Explain your approach, handle edge cases, and r Hints: Identify the Stacks pattern before coding. | Use monotonic stacks and bracket-style simulation instead of brute force whenever possible. | Write down the invariant for the Meta round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Meta Stack Sequence Validator 1, the intended solution is to recognize the Stacks pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Meta Stack Sequence Validator 1 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-005",
+    "text": "[Problem: Apple Queue Throughput Scheduler 1 (Medium)] Tags: Queues Apple Zoho Company Wise. Apple placement-style challenge focused on Queues. You are given a compact assessment input and must apply FIFO windows, deques, and event ordering. Explain your approach, handle edge cases, and retur Hints: Identify the Queues pattern before coding. | Use FIFO windows, deques, and event ordering instead of brute force whenever possible. | Write down the invariant for the Apple round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Apple Queue Throughput Scheduler 1, the intended solution is to recognize the Queues pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Apple Queue Throughput Scheduler 1 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-006",
+    "text": "[Problem: Netflix Hash Map Collision Resolver 1 (Hard)] Tags: Hashing Netflix Adobe Company Wise. Netflix placement-style challenge focused on Hashing. You are given a compact assessment input and must apply constant-time lookup and duplicate tracking. Explain your approach, handle edge cases, and Hints: Identify the Hashing pattern before coding. | Use constant-time lookup and duplicate tracking instead of brute force whenever possible. | Write down the invariant for the Netflix round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Netflix Hash Map Collision Resolver 1, the intended solution is to recognize the Hashing pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Netflix Hash Map Collision Resolver 1 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-007",
+    "text": "[Problem: Adobe Binary Tree Path Auditor 1 (Easy)] Tags: Trees Adobe Infosys Company Wise. Adobe placement-style challenge focused on Trees. You are given a compact assessment input and must apply DFS traversal, recursion, and path accumulation. Explain your approach, handle edge cases, and Hints: Identify the Trees pattern before coding. | Use DFS traversal, recursion, and path accumulation instead of brute force whenever possible. | Write down the invariant for the Adobe round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Adobe Binary Tree Path Auditor 1, the intended solution is to recognize the Trees pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Adobe Binary Tree Path Auditor 1 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-008",
+    "text": "[Problem: Uber BST Range Inspector 1 (Medium)] Tags: Binary Search Trees Uber Deloitte Company Wise. Uber placement-style challenge focused on Binary Search Trees. You are given a compact assessment input and must apply ordered traversal and lower/upper bounds. Explain your approach, handle edge case Hints: Identify the Binary Search Trees pattern before coding. | Use ordered traversal and lower/upper bounds instead of brute force whenever possible. | Write down the invariant for the Uber round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Uber BST Range Inspector 1, the intended solution is to recognize the Binary Search Trees pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Uber BST Range Inspector 1 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-009",
+    "text": "[Problem: Airbnb Priority Heap Ranker 1 (Hard)] Tags: Heaps Airbnb Swiggy Company Wise. Airbnb placement-style challenge focused on Heaps. You are given a compact assessment input and must apply top-k selection and priority queue maintenance. Explain your approach, handle edge cases, and Hints: Identify the Heaps pattern before coding. | Use top-k selection and priority queue maintenance instead of brute force whenever possible. | Write down the invariant for the Airbnb round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Airbnb Priority Heap Ranker 1, the intended solution is to recognize the Heaps pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Airbnb Priority Heap Ranker 1 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-010",
+    "text": "[Problem: Stripe Graph Route Planner 1 (Easy)] Tags: Graphs Stripe Microsoft Company Wise. Stripe placement-style challenge focused on Graphs. You are given a compact assessment input and must apply BFS, DFS, connected components, and cycle checks. Explain your approach, handle edge cases,  Hints: Identify the Graphs pattern before coding. | Use BFS, DFS, connected components, and cycle checks instead of brute force whenever possible. | Write down the invariant for the Stripe round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Stripe Graph Route Planner 1, the intended solution is to recognize the Graphs pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Stripe Graph Route Planner 1 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-011",
+    "text": "[Problem: Salesforce Recursive State Explorer 1 (Medium)] Tags: Recursion Salesforce Stripe Company Wise. Salesforce placement-style challenge focused on Recursion. You are given a compact assessment input and must apply base cases and state transition trees. Explain your approach, handle edge cases, and  Hints: Identify the Recursion pattern before coding. | Use base cases and state transition trees instead of brute force whenever possible. | Write down the invariant for the Salesforce round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Salesforce Recursive State Explorer 1, the intended solution is to recognize the Recursion pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Salesforce Recursive State Explorer 1 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-012",
+    "text": "[Problem: Oracle Backtracking Choice Builder 1 (Hard)] Tags: Backtracking Oracle Capgemini Company Wise. Oracle placement-style challenge focused on Backtracking. You are given a compact assessment input and must apply choose-explore-unchoose search. Explain your approach, handle edge cases, and return t Hints: Identify the Backtracking pattern before coding. | Use choose-explore-unchoose search instead of brute force whenever possible. | Write down the invariant for the Oracle round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Oracle Backtracking Choice Builder 1, the intended solution is to recognize the Backtracking pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Oracle Backtracking Choice Builder 1 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-013",
+    "text": "[Problem: TCS Greedy Placement Optimizer 1 (Easy)] Tags: Greedy Algorithms TCS Cisco Company Wise. TCS placement-style challenge focused on Greedy Algorithms. You are given a compact assessment input and must apply local optimal choices and sorting. Explain your approach, handle edge cases, and ret Hints: Identify the Greedy Algorithms pattern before coding. | Use local optimal choices and sorting instead of brute force whenever possible. | Write down the invariant for the TCS round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For TCS Greedy Placement Optimizer 1, the intended solution is to recognize the Greedy Algorithms pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "TCS Greedy Placement Optimizer 1 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-014",
+    "text": "[Problem: Infosys DP Interview Grid 1 (Medium)] Tags: Dynamic Programming Infosys Razorpay Company Wise. Infosys placement-style challenge focused on Dynamic Programming. You are given a compact assessment input and must apply memoization, tabulation, and transitions. Explain your approach, handle edge c Hints: Identify the Dynamic Programming pattern before coding. | Use memoization, tabulation, and transitions instead of brute force whenever possible. | Write down the invariant for the Infosys round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Infosys DP Interview Grid 1, the intended solution is to recognize the Dynamic Programming pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Infosys DP Interview Grid 1 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-015",
+    "text": "[Problem: Wipro Trie Prefix Directory 1 (Hard)] Tags: Tries Wipro Netflix Company Wise. Wipro placement-style challenge focused on Tries. You are given a compact assessment input and must apply prefix trees and character edges. Explain your approach, handle edge cases, and return the req Hints: Identify the Tries pattern before coding. | Use prefix trees and character edges instead of brute force whenever possible. | Write down the invariant for the Wipro round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Wipro Trie Prefix Directory 1, the intended solution is to recognize the Tries pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Wipro Trie Prefix Directory 1 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-016",
+    "text": "[Problem: Accenture Segment Tree Query Engine 1 (Easy)] Tags: Segment Trees Accenture TCS Company Wise. Accenture placement-style challenge focused on Segment Trees. You are given a compact assessment input and must apply range queries and logarithmic updates. Explain your approach, handle edge cases, a Hints: Identify the Segment Trees pattern before coding. | Use range queries and logarithmic updates instead of brute force whenever possible. | Write down the invariant for the Accenture round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Accenture Segment Tree Query Engine 1, the intended solution is to recognize the Segment Trees pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Accenture Segment Tree Query Engine 1 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-017",
+    "text": "[Problem: Capgemini Bitmask Eligibility Filter 1 (Medium)] Tags: Bit Manipulation Capgemini JP Morgan Company Wise. Capgemini placement-style challenge focused on Bit Manipulation. You are given a compact assessment input and must apply xor, masks, and binary flags. Explain your approach, handle edge cases, and ret Hints: Identify the Bit Manipulation pattern before coding. | Use xor, masks, and binary flags instead of brute force whenever possible. | Write down the invariant for the Capgemini round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Capgemini Bitmask Eligibility Filter 1, the intended solution is to recognize the Bit Manipulation pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Capgemini Bitmask Eligibility Filter 1 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-018",
+    "text": "[Problem: Cognizant Sliding Window Signal 1 (Hard)] Tags: Sliding Window Cognizant Flipkart Company Wise. Cognizant placement-style challenge focused on Sliding Window. You are given a compact assessment input and must apply expand-shrink window invariants. Explain your approach, handle edge cases, and re Hints: Identify the Sliding Window pattern before coding. | Use expand-shrink window invariants instead of brute force whenever possible. | Write down the invariant for the Cognizant round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Cognizant Sliding Window Signal 1, the intended solution is to recognize the Sliding Window pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Cognizant Sliding Window Signal 1 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-019",
+    "text": "[Problem: Goldman Sachs Two Pointer Interview Sweep 1 (Easy)] Tags: Two Pointers Goldman Sachs Google Company Wise. Goldman Sachs placement-style challenge focused on Two Pointers. You are given a compact assessment input and must apply sorted scans and converging pointers. Explain your approach, handle edge cases, Hints: Identify the Two Pointers pattern before coding. | Use sorted scans and converging pointers instead of brute force whenever possible. | Write down the invariant for the Goldman Sachs round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Goldman Sachs Two Pointer Interview Sweep 1, the intended solution is to recognize the Two Pointers pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Goldman Sachs Two Pointer Interview Sweep 1 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-020",
+    "text": "[Problem: JP Morgan System Constraint Challenge 1 (Medium)] Tags: Advanced Interview Problems JP Morgan Airbnb Company Wise. JP Morgan placement-style challenge focused on Advanced Interview Problems. You are given a compact assessment input and must apply hybrid algorithms and edge-case analysis. Explain your approach, han Hints: Identify the Advanced Interview Problems pattern before coding. | Use hybrid algorithms and edge-case analysis instead of brute force whenever possible. | Write down the invariant for the JP Morgan round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For JP Morgan System Constraint Challenge 1, the intended solution is to recognize the Advanced Interview Problems pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "JP Morgan System Constraint Challenge 1 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-021",
+    "text": "[Problem: Deloitte Array Window Balancer 2 (Hard)] Tags: Arrays Deloitte Accenture Company Wise. Deloitte placement-style challenge focused on Arrays. You are given a compact assessment input and must apply prefix sums, hashing, and careful index bounds. Explain your approach, handle edge cases,  Hints: Identify the Arrays pattern before coding. | Use prefix sums, hashing, and careful index bounds instead of brute force whenever possible. | Write down the invariant for the Deloitte round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Deloitte Array Window Balancer 2, the intended solution is to recognize the Arrays pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Deloitte Array Window Balancer 2 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-022",
+    "text": "[Problem: PayPal String Pattern Normalizer 2 (Easy)] Tags: Strings PayPal Atlassian Company Wise. PayPal placement-style challenge focused on Strings. You are given a compact assessment input and must apply frequency tables, two pointers, and case handling. Explain your approach, handle edge cases Hints: Identify the Strings pattern before coding. | Use frequency tables, two pointers, and case handling instead of brute force whenever possible. | Write down the invariant for the PayPal round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For PayPal String Pattern Normalizer 2, the intended solution is to recognize the Strings pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "PayPal String Pattern Normalizer 2 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-023",
+    "text": "[Problem: Atlassian Linked List Pointer Repair 2 (Medium)] Tags: Linked Lists Atlassian PhonePe Company Wise. Atlassian placement-style challenge focused on Linked Lists. You are given a compact assessment input and must apply slow-fast pointers and safe node relinking. Explain your approach, handle edge case Hints: Identify the Linked Lists pattern before coding. | Use slow-fast pointers and safe node relinking instead of brute force whenever possible. | Write down the invariant for the Atlassian round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Atlassian Linked List Pointer Repair 2, the intended solution is to recognize the Linked Lists pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Atlassian Linked List Pointer Repair 2 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-024",
+    "text": "[Problem: Cisco Stack Sequence Validator 2 (Hard)] Tags: Stacks Cisco Apple Company Wise. Cisco placement-style challenge focused on Stacks. You are given a compact assessment input and must apply monotonic stacks and bracket-style simulation. Explain your approach, handle edge cases, and  Hints: Identify the Stacks pattern before coding. | Use monotonic stacks and bracket-style simulation instead of brute force whenever possible. | Write down the invariant for the Cisco round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Cisco Stack Sequence Validator 2, the intended solution is to recognize the Stacks pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Cisco Stack Sequence Validator 2 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-025",
+    "text": "[Problem: Intel Queue Throughput Scheduler 2 (Easy)] Tags: Queues Intel Oracle Company Wise. Intel placement-style challenge focused on Queues. You are given a compact assessment input and must apply FIFO windows, deques, and event ordering. Explain your approach, handle edge cases, and retur Hints: Identify the Queues pattern before coding. | Use FIFO windows, deques, and event ordering instead of brute force whenever possible. | Write down the invariant for the Intel round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Intel Queue Throughput Scheduler 2, the intended solution is to recognize the Queues pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Intel Queue Throughput Scheduler 2 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-026",
+    "text": "[Problem: NVIDIA Hash Map Collision Resolver 2 (Medium)] Tags: Hashing NVIDIA Goldman Sachs Company Wise. NVIDIA placement-style challenge focused on Hashing. You are given a compact assessment input and must apply constant-time lookup and duplicate tracking. Explain your approach, handle edge cases, and  Hints: Identify the Hashing pattern before coding. | Use constant-time lookup and duplicate tracking instead of brute force whenever possible. | Write down the invariant for the NVIDIA round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For NVIDIA Hash Map Collision Resolver 2, the intended solution is to recognize the Hashing pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "NVIDIA Hash Map Collision Resolver 2 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-027",
+    "text": "[Problem: Flipkart Binary Tree Path Auditor 2 (Hard)] Tags: Trees Flipkart NVIDIA Company Wise. Flipkart placement-style challenge focused on Trees. You are given a compact assessment input and must apply DFS traversal, recursion, and path accumulation. Explain your approach, handle edge cases,  Hints: Identify the Trees pattern before coding. | Use DFS traversal, recursion, and path accumulation instead of brute force whenever possible. | Write down the invariant for the Flipkart round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Flipkart Binary Tree Path Auditor 2, the intended solution is to recognize the Trees pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Flipkart Binary Tree Path Auditor 2 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-028",
+    "text": "[Problem: Swiggy BST Range Inspector 2 (Easy)] Tags: Binary Search Trees Swiggy Amazon Company Wise. Swiggy placement-style challenge focused on Binary Search Trees. You are given a compact assessment input and must apply ordered traversal and lower/upper bounds. Explain your approach, handle edge ca Hints: Identify the Binary Search Trees pattern before coding. | Use ordered traversal and lower/upper bounds instead of brute force whenever possible. | Write down the invariant for the Swiggy round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Swiggy BST Range Inspector 2, the intended solution is to recognize the Binary Search Trees pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Swiggy BST Range Inspector 2 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-029",
+    "text": "[Problem: Zomato Priority Heap Ranker 2 (Medium)] Tags: Heaps Zomato Uber Company Wise. Zomato placement-style challenge focused on Heaps. You are given a compact assessment input and must apply top-k selection and priority queue maintenance. Explain your approach, handle edge cases, and Hints: Identify the Heaps pattern before coding. | Use top-k selection and priority queue maintenance instead of brute force whenever possible. | Write down the invariant for the Zomato round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Zomato Priority Heap Ranker 2, the intended solution is to recognize the Heaps pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Zomato Priority Heap Ranker 2 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-030",
+    "text": "[Problem: PhonePe Graph Route Planner 2 (Hard)] Tags: Graphs PhonePe Wipro Company Wise. PhonePe placement-style challenge focused on Graphs. You are given a compact assessment input and must apply BFS, DFS, connected components, and cycle checks. Explain your approach, handle edge cases, Hints: Identify the Graphs pattern before coding. | Use BFS, DFS, connected components, and cycle checks instead of brute force whenever possible. | Write down the invariant for the PhonePe round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For PhonePe Graph Route Planner 2, the intended solution is to recognize the Graphs pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "PhonePe Graph Route Planner 2 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-031",
+    "text": "[Problem: Razorpay Recursive State Explorer 2 (Easy)] Tags: Recursion Razorpay PayPal Company Wise. Razorpay placement-style challenge focused on Recursion. You are given a compact assessment input and must apply base cases and state transition trees. Explain your approach, handle edge cases, and re Hints: Identify the Recursion pattern before coding. | Use base cases and state transition trees instead of brute force whenever possible. | Write down the invariant for the Razorpay round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Razorpay Recursive State Explorer 2, the intended solution is to recognize the Recursion pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Razorpay Recursive State Explorer 2 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-032",
+    "text": "[Problem: Zoho Backtracking Choice Builder 2 (Medium)] Tags: Backtracking Zoho Zomato Company Wise. Zoho placement-style challenge focused on Backtracking. You are given a compact assessment input and must apply choose-explore-unchoose search. Explain your approach, handle edge cases, and return the Hints: Identify the Backtracking pattern before coding. | Use choose-explore-unchoose search instead of brute force whenever possible. | Write down the invariant for the Zoho round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Zoho Backtracking Choice Builder 2, the intended solution is to recognize the Backtracking pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Zoho Backtracking Choice Builder 2 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-033",
+    "text": "[Problem: Amazon Greedy Placement Optimizer 2 (Hard)] Tags: Greedy Algorithms Amazon Meta Company Wise. Amazon placement-style challenge focused on Greedy Algorithms. You are given a compact assessment input and must apply local optimal choices and sorting. Explain your approach, handle edge cases, and  Hints: Identify the Greedy Algorithms pattern before coding. | Use local optimal choices and sorting instead of brute force whenever possible. | Write down the invariant for the Amazon round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Amazon Greedy Placement Optimizer 2, the intended solution is to recognize the Greedy Algorithms pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Amazon Greedy Placement Optimizer 2 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-034",
+    "text": "[Problem: Google DP Interview Grid 2 (Easy)] Tags: Dynamic Programming Google Salesforce Company Wise. Google placement-style challenge focused on Dynamic Programming. You are given a compact assessment input and must apply memoization, tabulation, and transitions. Explain your approach, handle edge ca Hints: Identify the Dynamic Programming pattern before coding. | Use memoization, tabulation, and transitions instead of brute force whenever possible. | Write down the invariant for the Google round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Google DP Interview Grid 2, the intended solution is to recognize the Dynamic Programming pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Google DP Interview Grid 2 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-035",
+    "text": "[Problem: Microsoft Trie Prefix Directory 2 (Medium)] Tags: Tries Microsoft Cognizant Company Wise. Microsoft placement-style challenge focused on Tries. You are given a compact assessment input and must apply prefix trees and character edges. Explain your approach, handle edge cases, and return the Hints: Identify the Tries pattern before coding. | Use prefix trees and character edges instead of brute force whenever possible. | Write down the invariant for the Microsoft round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Microsoft Trie Prefix Directory 2, the intended solution is to recognize the Tries pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Microsoft Trie Prefix Directory 2 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-036",
+    "text": "[Problem: Meta Segment Tree Query Engine 2 (Hard)] Tags: Segment Trees Meta Intel Company Wise. Meta placement-style challenge focused on Segment Trees. You are given a compact assessment input and must apply range queries and logarithmic updates. Explain your approach, handle edge cases, and re Hints: Identify the Segment Trees pattern before coding. | Use range queries and logarithmic updates instead of brute force whenever possible. | Write down the invariant for the Meta round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Meta Segment Tree Query Engine 2, the intended solution is to recognize the Segment Trees pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Meta Segment Tree Query Engine 2 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-037",
+    "text": "[Problem: Apple Bitmask Eligibility Filter 2 (Easy)] Tags: Bit Manipulation Apple Zoho Company Wise. Apple placement-style challenge focused on Bit Manipulation. You are given a compact assessment input and must apply xor, masks, and binary flags. Explain your approach, handle edge cases, and return  Hints: Identify the Bit Manipulation pattern before coding. | Use xor, masks, and binary flags instead of brute force whenever possible. | Write down the invariant for the Apple round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Apple Bitmask Eligibility Filter 2, the intended solution is to recognize the Bit Manipulation pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Apple Bitmask Eligibility Filter 2 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-038",
+    "text": "[Problem: Netflix Sliding Window Signal 2 (Medium)] Tags: Sliding Window Netflix Adobe Company Wise. Netflix placement-style challenge focused on Sliding Window. You are given a compact assessment input and must apply expand-shrink window invariants. Explain your approach, handle edge cases, and retu Hints: Identify the Sliding Window pattern before coding. | Use expand-shrink window invariants instead of brute force whenever possible. | Write down the invariant for the Netflix round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Netflix Sliding Window Signal 2, the intended solution is to recognize the Sliding Window pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Netflix Sliding Window Signal 2 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-039",
+    "text": "[Problem: Adobe Two Pointer Interview Sweep 2 (Hard)] Tags: Two Pointers Adobe Infosys Company Wise. Adobe placement-style challenge focused on Two Pointers. You are given a compact assessment input and must apply sorted scans and converging pointers. Explain your approach, handle edge cases, and ret Hints: Identify the Two Pointers pattern before coding. | Use sorted scans and converging pointers instead of brute force whenever possible. | Write down the invariant for the Adobe round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Adobe Two Pointer Interview Sweep 2, the intended solution is to recognize the Two Pointers pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Adobe Two Pointer Interview Sweep 2 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-040",
+    "text": "[Problem: Uber System Constraint Challenge 2 (Easy)] Tags: Advanced Interview Problems Uber Deloitte Company Wise. Uber placement-style challenge focused on Advanced Interview Problems. You are given a compact assessment input and must apply hybrid algorithms and edge-case analysis. Explain your approach, handle e Hints: Identify the Advanced Interview Problems pattern before coding. | Use hybrid algorithms and edge-case analysis instead of brute force whenever possible. | Write down the invariant for the Uber round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Uber System Constraint Challenge 2, the intended solution is to recognize the Advanced Interview Problems pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Uber System Constraint Challenge 2 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-041",
+    "text": "[Problem: Airbnb Array Window Balancer 3 (Medium)] Tags: Arrays Airbnb Swiggy Company Wise. Airbnb placement-style challenge focused on Arrays. You are given a compact assessment input and must apply prefix sums, hashing, and careful index bounds. Explain your approach, handle edge cases, an Hints: Identify the Arrays pattern before coding. | Use prefix sums, hashing, and careful index bounds instead of brute force whenever possible. | Write down the invariant for the Airbnb round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Airbnb Array Window Balancer 3, the intended solution is to recognize the Arrays pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Airbnb Array Window Balancer 3 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-042",
+    "text": "[Problem: Stripe String Pattern Normalizer 3 (Hard)] Tags: Strings Stripe Microsoft Company Wise. Stripe placement-style challenge focused on Strings. You are given a compact assessment input and must apply frequency tables, two pointers, and case handling. Explain your approach, handle edge cases Hints: Identify the Strings pattern before coding. | Use frequency tables, two pointers, and case handling instead of brute force whenever possible. | Write down the invariant for the Stripe round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Stripe String Pattern Normalizer 3, the intended solution is to recognize the Strings pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Stripe String Pattern Normalizer 3 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-043",
+    "text": "[Problem: Salesforce Linked List Pointer Repair 3 (Easy)] Tags: Linked Lists Salesforce Stripe Company Wise. Salesforce placement-style challenge focused on Linked Lists. You are given a compact assessment input and must apply slow-fast pointers and safe node relinking. Explain your approach, handle edge cas Hints: Identify the Linked Lists pattern before coding. | Use slow-fast pointers and safe node relinking instead of brute force whenever possible. | Write down the invariant for the Salesforce round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Salesforce Linked List Pointer Repair 3, the intended solution is to recognize the Linked Lists pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Salesforce Linked List Pointer Repair 3 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-044",
+    "text": "[Problem: Oracle Stack Sequence Validator 3 (Medium)] Tags: Stacks Oracle Capgemini Company Wise. Oracle placement-style challenge focused on Stacks. You are given a compact assessment input and must apply monotonic stacks and bracket-style simulation. Explain your approach, handle edge cases, and Hints: Identify the Stacks pattern before coding. | Use monotonic stacks and bracket-style simulation instead of brute force whenever possible. | Write down the invariant for the Oracle round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Oracle Stack Sequence Validator 3, the intended solution is to recognize the Stacks pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Oracle Stack Sequence Validator 3 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-045",
+    "text": "[Problem: TCS Queue Throughput Scheduler 3 (Hard)] Tags: Queues TCS Cisco Company Wise. TCS placement-style challenge focused on Queues. You are given a compact assessment input and must apply FIFO windows, deques, and event ordering. Explain your approach, handle edge cases, and return  Hints: Identify the Queues pattern before coding. | Use FIFO windows, deques, and event ordering instead of brute force whenever possible. | Write down the invariant for the TCS round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For TCS Queue Throughput Scheduler 3, the intended solution is to recognize the Queues pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "TCS Queue Throughput Scheduler 3 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-046",
+    "text": "[Problem: Infosys Hash Map Collision Resolver 3 (Easy)] Tags: Hashing Infosys Razorpay Company Wise. Infosys placement-style challenge focused on Hashing. You are given a compact assessment input and must apply constant-time lookup and duplicate tracking. Explain your approach, handle edge cases, and Hints: Identify the Hashing pattern before coding. | Use constant-time lookup and duplicate tracking instead of brute force whenever possible. | Write down the invariant for the Infosys round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Infosys Hash Map Collision Resolver 3, the intended solution is to recognize the Hashing pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Infosys Hash Map Collision Resolver 3 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-047",
+    "text": "[Problem: Wipro Binary Tree Path Auditor 3 (Medium)] Tags: Trees Wipro Netflix Company Wise. Wipro placement-style challenge focused on Trees. You are given a compact assessment input and must apply DFS traversal, recursion, and path accumulation. Explain your approach, handle edge cases, and Hints: Identify the Trees pattern before coding. | Use DFS traversal, recursion, and path accumulation instead of brute force whenever possible. | Write down the invariant for the Wipro round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Wipro Binary Tree Path Auditor 3, the intended solution is to recognize the Trees pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Wipro Binary Tree Path Auditor 3 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-048",
+    "text": "[Problem: Accenture BST Range Inspector 3 (Hard)] Tags: Binary Search Trees Accenture TCS Company Wise. Accenture placement-style challenge focused on Binary Search Trees. You are given a compact assessment input and must apply ordered traversal and lower/upper bounds. Explain your approach, handle edge Hints: Identify the Binary Search Trees pattern before coding. | Use ordered traversal and lower/upper bounds instead of brute force whenever possible. | Write down the invariant for the Accenture round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Accenture BST Range Inspector 3, the intended solution is to recognize the Binary Search Trees pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Accenture BST Range Inspector 3 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-049",
+    "text": "[Problem: Capgemini Priority Heap Ranker 3 (Easy)] Tags: Heaps Capgemini JP Morgan Company Wise. Capgemini placement-style challenge focused on Heaps. You are given a compact assessment input and must apply top-k selection and priority queue maintenance. Explain your approach, handle edge cases,  Hints: Identify the Heaps pattern before coding. | Use top-k selection and priority queue maintenance instead of brute force whenever possible. | Write down the invariant for the Capgemini round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Capgemini Priority Heap Ranker 3, the intended solution is to recognize the Heaps pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Capgemini Priority Heap Ranker 3 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-050",
+    "text": "[Problem: Cognizant Graph Route Planner 3 (Medium)] Tags: Graphs Cognizant Flipkart Company Wise. Cognizant placement-style challenge focused on Graphs. You are given a compact assessment input and must apply BFS, DFS, connected components, and cycle checks. Explain your approach, handle edge case Hints: Identify the Graphs pattern before coding. | Use BFS, DFS, connected components, and cycle checks instead of brute force whenever possible. | Write down the invariant for the Cognizant round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Cognizant Graph Route Planner 3, the intended solution is to recognize the Graphs pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Cognizant Graph Route Planner 3 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-051",
+    "text": "[Problem: Goldman Sachs Recursive State Explorer 3 (Hard)] Tags: Recursion Goldman Sachs Google Company Wise. Goldman Sachs placement-style challenge focused on Recursion. You are given a compact assessment input and must apply base cases and state transition trees. Explain your approach, handle edge cases, a Hints: Identify the Recursion pattern before coding. | Use base cases and state transition trees instead of brute force whenever possible. | Write down the invariant for the Goldman Sachs round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Goldman Sachs Recursive State Explorer 3, the intended solution is to recognize the Recursion pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Goldman Sachs Recursive State Explorer 3 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-052",
+    "text": "[Problem: JP Morgan Backtracking Choice Builder 3 (Easy)] Tags: Backtracking JP Morgan Airbnb Company Wise. JP Morgan placement-style challenge focused on Backtracking. You are given a compact assessment input and must apply choose-explore-unchoose search. Explain your approach, handle edge cases, and retur Hints: Identify the Backtracking pattern before coding. | Use choose-explore-unchoose search instead of brute force whenever possible. | Write down the invariant for the JP Morgan round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For JP Morgan Backtracking Choice Builder 3, the intended solution is to recognize the Backtracking pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "JP Morgan Backtracking Choice Builder 3 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-053",
+    "text": "[Problem: Deloitte Greedy Placement Optimizer 3 (Medium)] Tags: Greedy Algorithms Deloitte Accenture Company Wise. Deloitte placement-style challenge focused on Greedy Algorithms. You are given a compact assessment input and must apply local optimal choices and sorting. Explain your approach, handle edge cases, an Hints: Identify the Greedy Algorithms pattern before coding. | Use local optimal choices and sorting instead of brute force whenever possible. | Write down the invariant for the Deloitte round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Deloitte Greedy Placement Optimizer 3, the intended solution is to recognize the Greedy Algorithms pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Deloitte Greedy Placement Optimizer 3 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-054",
+    "text": "[Problem: PayPal DP Interview Grid 3 (Hard)] Tags: Dynamic Programming PayPal Atlassian Company Wise. PayPal placement-style challenge focused on Dynamic Programming. You are given a compact assessment input and must apply memoization, tabulation, and transitions. Explain your approach, handle edge ca Hints: Identify the Dynamic Programming pattern before coding. | Use memoization, tabulation, and transitions instead of brute force whenever possible. | Write down the invariant for the PayPal round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For PayPal DP Interview Grid 3, the intended solution is to recognize the Dynamic Programming pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "PayPal DP Interview Grid 3 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-055",
+    "text": "[Problem: Atlassian Trie Prefix Directory 3 (Easy)] Tags: Tries Atlassian PhonePe Company Wise. Atlassian placement-style challenge focused on Tries. You are given a compact assessment input and must apply prefix trees and character edges. Explain your approach, handle edge cases, and return the Hints: Identify the Tries pattern before coding. | Use prefix trees and character edges instead of brute force whenever possible. | Write down the invariant for the Atlassian round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Atlassian Trie Prefix Directory 3, the intended solution is to recognize the Tries pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Atlassian Trie Prefix Directory 3 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-056",
+    "text": "[Problem: Cisco Segment Tree Query Engine 3 (Medium)] Tags: Segment Trees Cisco Apple Company Wise. Cisco placement-style challenge focused on Segment Trees. You are given a compact assessment input and must apply range queries and logarithmic updates. Explain your approach, handle edge cases, and r Hints: Identify the Segment Trees pattern before coding. | Use range queries and logarithmic updates instead of brute force whenever possible. | Write down the invariant for the Cisco round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Cisco Segment Tree Query Engine 3, the intended solution is to recognize the Segment Trees pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Cisco Segment Tree Query Engine 3 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-057",
+    "text": "[Problem: Intel Bitmask Eligibility Filter 3 (Hard)] Tags: Bit Manipulation Intel Oracle Company Wise. Intel placement-style challenge focused on Bit Manipulation. You are given a compact assessment input and must apply xor, masks, and binary flags. Explain your approach, handle edge cases, and return  Hints: Identify the Bit Manipulation pattern before coding. | Use xor, masks, and binary flags instead of brute force whenever possible. | Write down the invariant for the Intel round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Intel Bitmask Eligibility Filter 3, the intended solution is to recognize the Bit Manipulation pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Intel Bitmask Eligibility Filter 3 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-058",
+    "text": "[Problem: NVIDIA Sliding Window Signal 3 (Easy)] Tags: Sliding Window NVIDIA Goldman Sachs Company Wise. NVIDIA placement-style challenge focused on Sliding Window. You are given a compact assessment input and must apply expand-shrink window invariants. Explain your approach, handle edge cases, and retur Hints: Identify the Sliding Window pattern before coding. | Use expand-shrink window invariants instead of brute force whenever possible. | Write down the invariant for the NVIDIA round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For NVIDIA Sliding Window Signal 3, the intended solution is to recognize the Sliding Window pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "NVIDIA Sliding Window Signal 3 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-059",
+    "text": "[Problem: Flipkart Two Pointer Interview Sweep 3 (Medium)] Tags: Two Pointers Flipkart NVIDIA Company Wise. Flipkart placement-style challenge focused on Two Pointers. You are given a compact assessment input and must apply sorted scans and converging pointers. Explain your approach, handle edge cases, and  Hints: Identify the Two Pointers pattern before coding. | Use sorted scans and converging pointers instead of brute force whenever possible. | Write down the invariant for the Flipkart round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Flipkart Two Pointer Interview Sweep 3, the intended solution is to recognize the Two Pointers pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Flipkart Two Pointer Interview Sweep 3 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-060",
+    "text": "[Problem: Swiggy System Constraint Challenge 3 (Hard)] Tags: Advanced Interview Problems Swiggy Amazon Company Wise. Swiggy placement-style challenge focused on Advanced Interview Problems. You are given a compact assessment input and must apply hybrid algorithms and edge-case analysis. Explain your approach, handle Hints: Identify the Advanced Interview Problems pattern before coding. | Use hybrid algorithms and edge-case analysis instead of brute force whenever possible. | Write down the invariant for the Swiggy round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Swiggy System Constraint Challenge 3, the intended solution is to recognize the Advanced Interview Problems pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Swiggy System Constraint Challenge 3 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-061",
+    "text": "[Problem: Zomato Array Window Balancer 4 (Easy)] Tags: Arrays Zomato Uber Company Wise. Zomato placement-style challenge focused on Arrays. You are given a compact assessment input and must apply prefix sums, hashing, and careful index bounds. Explain your approach, handle edge cases, an Hints: Identify the Arrays pattern before coding. | Use prefix sums, hashing, and careful index bounds instead of brute force whenever possible. | Write down the invariant for the Zomato round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Zomato Array Window Balancer 4, the intended solution is to recognize the Arrays pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Zomato Array Window Balancer 4 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-062",
+    "text": "[Problem: PhonePe String Pattern Normalizer 4 (Medium)] Tags: Strings PhonePe Wipro Company Wise. PhonePe placement-style challenge focused on Strings. You are given a compact assessment input and must apply frequency tables, two pointers, and case handling. Explain your approach, handle edge case Hints: Identify the Strings pattern before coding. | Use frequency tables, two pointers, and case handling instead of brute force whenever possible. | Write down the invariant for the PhonePe round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For PhonePe String Pattern Normalizer 4, the intended solution is to recognize the Strings pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "PhonePe String Pattern Normalizer 4 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-063",
+    "text": "[Problem: Razorpay Linked List Pointer Repair 4 (Hard)] Tags: Linked Lists Razorpay PayPal Company Wise. Razorpay placement-style challenge focused on Linked Lists. You are given a compact assessment input and must apply slow-fast pointers and safe node relinking. Explain your approach, handle edge cases Hints: Identify the Linked Lists pattern before coding. | Use slow-fast pointers and safe node relinking instead of brute force whenever possible. | Write down the invariant for the Razorpay round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Razorpay Linked List Pointer Repair 4, the intended solution is to recognize the Linked Lists pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Razorpay Linked List Pointer Repair 4 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-064",
+    "text": "[Problem: Zoho Stack Sequence Validator 4 (Easy)] Tags: Stacks Zoho Zomato Company Wise. Zoho placement-style challenge focused on Stacks. You are given a compact assessment input and must apply monotonic stacks and bracket-style simulation. Explain your approach, handle edge cases, and r Hints: Identify the Stacks pattern before coding. | Use monotonic stacks and bracket-style simulation instead of brute force whenever possible. | Write down the invariant for the Zoho round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Zoho Stack Sequence Validator 4, the intended solution is to recognize the Stacks pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Zoho Stack Sequence Validator 4 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-065",
+    "text": "[Problem: Amazon Queue Throughput Scheduler 4 (Medium)] Tags: Queues Amazon Meta Company Wise. Amazon placement-style challenge focused on Queues. You are given a compact assessment input and must apply FIFO windows, deques, and event ordering. Explain your approach, handle edge cases, and retu Hints: Identify the Queues pattern before coding. | Use FIFO windows, deques, and event ordering instead of brute force whenever possible. | Write down the invariant for the Amazon round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Amazon Queue Throughput Scheduler 4, the intended solution is to recognize the Queues pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Amazon Queue Throughput Scheduler 4 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-066",
+    "text": "[Problem: Google Hash Map Collision Resolver 4 (Hard)] Tags: Hashing Google Salesforce Company Wise. Google placement-style challenge focused on Hashing. You are given a compact assessment input and must apply constant-time lookup and duplicate tracking. Explain your approach, handle edge cases, and  Hints: Identify the Hashing pattern before coding. | Use constant-time lookup and duplicate tracking instead of brute force whenever possible. | Write down the invariant for the Google round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Google Hash Map Collision Resolver 4, the intended solution is to recognize the Hashing pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Google Hash Map Collision Resolver 4 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-067",
+    "text": "[Problem: Microsoft Binary Tree Path Auditor 4 (Easy)] Tags: Trees Microsoft Cognizant Company Wise. Microsoft placement-style challenge focused on Trees. You are given a compact assessment input and must apply DFS traversal, recursion, and path accumulation. Explain your approach, handle edge cases, Hints: Identify the Trees pattern before coding. | Use DFS traversal, recursion, and path accumulation instead of brute force whenever possible. | Write down the invariant for the Microsoft round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Microsoft Binary Tree Path Auditor 4, the intended solution is to recognize the Trees pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Microsoft Binary Tree Path Auditor 4 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-068",
+    "text": "[Problem: Meta BST Range Inspector 4 (Medium)] Tags: Binary Search Trees Meta Intel Company Wise. Meta placement-style challenge focused on Binary Search Trees. You are given a compact assessment input and must apply ordered traversal and lower/upper bounds. Explain your approach, handle edge case Hints: Identify the Binary Search Trees pattern before coding. | Use ordered traversal and lower/upper bounds instead of brute force whenever possible. | Write down the invariant for the Meta round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Meta BST Range Inspector 4, the intended solution is to recognize the Binary Search Trees pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Meta BST Range Inspector 4 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-069",
+    "text": "[Problem: Apple Priority Heap Ranker 4 (Hard)] Tags: Heaps Apple Zoho Company Wise. Apple placement-style challenge focused on Heaps. You are given a compact assessment input and must apply top-k selection and priority queue maintenance. Explain your approach, handle edge cases, and  Hints: Identify the Heaps pattern before coding. | Use top-k selection and priority queue maintenance instead of brute force whenever possible. | Write down the invariant for the Apple round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Apple Priority Heap Ranker 4, the intended solution is to recognize the Heaps pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Apple Priority Heap Ranker 4 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-070",
+    "text": "[Problem: Netflix Graph Route Planner 4 (Easy)] Tags: Graphs Netflix Adobe Company Wise. Netflix placement-style challenge focused on Graphs. You are given a compact assessment input and must apply BFS, DFS, connected components, and cycle checks. Explain your approach, handle edge cases, Hints: Identify the Graphs pattern before coding. | Use BFS, DFS, connected components, and cycle checks instead of brute force whenever possible. | Write down the invariant for the Netflix round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Netflix Graph Route Planner 4, the intended solution is to recognize the Graphs pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Netflix Graph Route Planner 4 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-071",
+    "text": "[Problem: Adobe Recursive State Explorer 4 (Medium)] Tags: Recursion Adobe Infosys Company Wise. Adobe placement-style challenge focused on Recursion. You are given a compact assessment input and must apply base cases and state transition trees. Explain your approach, handle edge cases, and retur Hints: Identify the Recursion pattern before coding. | Use base cases and state transition trees instead of brute force whenever possible. | Write down the invariant for the Adobe round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Adobe Recursive State Explorer 4, the intended solution is to recognize the Recursion pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Adobe Recursive State Explorer 4 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-072",
+    "text": "[Problem: Uber Backtracking Choice Builder 4 (Hard)] Tags: Backtracking Uber Deloitte Company Wise. Uber placement-style challenge focused on Backtracking. You are given a compact assessment input and must apply choose-explore-unchoose search. Explain your approach, handle edge cases, and return the Hints: Identify the Backtracking pattern before coding. | Use choose-explore-unchoose search instead of brute force whenever possible. | Write down the invariant for the Uber round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Uber Backtracking Choice Builder 4, the intended solution is to recognize the Backtracking pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Uber Backtracking Choice Builder 4 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-073",
+    "text": "[Problem: Airbnb Greedy Placement Optimizer 4 (Easy)] Tags: Greedy Algorithms Airbnb Swiggy Company Wise. Airbnb placement-style challenge focused on Greedy Algorithms. You are given a compact assessment input and must apply local optimal choices and sorting. Explain your approach, handle edge cases, and  Hints: Identify the Greedy Algorithms pattern before coding. | Use local optimal choices and sorting instead of brute force whenever possible. | Write down the invariant for the Airbnb round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Airbnb Greedy Placement Optimizer 4, the intended solution is to recognize the Greedy Algorithms pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Airbnb Greedy Placement Optimizer 4 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-074",
+    "text": "[Problem: Stripe DP Interview Grid 4 (Medium)] Tags: Dynamic Programming Stripe Microsoft Company Wise. Stripe placement-style challenge focused on Dynamic Programming. You are given a compact assessment input and must apply memoization, tabulation, and transitions. Explain your approach, handle edge ca Hints: Identify the Dynamic Programming pattern before coding. | Use memoization, tabulation, and transitions instead of brute force whenever possible. | Write down the invariant for the Stripe round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Stripe DP Interview Grid 4, the intended solution is to recognize the Dynamic Programming pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Stripe DP Interview Grid 4 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-075",
+    "text": "[Problem: Salesforce Trie Prefix Directory 4 (Hard)] Tags: Tries Salesforce Stripe Company Wise. Salesforce placement-style challenge focused on Tries. You are given a compact assessment input and must apply prefix trees and character edges. Explain your approach, handle edge cases, and return th Hints: Identify the Tries pattern before coding. | Use prefix trees and character edges instead of brute force whenever possible. | Write down the invariant for the Salesforce round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Salesforce Trie Prefix Directory 4, the intended solution is to recognize the Tries pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Salesforce Trie Prefix Directory 4 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-076",
+    "text": "[Problem: Oracle Segment Tree Query Engine 4 (Easy)] Tags: Segment Trees Oracle Capgemini Company Wise. Oracle placement-style challenge focused on Segment Trees. You are given a compact assessment input and must apply range queries and logarithmic updates. Explain your approach, handle edge cases, and  Hints: Identify the Segment Trees pattern before coding. | Use range queries and logarithmic updates instead of brute force whenever possible. | Write down the invariant for the Oracle round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Oracle Segment Tree Query Engine 4, the intended solution is to recognize the Segment Trees pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Oracle Segment Tree Query Engine 4 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-077",
+    "text": "[Problem: TCS Bitmask Eligibility Filter 4 (Medium)] Tags: Bit Manipulation TCS Cisco Company Wise. TCS placement-style challenge focused on Bit Manipulation. You are given a compact assessment input and must apply xor, masks, and binary flags. Explain your approach, handle edge cases, and return th Hints: Identify the Bit Manipulation pattern before coding. | Use xor, masks, and binary flags instead of brute force whenever possible. | Write down the invariant for the TCS round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For TCS Bitmask Eligibility Filter 4, the intended solution is to recognize the Bit Manipulation pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "TCS Bitmask Eligibility Filter 4 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-078",
+    "text": "[Problem: Infosys Sliding Window Signal 4 (Hard)] Tags: Sliding Window Infosys Razorpay Company Wise. Infosys placement-style challenge focused on Sliding Window. You are given a compact assessment input and must apply expand-shrink window invariants. Explain your approach, handle edge cases, and retu Hints: Identify the Sliding Window pattern before coding. | Use expand-shrink window invariants instead of brute force whenever possible. | Write down the invariant for the Infosys round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Infosys Sliding Window Signal 4, the intended solution is to recognize the Sliding Window pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Infosys Sliding Window Signal 4 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-079",
+    "text": "[Problem: Wipro Two Pointer Interview Sweep 4 (Easy)] Tags: Two Pointers Wipro Netflix Company Wise. Wipro placement-style challenge focused on Two Pointers. You are given a compact assessment input and must apply sorted scans and converging pointers. Explain your approach, handle edge cases, and ret Hints: Identify the Two Pointers pattern before coding. | Use sorted scans and converging pointers instead of brute force whenever possible. | Write down the invariant for the Wipro round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Wipro Two Pointer Interview Sweep 4, the intended solution is to recognize the Two Pointers pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Wipro Two Pointer Interview Sweep 4 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-080",
+    "text": "[Problem: Accenture System Constraint Challenge 4 (Medium)] Tags: Advanced Interview Problems Accenture TCS Company Wise. Accenture placement-style challenge focused on Advanced Interview Problems. You are given a compact assessment input and must apply hybrid algorithms and edge-case analysis. Explain your approach, han Hints: Identify the Advanced Interview Problems pattern before coding. | Use hybrid algorithms and edge-case analysis instead of brute force whenever possible. | Write down the invariant for the Accenture round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Accenture System Constraint Challenge 4, the intended solution is to recognize the Advanced Interview Problems pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Accenture System Constraint Challenge 4 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-081",
+    "text": "[Problem: Capgemini Array Window Balancer 5 (Hard)] Tags: Arrays Capgemini JP Morgan Company Wise. Capgemini placement-style challenge focused on Arrays. You are given a compact assessment input and must apply prefix sums, hashing, and careful index bounds. Explain your approach, handle edge cases, Hints: Identify the Arrays pattern before coding. | Use prefix sums, hashing, and careful index bounds instead of brute force whenever possible. | Write down the invariant for the Capgemini round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Capgemini Array Window Balancer 5, the intended solution is to recognize the Arrays pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Capgemini Array Window Balancer 5 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-082",
+    "text": "[Problem: Cognizant String Pattern Normalizer 5 (Easy)] Tags: Strings Cognizant Flipkart Company Wise. Cognizant placement-style challenge focused on Strings. You are given a compact assessment input and must apply frequency tables, two pointers, and case handling. Explain your approach, handle edge ca Hints: Identify the Strings pattern before coding. | Use frequency tables, two pointers, and case handling instead of brute force whenever possible. | Write down the invariant for the Cognizant round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Cognizant String Pattern Normalizer 5, the intended solution is to recognize the Strings pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Cognizant String Pattern Normalizer 5 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-083",
+    "text": "[Problem: Goldman Sachs Linked List Pointer Repair 5 (Medium)] Tags: Linked Lists Goldman Sachs Google Company Wise. Goldman Sachs placement-style challenge focused on Linked Lists. You are given a compact assessment input and must apply slow-fast pointers and safe node relinking. Explain your approach, handle edge  Hints: Identify the Linked Lists pattern before coding. | Use slow-fast pointers and safe node relinking instead of brute force whenever possible. | Write down the invariant for the Goldman Sachs round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Goldman Sachs Linked List Pointer Repair 5, the intended solution is to recognize the Linked Lists pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Goldman Sachs Linked List Pointer Repair 5 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-084",
+    "text": "[Problem: JP Morgan Stack Sequence Validator 5 (Hard)] Tags: Stacks JP Morgan Airbnb Company Wise. JP Morgan placement-style challenge focused on Stacks. You are given a compact assessment input and must apply monotonic stacks and bracket-style simulation. Explain your approach, handle edge cases,  Hints: Identify the Stacks pattern before coding. | Use monotonic stacks and bracket-style simulation instead of brute force whenever possible. | Write down the invariant for the JP Morgan round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For JP Morgan Stack Sequence Validator 5, the intended solution is to recognize the Stacks pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "JP Morgan Stack Sequence Validator 5 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-085",
+    "text": "[Problem: Deloitte Queue Throughput Scheduler 5 (Easy)] Tags: Queues Deloitte Accenture Company Wise. Deloitte placement-style challenge focused on Queues. You are given a compact assessment input and must apply FIFO windows, deques, and event ordering. Explain your approach, handle edge cases, and re Hints: Identify the Queues pattern before coding. | Use FIFO windows, deques, and event ordering instead of brute force whenever possible. | Write down the invariant for the Deloitte round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Deloitte Queue Throughput Scheduler 5, the intended solution is to recognize the Queues pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Deloitte Queue Throughput Scheduler 5 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-086",
+    "text": "[Problem: PayPal Hash Map Collision Resolver 5 (Medium)] Tags: Hashing PayPal Atlassian Company Wise. PayPal placement-style challenge focused on Hashing. You are given a compact assessment input and must apply constant-time lookup and duplicate tracking. Explain your approach, handle edge cases, and  Hints: Identify the Hashing pattern before coding. | Use constant-time lookup and duplicate tracking instead of brute force whenever possible. | Write down the invariant for the PayPal round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For PayPal Hash Map Collision Resolver 5, the intended solution is to recognize the Hashing pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "PayPal Hash Map Collision Resolver 5 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-087",
+    "text": "[Problem: Atlassian Binary Tree Path Auditor 5 (Hard)] Tags: Trees Atlassian PhonePe Company Wise. Atlassian placement-style challenge focused on Trees. You are given a compact assessment input and must apply DFS traversal, recursion, and path accumulation. Explain your approach, handle edge cases, Hints: Identify the Trees pattern before coding. | Use DFS traversal, recursion, and path accumulation instead of brute force whenever possible. | Write down the invariant for the Atlassian round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Atlassian Binary Tree Path Auditor 5, the intended solution is to recognize the Trees pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Atlassian Binary Tree Path Auditor 5 (Hard)"
+  },
+  {
+    "id": "prob-prob-bank-088",
+    "text": "[Problem: Cisco BST Range Inspector 5 (Easy)] Tags: Binary Search Trees Cisco Apple Company Wise. Cisco placement-style challenge focused on Binary Search Trees. You are given a compact assessment input and must apply ordered traversal and lower/upper bounds. Explain your approach, handle edge cas Hints: Identify the Binary Search Trees pattern before coding. | Use ordered traversal and lower/upper bounds instead of brute force whenever possible. | Write down the invariant for the Cisco round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Cisco BST Range Inspector 5, the intended solution is to recognize the Binary Search Trees pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Cisco BST Range Inspector 5 (Easy)"
+  },
+  {
+    "id": "prob-prob-bank-089",
+    "text": "[Problem: Intel Priority Heap Ranker 5 (Medium)] Tags: Heaps Intel Oracle Company Wise. Intel placement-style challenge focused on Heaps. You are given a compact assessment input and must apply top-k selection and priority queue maintenance. Explain your approach, handle edge cases, and  Hints: Identify the Heaps pattern before coding. | Use top-k selection and priority queue maintenance instead of brute force whenever possible. | Write down the invariant for the Intel round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For Intel Priority Heap Ranker 5, the intended solution is to recognize the Heaps pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "Intel Priority Heap Ranker 5 (Medium)"
+  },
+  {
+    "id": "prob-prob-bank-090",
+    "text": "[Problem: NVIDIA Graph Route Planner 5 (Hard)] Tags: Graphs NVIDIA Goldman Sachs Company Wise. NVIDIA placement-style challenge focused on Graphs. You are given a compact assessment input and must apply BFS, DFS, connected components, and cycle checks. Explain your approach, handle edge cases,  Hints: Identify the Graphs pattern before coding. | Use BFS, DFS, connected components, and cycle checks instead of brute force whenever possible. | Write down the invariant for the NVIDIA round. | Check empty, single item, duplicate, and boundary cases. | Submit only after the sample and hidden-style cases follow the same logic.. Editorial: For NVIDIA Graph Route Planner 5, the intended solution is to recognize the Graphs pattern, choose the proper data structure, maintain a clear invariant, and keep the implementation concise. Company rounds usually reward correct complexity analysis as much as final code.",
+    "source": "Problem Bank",
+    "topic": "NVIDIA Graph Route Planner 5 (Hard)"
+  },
+  {
+    "id": "disc-disc-1",
+    "text": "[Discussion: How to clear Google's Technical Round? My Experience] Just finished Google L3 interview loop. Focus closely on Graphs, Dynamic Programming, and clean variable names! They ask high density questions regarding System Design bottlenecks too.",
+    "source": "Community Discussion",
+    "topic": "How to clear Google's Technical Round? My Experience"
+  }
+]
