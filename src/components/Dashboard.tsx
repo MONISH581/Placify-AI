@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Award, CheckSquare, Sparkles, TrendingUp, Zap, Target, Flame, BrainCircuit, Activity } from 'lucide-react';
 
@@ -38,7 +38,52 @@ export function Dashboard({ user, problems, onSelectProblem, onNavigate }: Dashb
   const xpFactor = Math.min(25, Math.round(user.xp / 40));
   const streakFactor = Math.min(20, user.streak * 3);
   const accuracyFactor = Math.min(20, Math.round(user.accuracy / 5));
-  const readinessScore = Math.min(100, solvedFactor + xpFactor + streakFactor + accuracyFactor);
+  const fallbackReadinessScore = Math.min(100, solvedFactor + xpFactor + streakFactor + accuracyFactor);
+
+  const [aiData, setAiData] = useState<any>(null);
+
+  useEffect(() => {
+    const payload = {
+        user_id: "std-1",
+        coding_score: user.accuracy,
+        problems_solved: user.problemsSolved.length,
+        average_time_secs: 1800,
+        weak_topics: ["Trees", "Operating Systems"],
+        strong_topics: ["Arrays", "Python", "OOP"]
+    };
+
+    // Fetch Readiness
+    fetch(`/api/ai/readiness`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(data => setAiData(prev => ({ ...prev, readiness: data })))
+      .catch(err => console.error("Error fetching AI Readiness:", err));
+      
+    // Fetch Recommendations
+    fetch(`/api/ai/recommend`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(data => setAiData(prev => ({ ...prev, recommendation: data })))
+      .catch(err => console.error("Error fetching AI Recommendation:", err));
+  }, [user]);
+
+  const readinessScore = aiData?.readiness?.overall_readiness !== undefined
+    ? aiData.readiness.overall_readiness
+    : fallbackReadinessScore;
+
+  const interviewSuccess = aiData?.readiness?.interview_readiness !== undefined
+    ? aiData.readiness.interview_readiness
+    : 75;
+
+  const skillLevel = aiData?.readiness?.expected_skill_level || "Competitive SDE";
+  const weakAreas = aiData?.readiness?.weak_topics || ["None! Keep practicing."];
+  const recommendedTopic = aiData?.recommendation?.[0]?.topic || "Strings & Two Pointers";
 
   const handleRunMockTest = (testName: string, setter: (val: boolean) => void) => {
     setter(true);
@@ -73,6 +118,70 @@ export function Dashboard({ user, problems, onSelectProblem, onNavigate }: Dashb
 
   return (
     <div className="space-y-6" id="dashboard-container">
+      {/* Expo Demo Student & Placify AI Readiness Banner */}
+      <div className="bg-gradient-to-r from-[#0a101f]/90 via-[#0d162a]/90 to-[#0a101f]/90 border border-cyan-500/20 rounded-2xl p-6 backdrop-blur-md shadow-2xl relative overflow-hidden" id="expo-ai-banner">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-2 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-[10px] font-mono font-bold tracking-wide uppercase flex items-center gap-1.5">
+                <BrainCircuit className="w-3.5 h-3.5 animate-pulse" /> PLACIFY AI READINESS MODEL v1 (ACTIVE)
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-white/5 text-zinc-400 border border-white/10 text-[10px] font-mono">
+                Dataset: DEMO_SYNTHETIC (2,500 Profiles)
+              </span>
+            </div>
+            <h1 className="text-2xl font-black text-white tracking-tight font-heading flex items-center gap-2">
+              AI Candidate Intelligence <span className="text-cyan-400 font-mono text-lg">• Alex (Demo SDE Profile)</span>
+            </h1>
+            <p className="text-zinc-400 text-xs font-sans leading-relaxed">
+              Realtime ML readiness assessment trained on student performance metrics, solve speed, hint rates, and CS topic mastery.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              <span className="text-[10px] font-mono text-zinc-500 font-bold uppercase mr-1">Strengths:</span>
+              {(aiData?.readiness?.strong_topics || ["Arrays & Hashing", "Python Syntax", "OOP Concepts"]).map((st: string, idx: number) => (
+                <span key={idx} className="text-[10px] bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-mono font-medium">
+                  ✓ {st}
+                </span>
+              ))}
+
+              <span className="text-[10px] font-mono text-zinc-500 font-bold uppercase ml-3 mr-1">Weaknesses:</span>
+              {(aiData?.readiness?.weak_topics || ["Graphs & BFS/DFS", "Dynamic Programming", "Operating Systems"]).map((wt: string, idx: number) => (
+                <span key={idx} className="text-[10px] bg-rose-500/10 text-rose-300 border border-rose-500/20 px-2.5 py-0.5 rounded-full font-mono font-medium">
+                  ⚠ {wt}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-6 bg-black/40 p-4 rounded-xl border border-white/5 shrink-0">
+            <div className="text-center border-r border-white/10 pr-5">
+              <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 font-mono">
+                {readinessScore}%
+              </div>
+              <p className="text-[9px] font-mono text-cyan-300 uppercase font-bold mt-1">Readiness Score</p>
+            </div>
+            <div className="space-y-1 text-left text-[11px] font-mono">
+              <div className="flex justify-between gap-4 text-zinc-300">
+                <span className="text-zinc-500">DSA:</span>
+                <span className="text-cyan-400 font-bold">{aiData?.readiness?.dsa_score || 78}%</span>
+              </div>
+              <div className="flex justify-between gap-4 text-zinc-300">
+                <span className="text-zinc-500">Programming:</span>
+                <span className="text-cyan-400 font-bold">{aiData?.readiness?.coding_readiness || 82}%</span>
+              </div>
+              <div className="flex justify-between gap-4 text-zinc-300">
+                <span className="text-zinc-500">CS Fundamentals:</span>
+                <span className="text-cyan-400 font-bold">{aiData?.readiness?.cs_fundamentals || 64}%</span>
+              </div>
+              <div className="flex justify-between gap-4 text-zinc-300">
+                <span className="text-zinc-500">Interview / Resume:</span>
+                <span className="text-cyan-400 font-bold">{interviewSuccess}% / {aiData?.readiness?.resume_readiness || 86}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       
       {/* Overview stats layout */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4" id="stats-grid">
@@ -272,12 +381,15 @@ export function Dashboard({ user, problems, onSelectProblem, onNavigate }: Dashb
               <div className="text-xs space-y-1">
                 <p className="font-bold text-white flex items-center gap-1.5">
                   <Target className="w-3.5 h-3.5 text-cyan-400" />
-                  Status: "Competitive SDE"
+                  Status: "{skillLevel}"
                 </p>
                 <p className="text-zinc-450 text-[10px] leading-normal">
-                  You are tracking in the <strong>88th percentile</strong>. Solve 4 more Medium level structures to breach FAANG tier threshold!
+                  Interview Success: <strong>{interviewSuccess}%</strong>.
                 </p>
-            </div>
+                <p className="text-zinc-450 text-[9px] leading-normal font-mono">
+                  Weak Areas: {weakAreas.join(", ")}
+                </p>
+              </div>
           </div>
           
           {/* Interactive Submissions Heatmap */}
@@ -331,7 +443,7 @@ export function Dashboard({ user, problems, onSelectProblem, onNavigate }: Dashb
               <div className="bg-gradient-to-r from-cyan-500/5 to-blue-500/5 border border-cyan-550/15 rounded-xl p-3.5 space-y-1.5">
                 <span className="text-cyan-300 text-[9px] font-bold block font-mono uppercase tracking-wider">🎯 CORE STRATEGY SUGGESTION</span>
                 <p className="text-zinc-355 leading-relaxed text-[11px] font-sans">
-                  Target recruiting systems flag <strong>Strings & Two Pointers</strong> in 42% of SDE evaluations. Master the String Pattern Normalizer problem now!
+                  The AI Engine predicts that your optimal learning path next is to study <strong>{recommendedTopic}</strong>. Focus on problems matching this tag.
                 </p>
                 <button
                   onClick={() => onNavigate('arena')}

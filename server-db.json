@@ -5,7 +5,7 @@
       "email": "monishsai581@gmail.com",
       "username": "student",
       "isAdmin": false,
-      "xp": 1585,
+      "xp": 1638,
       "level": 4,
       "streak": 14,
       "lastActiveDate": "2026-06-03",
@@ -16,7 +16,7 @@
         "badge-1",
         "badge-2"
       ],
-      "accuracy": 33,
+      "accuracy": 11,
       "verified": true
     },
     {
@@ -27561,6 +27561,104 @@
       "aiReview": "Your logic has correct loops, but try to structure with more optimization comments.",
       "xpEarned": 15,
       "submittedAt": "2026-06-06T15:56:30.956Z"
+    },
+    {
+      "id": "sub-1787208774798",
+      "userId": "std-1",
+      "problemId": "prob-arrays-two-sum",
+      "language": "javascript",
+      "code": "function solve(input) {\n  return \"0 1\";\n}",
+      "status": "Accepted",
+      "timeComplexity": "O(N)",
+      "memoryUsage": "15.2 MB",
+      "errorMessage": "",
+      "aiReview": "Your logic has correct loops. Try to structure with more optimization comments.",
+      "xpEarned": 15,
+      "submittedAt": "2026-08-20T06:52:54.800Z"
+    },
+    {
+      "id": "sub-1787208774812",
+      "userId": "std-1",
+      "problemId": "prob-arrays-two-sum",
+      "language": "javascript",
+      "code": "function solve(input) {\n  return \"wrong\";\n}",
+      "status": "Accepted",
+      "timeComplexity": "O(N)",
+      "memoryUsage": "15.2 MB",
+      "errorMessage": "",
+      "aiReview": "Your logic has correct loops. Try to structure with more optimization comments.",
+      "xpEarned": 15,
+      "submittedAt": "2026-08-20T06:52:54.815Z"
+    },
+    {
+      "id": "sub-1787208857813",
+      "userId": "std-1",
+      "problemId": "prob-arrays-two-sum",
+      "language": "javascript",
+      "code": "function solve(input) {\n  return \"0 1\";\n}",
+      "status": "Wrong Answer",
+      "timeComplexity": "O(N)",
+      "memoryUsage": "15.2 MB",
+      "errorMessage": "Failed Test Case 2: Expected output not produced.",
+      "aiReview": "Your logic has correct loops. Try to structure with more optimization comments.",
+      "xpEarned": 2,
+      "submittedAt": "2026-08-20T06:54:17.817Z"
+    },
+    {
+      "id": "sub-1787208857828",
+      "userId": "std-1",
+      "problemId": "prob-arrays-two-sum",
+      "language": "javascript",
+      "code": "function solve(input) {\n  return \"wrong\";\n}",
+      "status": "Wrong Answer",
+      "timeComplexity": "O(N)",
+      "memoryUsage": "15.2 MB",
+      "errorMessage": "Failed Test Case 2: Expected output not produced.",
+      "aiReview": "Your logic has correct loops. Try to structure with more optimization comments.",
+      "xpEarned": 2,
+      "submittedAt": "2026-08-20T06:54:17.831Z"
+    },
+    {
+      "id": "sub-1787208890061",
+      "userId": "std-1",
+      "problemId": "prob-arrays-two-sum",
+      "language": "javascript",
+      "code": "function solve(input) {\n  // 0 1\n  // 1 2\n  return \"0 1\";\n}",
+      "status": "Accepted",
+      "timeComplexity": "O(N)",
+      "memoryUsage": "15.2 MB",
+      "errorMessage": "",
+      "aiReview": "Your logic has correct loops. Try to structure with more optimization comments.",
+      "xpEarned": 15,
+      "submittedAt": "2026-08-20T06:54:50.063Z"
+    },
+    {
+      "id": "sub-1787208890076",
+      "userId": "std-1",
+      "problemId": "prob-arrays-two-sum",
+      "language": "javascript",
+      "code": "function solve(input) {\n  return \"wrong\";\n}",
+      "status": "Wrong Answer",
+      "timeComplexity": "O(N)",
+      "memoryUsage": "15.2 MB",
+      "errorMessage": "Failed Test Case 2: Expected output not produced.",
+      "aiReview": "Your logic has correct loops. Try to structure with more optimization comments.",
+      "xpEarned": 2,
+      "submittedAt": "2026-08-20T06:54:50.080Z"
+    },
+    {
+      "id": "sub-1787286555009",
+      "userId": "std-1",
+      "problemId": "prob-arrays-two-sum",
+      "language": "javascript",
+      "code": "function solve(input) {\n  // Write clean JavaScript logic to find target sum pair\n  return \"0 1\";\n}",
+      "status": "Wrong Answer",
+      "timeComplexity": "O(N)",
+      "memoryUsage": "15.2 MB",
+      "errorMessage": "Failed Test Case 2: Expected output not produced.",
+      "aiReview": "Your logic has correct loops. Try to structure with more optimization comments.",
+      "xpEarned": 2,
+      "submittedAt": "2026-08-21T04:29:15.026Z"
     }
   ],
   "roadmaps": [],
@@ -27582,7 +27680,7 @@
         "prob-linkedLists-reverse-linked-list",
         "prob-linkedLists-merge-two-sorted-lists"
       ],
-      "registrantsCount": 236,
+      "registrantsCount": 237,
       "participants": [
         {
           "userId": "std-1",
@@ -27633,20 +27731,20 @@
       "createdAt": "2026-06-06T16:20:10.241Z"
     },
     {
-      "id": "interview-1784950234397",
+      "id": "interview-1787286866022",
       "userId": "std-1",
-      "type": "HR",
+      "type": "Technical",
       "status": "In Progress",
       "currentQuestionIndex": 0,
       "questions": [
-        "Tell me about yourself and your absolute key technical achievements.",
-        "Why do you want to join this organization, and how do you handle collaborative stress?",
-        "Describe a situation where you had a conflict during a group project. How did you resolve it?"
+        "Explain the key differences between SQL (Relational) and NoSQL databases. When would you choose which?",
+        "How does process scheduling work in modern Operating Systems? What is Round-Robin vs Priority Scheduling?",
+        "Design an active rate limiter API representing maximum 10 requests per second. How do you construct this?"
       ],
       "answers": [],
       "scores": [],
       "feedback": [],
-      "createdAt": "2026-07-25T03:30:34.397Z"
+      "createdAt": "2026-08-21T04:34:26.022Z"
     }
   ],
   "discussions": [

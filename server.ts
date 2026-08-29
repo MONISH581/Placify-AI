@@ -8,11 +8,13 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
+import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
 import { languageTracks } from "./src/data/learningTracks";
 
 dotenv.config();
 
+const prisma = new PrismaClient();
 const PORT = 3000;
 const DB_FILE = path.join(process.cwd(), "server-db.json");
 
@@ -526,7 +528,12 @@ async function startServer() {
           // Extremely rudimentary execution test matching lines to run code simulation
           testRuns.forEach((tc: any, i: number) => {
             if (isSubmission || i === 0) {
-              const matches = true; // Seed matches
+              // Mock evaluation: code must at least contain the expected output string or 'true'/'false' depending on the answer
+              const expectedStr = String(tc.expectedOutput);
+              if (!code.includes(expectedStr)) {
+                success = false;
+                errMessage = `Failed Test Case ${i + 1}: Expected output not produced.`;
+              }
             }
           });
         }
@@ -557,7 +564,7 @@ Provide a high-fidelity, concise code review in JSON format matching this schema
   "cleanCodeScore": 0 to 100
 }`;
         const aiResponse = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-3.6-flash",
           contents: prompt,
           config: {
             responseMimeType: "application/json",
@@ -577,26 +584,9 @@ Provide a high-fidelity, concise code review in JSON format matching this schema
         });
         const ans = JSON.parse(aiResponse.text || "{}");
         success = ans.runsAccepted && success;
-        reviewText = ans.feedback;
+        const reviewText = ans.feedback;
         const subId = "sub-" + Date.now();
         const scoreGain = success ? (problem.difficulty === "Easy" ? 10 : problem.difficulty === "Medium" ? 20 : 30) : 2;
-
-        const submission = {
-          id: subId,
-          userId: userId || "std-1",
-          problemId: problem.id,
-          language,
-          code,
-          status: success ? "Accepted" : "Wrong Answer",
-          timeComplexity: ans.estimatedTimeComplexity || "O(N)",
-          memoryUsage: ans.estimatedMemoryUsage || "12.4 MB",
-          errorMessage: success ? "" : (errMessage || "Some test cases failed."),
-          aiReview: reviewText,
-          xpEarned: scoreGain,
-          submittedAt: new Date().toISOString()
-        };
-
-        db.submissions.push(submission);
 
         // Update User Statistics
         const user = db.users.find(u => u.id === (userId || "std-1"));
@@ -608,6 +598,42 @@ Provide a high-fidelity, concise code review in JSON format matching this schema
           }
           user.accuracy = Math.round((user.problemsSolved.length / Math.max(1, db.submissions.filter(s => s.userId === user.id).length)) * 100);
         }
+
+        // Fetch Next Recommended Topic from Python ML
+        let recommendedNextTopic = "";
+        try {
+          const recResponse = await fetch("http://localhost:8000/api/ai/recommend", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: user ? user.id : "std-1",
+              level: user ? user.level : 1,
+              accuracy: user ? user.accuracy : 50,
+              time_spent: user ? user.xp / 10 : 10
+            })
+          });
+          const recData = await recResponse.json();
+          recommendedNextTopic = recData.recommended_topic;
+        } catch (recErr) {
+          console.error("Failed to fetch ML recommendation for submission:", recErr);
+        }
+
+        const submission = {
+          id: subId,
+          userId: userId || "std-1",
+          problemId: problem.id,
+          language,
+          code,
+          status: success ? "Accepted" : "Wrong Answer",
+          timeComplexity: ans.estimatedTimeComplexity || "O(N)",
+          memoryUsage: ans.estimatedMemoryUsage || "12.4 MB",
+          errorMessage: success ? "" : (errMessage || "Some test cases failed."),
+          aiReview: reviewText + (recommendedNextTopic ? `\n\n💡 **AI Recommender:** Based on your performance, you should practice **${recommendedNextTopic}** next!` : ""),
+          xpEarned: scoreGain,
+          submittedAt: new Date().toISOString()
+        };
+
+        db.submissions.push(submission);
         saveDB();
 
         return res.json({ submission, success, analysis: ans });
@@ -621,6 +647,35 @@ Provide a high-fidelity, concise code review in JSON format matching this schema
     const isOk = success && (code.length > 20);
     const scoreGain = isOk ? 15 : 2;
 
+    const user = db.users.find(u => u.id === (userId || "std-1"));
+    if (user) {
+      user.xp += scoreGain;
+      user.level = Math.floor(user.xp / 500) + 1;
+      if (!user.problemsSolved.includes(problem.id) && isOk) {
+        user.problemsSolved.push(problem.id);
+      }
+      user.accuracy = Math.round((user.problemsSolved.length / Math.max(1, db.submissions.filter(s => s.userId === user.id).length)) * 100);
+    }
+
+    // Fetch Next Recommended Topic from Python ML
+    let recommendedNextTopic = "";
+    try {
+      const recResponse = await fetch("http://localhost:8000/api/ai/recommend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: user ? user.id : "std-1",
+          level: user ? user.level : 1,
+          accuracy: user ? user.accuracy : 50,
+          time_spent: user ? user.xp / 10 : 10
+        })
+      });
+      const recData = await recResponse.json();
+      recommendedNextTopic = recData.recommended_topic;
+    } catch (recErr) {
+      console.error("Failed to fetch ML recommendation for submission:", recErr);
+    }
+
     const submission = {
       id: subId,
       userId: userId || "std-1",
@@ -631,21 +686,12 @@ Provide a high-fidelity, concise code review in JSON format matching this schema
       timeComplexity: "O(N)",
       memoryUsage: "15.2 MB",
       errorMessage: isOk ? "" : (errMessage || "Failed base assertion cases."),
-      aiReview: "Your logic has correct loops, but try to structure with more optimization comments.",
+      aiReview: "Your logic has correct loops. Try to structure with more optimization comments." + (recommendedNextTopic ? `\n\n💡 **AI Recommender:** Based on your performance, you should practice **${recommendedNextTopic}** next!` : ""),
       xpEarned: scoreGain,
       submittedAt: new Date().toISOString()
     };
 
     db.submissions.push(submission);
-    const user = db.users.find(u => u.id === (userId || "std-1"));
-    if (user) {
-      user.xp += scoreGain;
-      user.level = Math.floor(user.xp / 500) + 1;
-      if (!user.problemsSolved.includes(problem.id) && isOk) {
-        user.problemsSolved.push(problem.id);
-      }
-      user.accuracy = Math.round((user.problemsSolved.length / Math.max(1, db.submissions.filter(s => s.userId === user.id).length)) * 100);
-    }
     saveDB();
 
     res.json({ submission, success: isOk });
@@ -658,83 +704,154 @@ Provide a high-fidelity, concise code review in JSON format matching this schema
     res.json(filtered.reverse());
   });
 
+  // API - Dashboard AI Analytics & Readiness Prediction
+  app.get("/api/dashboard/analytics/:userId", async (req, res) => {
+    const userId = req.params.userId;
+    const user = db.users.find(u => u.id === userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const codingScore = Math.min(100, Math.round((user.problemsSolved.length / 500) * 100) + 40);
+    const mockInterviews = db.interviews.filter(i => i.userId === userId && i.status === "Completed");
+    const interviewScore = mockInterviews.length > 0 
+      ? Math.round(mockInterviews.reduce((acc, curr) => acc + (curr.overallScore || 0), 0) / mockInterviews.length)
+      : 65;
+    
+    // Default metrics for ML readiness predictor
+    const resumeScore = 75;
+    const aptitudeScore = 70;
+    const attendance = 92;
+    const dailyStudyTime = 3.5;
+    const projectsCompleted = 3;
+
+    try {
+      // 1. Get Readiness from FastAPI ML
+      const readinessResponse = await fetch("http://localhost:8000/api/ai/readiness", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: user.id,
+          coding_score: codingScore,
+          interview_score: interviewScore,
+          resume_score: resumeScore,
+          aptitude_score: aptitudeScore,
+          attendance,
+          daily_study_time: dailyStudyTime,
+          projects_completed: projectsCompleted
+        })
+      });
+      const readinessData = await readinessResponse.json();
+
+      // 2. Get Next Recommended Topic from FastAPI ML
+      const recResponse = await fetch("http://localhost:8000/api/ai/recommend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: user.id,
+          level: user.level,
+          accuracy: user.accuracy,
+          time_spent: user.xp / 10
+        })
+      });
+      const recData = await recResponse.json();
+
+      res.json({
+        readiness: readinessData,
+        recommendation: recData,
+        metrics: {
+          codingScore,
+          interviewScore,
+          resumeScore,
+          aptitudeScore,
+          attendance,
+          dailyStudyTime,
+          projectsCompleted
+        }
+      });
+    } catch (err: any) {
+      console.error("AI Engine offline, using rule-based metrics fallback:", err);
+      // Fallback
+      res.json({
+        readiness: {
+          readiness_percentage: Math.min(100, Math.round((user.xp / 1540) * 85)),
+          interview_success_probability: Math.min(100, Math.round((user.accuracy / 100) * 80)),
+          expected_skill_level: user.level > 4 ? "Advanced" : "Intermediate",
+          weak_areas: ["Data Structures & Algorithms", "System Paging"]
+        },
+        recommendation: {
+          recommended_topic: "Strings"
+        },
+        metrics: {
+          codingScore,
+          interviewScore,
+          resumeScore,
+          aptitudeScore,
+          attendance,
+          dailyStudyTime,
+          projectsCompleted
+        }
+      });
+    }
+  });
+
   // API - General AI Coding Mentor chat
   app.post("/api/mentor/ask", async (req, res) => {
-    const { prompt, chatHistory } = req.body;
+    const { prompt, chatHistory, userId } = req.body;
     if (!prompt) {
       return res.status(400).json({ error: "Prompt is required" });
     }
 
-    if (!ai) {
-      return res.json({
-        text: "💡 [Notice: System running in Demo mode. Configure GEMINI_API_KEY to unlock active smart mentors!]\n\n**Demo Advisor Response:** Coding requires practice! For algorithms, try writing small chunks first, track recursive depth, and test limits with null pointers.",
+    try {
+      const response = await fetch("http://localhost:8000/api/ai/mentor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          student_id: userId || "std-1",
+          chat_history: chatHistory || []
+        })
+      });
+      const data = await response.json();
+      res.json({
+        text: data.response || data.text,
+        sources: data.sources || []
+      });
+    } catch (err: any) {
+      console.error("AI Engine connection failed, using fallback advisor:", err);
+      res.json({
+        text: "💡 [Notice: AI Engine Offline. Configure GEMINI_API_KEY and run Python service!]\n\n**Demo Advisor Response:** Study core DSA patterns like Arrays and Hashing. Start by writing small recursive steps.",
         sources: []
       });
-    }
-
-    try {
-      const systemInstruct = "You are the Placify AI Coding Mentor. Explain concepts step-by-step, generate ASCII or beautiful text diagrams to represent queues/trees/stacks, correct errors, and recommend standard patterns.";
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
-        config: {
-          systemInstruction: systemInstruct,
-        },
-      });
-      res.json({ text: response.text });
-    } catch (err: any) {
-      res.status(500).json({ error: "Gemini server error: " + err?.message });
     }
   });
 
   // API - AI Roadmap generator
   app.post("/api/roadmap/generate", async (req, res) => {
-    const { currentYear, skills, targetCompany, targetRole } = req.body;
+    const { currentYear, skills, targetCompany, targetRole, dailyStudyHours, codingScore, interviewScore } = req.body;
 
-    if (!ai) {
-      // Return structured demo plan
-      return res.json({
+    try {
+      const response = await fetch("http://localhost:8000/api/ai/roadmap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: "std-1",
+          target_companies: [targetCompany],
+          target_role: targetRole,
+          coding_score: codingScore || 50.0,
+          interview_score: interviewScore || 50.0
+        })
+      });
+      const data = await response.json();
+      res.json({ ...data, generatedAt: new Date().toISOString() });
+    } catch (err: any) {
+      console.error("Roadmap generation failed, using legacy demo fallback:", err);
+      res.json({
         dailyPlan: ["Morning: Practice 1 Arrays problem", "Afternoon: Study OS Concurrency Notes", "Evening: Mock MCQs on Placify"],
         weeklyPlan: ["Week 1: Arrays and Hashing", "Week 2: Linked Lists & Two Pointers", "Week 3: Stack & DBMS Normalization", "Week 4: Mock Intership Test Prep"],
         monthlyPlan: ["Month 1: DSA Core foundation", "Month 2: Core Engineering Subjects & DBMS", "Month 3: Full Project and Resume Analyzer Scan"],
         generatedAt: new Date().toISOString()
       });
-    }
-
-    try {
-      const prompt = `Generate a personalized placement roadmap.
-Year of study: "${currentYear}"
-Current Tech Skills: "${skills}"
-Target Company: "${targetCompany}"
-Target Role: "${targetRole}"
-Provide a high-quality response in the following schema:
-{
-  "dailyPlan": ["item 1", "item 2", "item 3"],
-  "weeklyPlan": ["item 1", "item 2", ...],
-  "monthlyPlan": ["item 1", "item 2", ...]
-}`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              dailyPlan: { type: Type.ARRAY, items: { type: Type.STRING } },
-              weeklyPlan: { type: Type.ARRAY, items: { type: Type.STRING } },
-              monthlyPlan: { type: Type.ARRAY, items: { type: Type.STRING } }
-            },
-            required: ["dailyPlan", "weeklyPlan", "monthlyPlan"]
-          }
-        }
-      });
-      const parsed = JSON.parse(response.text || "{}");
-      res.json({ ...parsed, generatedAt: new Date().toISOString() });
-    } catch (err: any) {
-      console.error(err);
-      res.status(500).json({ error: "AI Roadmap generation failed." });
     }
   });
 
@@ -804,7 +921,7 @@ Provide response in schema:
   "feedback": "constructive criticisms, missing technical terms, grammatical review"
 }`;
         const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-3.6-flash",
           contents: prompt,
           config: {
             responseMimeType: "application/json",
@@ -873,7 +990,7 @@ Provide in JSON schema:
   "suggestions": ["suggestion1", "suggestion2", ...]
 }`;
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-3.6-flash",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -1222,7 +1339,7 @@ Return the result in JSON matching this exact schema:
 }`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-3.6-flash",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -1291,10 +1408,7 @@ Return the result in JSON matching this exact schema:
     } catch (err) {
       console.error("Gemini curriculum generator error:", err);
       res.json(getDynamicTopicPayload(trackId, topicId, topic.name));
-    }
-  });
-
-  // ── ML Microservice Proxy Routes ──────────────────────────────────────────
+     // ── ML Microservice Proxy Routes ──────────────────────────────────────────
   // All /api/ml/* and /api/rag/* routes are proxied to Python FastAPI at :8000
   const ML_SERVICE_URL = "http://localhost:8000";
 
@@ -1351,6 +1465,162 @@ Return the result in JSON matching this exact schema:
 
   // ─────────────────────────────────────────────────────────────────────────
 
+  // AI Engine Proxies & Event Storage
+  const AI_ENGINE_URL = process.env.AI_ENGINE_URL || "http://localhost:8000/api/ai";
+  const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "placify_internal_secret";
+
+  // Persistent Learning Event Route (Phase 3 & 4)
+  app.post("/api/ai/event", express.json(), async (req, res) => {
+    try {
+      const { userId, eventType, entityId, topic, difficulty, result, score, timeTaken, metadata } = req.body;
+      const targetUserId = userId || "std-1";
+
+      // 1. Save LearningEvent to Prisma DB
+      const event = await prisma.learningEvent.create({
+        data: {
+          userId: targetUserId,
+          eventType: eventType || "general_activity",
+          entityId: entityId || "none",
+          topic: topic || null,
+          difficulty: difficulty || null,
+          result: result || null,
+          score: score !== undefined ? parseFloat(score) : null,
+          timeTaken: timeTaken !== undefined ? parseInt(timeTaken) : null,
+          metadata: JSON.stringify(metadata || {}),
+          createdAt: new Date().toISOString()
+        }
+      });
+
+      // 2. Fetch user's events to update StudentAIProfile
+      const allEvents = await prisma.learningEvent.findMany({ where: { userId: targetUserId } });
+      const solved = allEvents.filter(e => e.eventType === "problem_solved").length;
+      const attempted = Math.max(solved, allEvents.filter(e => e.eventType === "problem_attempted" || e.eventType === "problem_solved" || e.eventType === "problem_failed").length);
+      const hints = allEvents.filter(e => e.eventType === "hint_requested").length;
+
+      let timeSum = 0, timeCount = 0;
+      allEvents.forEach(e => {
+        if (e.timeTaken) { timeSum += e.timeTaken; timeCount++; }
+      });
+      const avgTime = timeCount > 0 ? timeSum / timeCount : 1200;
+
+      const profile = await prisma.studentAIProfile.upsert({
+        where: { userId: targetUserId },
+        update: {
+          problemsAttempted: attempted,
+          problemsSolved: solved,
+          hintsUsed: hints,
+          averageTimeSecs: avgTime,
+          codingScore: Math.min(100, Math.round((solved / Math.max(1, attempted)) * 100)),
+          lastUpdated: new Date().toISOString()
+        },
+        create: {
+          userId: targetUserId,
+          overallReadiness: 65.0,
+          codingScore: 70.0,
+          dsaScore: 68.0,
+          csFundamentals: 60.0,
+          interviewScore: 75.0,
+          resumeScore: 78.0,
+          problemsAttempted: attempted,
+          problemsSolved: solved,
+          hintsUsed: hints,
+          averageTimeSecs: avgTime,
+          strongTopics: JSON.stringify(["Arrays", "Python", "OOP"]),
+          weakTopics: JSON.stringify(["Graphs & BFS/DFS", "Dynamic Programming", "Operating Systems & Threading"]),
+          targetCompanies: JSON.stringify(["Google", "Microsoft", "Amazon"]),
+          targetRole: "Software Development Engineer",
+          lastUpdated: new Date().toISOString()
+        }
+      });
+
+      res.json({ status: "success", eventId: event.id, profile });
+    } catch (err) {
+      console.error("[Placify DB] Error persisting learning event:", err);
+      res.status(500).json({ error: "Failed to persist learning event" });
+    }
+  });
+
+  // AI Readiness Endpoint
+  app.post("/api/ai/readiness", express.json(), async (req, res) => {
+    try {
+      const response = await fetch(`${AI_ENGINE_URL}/readiness`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-Key": INTERNAL_API_KEY },
+        body: JSON.stringify(req.body)
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (err) {
+      console.error("AI Engine offline fallback for readiness:", err);
+      res.json({
+        overall_readiness: 73.5,
+        coding_readiness: 78.0,
+        dsa_score: 75.0,
+        cs_fundamentals: 64.0,
+        interview_readiness: 69.0,
+        resume_readiness: 86.0,
+        confidence: 0.85,
+        expected_skill_level: "Competitive SDE Candidate",
+        weak_topics: ["Graphs & BFS/DFS", "Dynamic Programming", "Operating Systems & Threading"],
+        strong_topics: ["Arrays & Hashing", "Python Syntax", "OOP Concepts"]
+      });
+    }
+  });
+
+  // AI Recommendations Endpoint
+  app.post("/api/ai/recommend", express.json(), async (req, res) => {
+    try {
+      const response = await fetch(`${AI_ENGINE_URL}/recommend`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-Key": INTERNAL_API_KEY },
+        body: JSON.stringify(req.body)
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (err) {
+      console.error("AI Engine offline fallback for recommendations:", err);
+      res.json([
+        {
+          id: "rec-graph-1",
+          type: "lesson",
+          entityId: "lesson-graph-traversal",
+          title: "Master Graph Traversals (BFS & DFS)",
+          topic: "Graphs",
+          difficulty: "Medium",
+          reasoning: "Weakness detected in Graph algorithms for target SDE role.",
+          prerequisitesMet: true,
+          xpReward: 50
+        },
+        {
+          id: "rec-graph-2",
+          type: "problem",
+          entityId: "prob-graph-bfs",
+          title: "Number of Islands (BFS/DFS Application)",
+          topic: "Graphs",
+          difficulty: "Medium",
+          reasoning: "High frequency coding assessment problem.",
+          prerequisitesMet: true,
+          xpReward: 40
+        }
+      ]);
+    }
+  });
+
+
+  // AI Mentor Endpoint
+  app.post("/api/ai/mentor", express.json(), async (req, res) => {
+    try {
+      const response = await fetch(`${AI_ENGINE_URL}/mentor`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-Key": INTERNAL_API_KEY },
+        body: JSON.stringify(req.body)
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (err) {
+      res.status(500).json({ error: "AI Mentor Engine offline" });
+    }
+  });
   // Vite development vs production asset handler
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

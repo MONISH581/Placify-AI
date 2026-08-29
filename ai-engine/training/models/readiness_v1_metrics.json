@@ -1,0 +1,13 @@
+{
+  "model_name": "readiness_rf_v1",
+  "version": "v1",
+  "status": "ACTIVE",
+  "dataset_type": "DEMO_SYNTHETIC",
+  "dataset_size": 2500,
+  "num_features": 18,
+  "mae": 1.8594,
+  "rmse": 2.3746,
+  "r2": 0.9846,
+  "model_path": "D:\\Desktop\\Placify\\ai-engine\\training\\models\\readiness_rf_v1.pkl",
+  "training_timestamp": "2026-08-21T04:25:09.547087+00:00"
+}
