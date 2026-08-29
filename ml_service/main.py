@@ -37,12 +37,12 @@ def load_model(name: str, filename: str) -> bool:
     if os.path.exists(path):
         try:
             _models[name] = joblib.load(path)
-            print(f"[ML] ✅ Loaded model: {name} ← {filename}")
+            print(f"[ML] [OK] Loaded model: {name} <- {filename}")
             return True
         except Exception as e:
-            print(f"[ML] ❌ Failed to load {name}: {e}")
+            print(f"[ML] [ERROR] Failed to load {name}: {e}")
     else:
-        print(f"[ML] ⚠️  Model not found: {filename} (run train_all.py first)")
+        print(f"[ML] [WARN] Model not found: {filename} (run train_all.py first)")
     return False
 
 
@@ -62,9 +62,9 @@ async def lifespan(app: FastAPI):
         from rag.rag_pipeline import load_index
         load_index()
         _models["rag_ready"] = True
-        print("[RAG] ✅ FAISS index loaded")
+        print("[RAG] [OK] FAISS index loaded")
     except Exception as e:
-        print(f"[RAG] ⚠️  RAG index not ready: {e}")
+        print(f"[RAG] [WARN] RAG index not ready: {e}")
         _models["rag_ready"] = False
 
     print("=" * 60)
