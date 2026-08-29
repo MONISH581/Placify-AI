@@ -1408,7 +1408,10 @@ Return the result in JSON matching this exact schema:
     } catch (err) {
       console.error("Gemini curriculum generator error:", err);
       res.json(getDynamicTopicPayload(trackId, topicId, topic.name));
-     // ── ML Microservice Proxy Routes ──────────────────────────────────────────
+    }
+  });
+
+  // ── ML Microservice Proxy Routes ──────────────────────────────────────────
   // All /api/ml/* and /api/rag/* routes are proxied to Python FastAPI at :8000
   const ML_SERVICE_URL = "http://localhost:8000";
 
