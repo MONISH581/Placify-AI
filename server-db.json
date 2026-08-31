@@ -5,7 +5,7 @@
       "email": "monishsai581@gmail.com",
       "username": "student",
       "isAdmin": false,
-      "xp": 1638,
+      "xp": 1655,
       "level": 4,
       "streak": 14,
       "lastActiveDate": "2026-06-03",
@@ -16,7 +16,7 @@
         "badge-1",
         "badge-2"
       ],
-      "accuracy": 11,
+      "accuracy": 9,
       "verified": true
     },
     {
@@ -27659,6 +27659,34 @@
       "aiReview": "Your logic has correct loops. Try to structure with more optimization comments.",
       "xpEarned": 2,
       "submittedAt": "2026-08-21T04:29:15.026Z"
+    },
+    {
+      "id": "sub-1787979244599",
+      "userId": "std-1",
+      "problemId": "prob-arrays-two-sum",
+      "language": "javascript",
+      "code": "function solve(input) {\n  // Write clean JavaScript logic to find target sum pair\n  return \"0 1\";\n}",
+      "status": "Accepted",
+      "timeComplexity": "O(N)",
+      "memoryUsage": "15.2 MB",
+      "errorMessage": "",
+      "aiReview": "Your logic has correct loops. Try to structure with more optimization comments.",
+      "xpEarned": 15,
+      "submittedAt": "2026-08-29T04:54:04.607Z"
+    },
+    {
+      "id": "sub-1787979250409",
+      "userId": "std-1",
+      "problemId": "prob-arrays-two-sum",
+      "language": "javascript",
+      "code": "function solve(input) {\n  // Write clean JavaScript logic to find target sum pair\n  return \"0 1\";\n}",
+      "status": "Wrong Answer",
+      "timeComplexity": "O(N)",
+      "memoryUsage": "15.2 MB",
+      "errorMessage": "Failed Test Case 2: Expected output not produced.",
+      "aiReview": "Your logic has correct loops. Try to structure with more optimization comments.",
+      "xpEarned": 2,
+      "submittedAt": "2026-08-29T04:54:10.420Z"
     }
   ],
   "roadmaps": [],
@@ -27745,6 +27773,36 @@
       "scores": [],
       "feedback": [],
       "createdAt": "2026-08-21T04:34:26.022Z"
+    },
+    {
+      "id": "interview-1787979316701",
+      "userId": "std-1",
+      "type": "Technical",
+      "status": "Completed",
+      "currentQuestionIndex": 2,
+      "questions": [
+        "Explain the key differences between SQL (Relational) and NoSQL databases. When would you choose which?",
+        "How does process scheduling work in modern Operating Systems? What is Round-Robin vs Priority Scheduling?",
+        "Design an active rate limiter API representing maximum 10 requests per second. How do you construct this?"
+      ],
+      "answers": [
+        "We should prioritize SQL indices when lookups are frequent. However, inserts will write slower. A heap hash allocation can speed queries to constant time O(1).",
+        "We should prioritize SQL indices when lookups are frequent. However, inserts will write slower. A heap hash allocation can speed queries to constant time O(1).",
+        "We should prioritize SQL indices when lookups are frequent. However, inserts will write slower. A heap hash allocation can speed queries to constant time O(1)."
+      ],
+      "scores": [
+        75,
+        75,
+        75
+      ],
+      "feedback": [
+        "Nice outline. Add more technical terminologies matching industrial specs.",
+        "Nice outline. Add more technical terminologies matching industrial specs.",
+        "Nice outline. Add more technical terminologies matching industrial specs."
+      ],
+      "createdAt": "2026-08-29T04:55:16.701Z",
+      "overallScore": 75,
+      "overallFeedback": "Great effort! Spend extra effort reviewing theoretical concepts."
     }
   ],
   "discussions": [
