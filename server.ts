@@ -906,9 +906,31 @@ Provide a high-fidelity, concise code review in JSON format matching this schema
     const currentIdx = interview.currentQuestionIndex;
     interview.answers.push(answer);
 
-    let score = 75;
-    let feedback = "Nice outline. Add more technical terminologies matching industrial specs.";
+    let score = 70;
+    let feedback = "Good effort. Include more technical terminology and concrete examples for a higher score.";
 
+    // 1. Try FastAPI ML Interview Scorer (Sentence-Transformers)
+    try {
+      const mlRes = await fetch("http://localhost:8000/evaluate/interview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: interview.questions[currentIdx],
+          answer: answer,
+          interview_type: interview.type
+        }),
+        signal: AbortSignal.timeout(8000)
+      });
+      if (mlRes.ok) {
+        const mlData = await mlRes.json();
+        score = mlData.score;
+        feedback = mlData.feedback;
+      }
+    } catch (mlErr) {
+      console.warn("[Interview] FastAPI ML interview scorer unreachable, checking Gemini/fallback:", mlErr);
+    }
+
+    // 2. If Gemini is available, optionally refine feedback
     if (ai) {
       try {
         const prompt = `You are a strict placement interviewer scoring answers during a ${interview.type} mock interview.
@@ -936,8 +958,8 @@ Provide response in schema:
           }
         });
         const ans = JSON.parse(response.text || "{}");
-        score = ans.score;
-        feedback = ans.feedback;
+        if (ans.score !== undefined) score = ans.score;
+        if (ans.feedback) feedback = ans.feedback;
       } catch (e) {
         console.error("AI Interview scorer error:", e);
       }
@@ -1459,6 +1481,27 @@ Return the result in JSON matching this exact schema:
   // 5. RAG Mentor
   app.post("/api/rag/mentor-ask", async (req, res) => {
     await proxyToML(req, res, "/rag/mentor-ask");
+  });
+
+  // ── Canonical Sprint Endpoints Proxies ──────────────────────────────────
+  app.post("/api/predict/placement", async (req, res) => {
+    await proxyToML(req, res, "/predict/placement");
+  });
+
+  app.post("/api/predict/difficulty", async (req, res) => {
+    await proxyToML(req, res, "/predict/difficulty");
+  });
+
+  app.post("/api/recommend/problems", async (req, res) => {
+    await proxyToML(req, res, "/recommend/problems");
+  });
+
+  app.post("/api/evaluate/interview", async (req, res) => {
+    await proxyToML(req, res, "/evaluate/interview");
+  });
+
+  app.post("/api/rag/query", async (req, res) => {
+    await proxyToML(req, res, "/rag/query");
   });
 
   // 6. ML Service Health
