@@ -1,5 +1,5 @@
 {
-  "name": "react-example",
+  "name": "placify-ai",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -21,8 +21,7 @@
     "motion": "^12.23.24",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
-    "recharts": "^3.8.1",
-    "vite": "^6.2.3"
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@prisma/client": "^5.22.0",

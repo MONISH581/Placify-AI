@@ -26,5 +26,8 @@ def health_check():
 app.include_router(ai_endpoints.router, prefix="/api/ai", tags=["ai"])
 app.include_router(admin.router, prefix="/api/ai/admin", tags=["admin"])
 
+import os
+
 if __name__ == "__main__":
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.getenv("AI_ENGINE_PORT", "8001"))
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=True)

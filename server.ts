@@ -16,9 +16,35 @@ import { languageTracks } from "./src/data/learningTracks";
 dotenv.config();
 
 const prisma = new PrismaClient();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 const DB_FILE = path.join(process.cwd(), "server-db.json");
 const JWT_SECRET = process.env.JWT_SECRET || "placify_super_secret_jwt_key_2026";
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000";
+const GEMINI_MODEL = "gemini-1.5-flash";
+
+// Password Hashing Helper (PBKDF2-SHA512)
+function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, "sha512").toString("hex");
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password: string, storedHash: string): boolean {
+  if (!storedHash || !storedHash.includes(":")) return false;
+  try {
+    const [salt, originalHash] = storedHash.split(":");
+    const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, "sha512").toString("hex");
+    return crypto.timingSafeEqual(Buffer.from(hash, "hex"), Buffer.from(originalHash, "hex"));
+  } catch {
+    return false;
+  }
+}
+
+function sanitizeUser(user: any) {
+  if (!user) return null;
+  const { password, ...safeUser } = user;
+  return safeUser;
+}
 
 // JWT Helper Functions using Node.js crypto
 function base64url(str: string | Buffer): string {
@@ -64,6 +90,13 @@ function authenticateToken(req: any, res: any, next: any) {
   const decoded = verifyJWT(token);
   if (!decoded) return res.status(401).json({ error: "Invalid or expired token" });
   req.user = decoded;
+  next();
+}
+
+function requireAdmin(req: any, res: any, next: any) {
+  if (!req.user || !req.user.isAdmin) {
+    return res.status(403).json({ error: "Admin privilege required" });
+  }
   next();
 }
 
@@ -481,51 +514,89 @@ async function startServer() {
   });
 
   // API - Auth register
-  app.post("/api/auth/register", (req, res) => {
-    const { email, username, password } = req.body;
-    if (!email || !username) {
-      return res.status(400).json({ error: "Missing email or username" });
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { email, username, password } = req.body;
+      if (!email || !username || !password) {
+        return res.status(400).json({ error: "Missing required fields: email, username, and password" });
+      }
+      if (password.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      }
+      
+      const existingUser = await prisma.user.findFirst({
+        where: { OR: [{ email }, { username }] }
+      });
+      if (existingUser) {
+        return res.status(409).json({ error: "Email or username already registered" });
+      }
+
+      const passHash = hashPassword(password);
+      const newUser = await prisma.user.create({
+        data: {
+          email,
+          username,
+          password: passHash,
+          isAdmin: false, // Never infer admin from username
+          xp: 100,
+          level: 1,
+          streak: 1,
+          lastActiveDate: new Date().toISOString().split("T")[0],
+          accuracy: 100,
+          verified: true
+        }
+      });
+
+      const token = signJWT({ id: newUser.id, email: newUser.email, username: newUser.username, isAdmin: newUser.isAdmin });
+      const safeUser = sanitizeUser(newUser);
+      res.status(201).json({ success: true, user: safeUser, token });
+    } catch (err: any) {
+      console.error("Register Error:", err);
+      res.status(500).json({ error: "Internal server error during registration" });
     }
-    const exists = db.users.find(u => u.email === email || u.username === username);
-    if (exists) {
-      return res.status(400).json({ error: "Email or username already exists" });
-    }
-    const newUser = {
-      id: "u-" + Date.now(),
-      email,
-      username,
-      isAdmin: username.toLowerCase().includes("admin"),
-      xp: 100,
-      level: 1,
-      streak: 1,
-      lastActiveDate: new Date().toISOString().split("T")[0],
-      problemsSolved: [],
-      badges: [],
-      accuracy: 100,
-      verified: true
-    };
-    db.users.push(newUser);
-    saveDB();
-    const token = signJWT({ id: newUser.id, email: newUser.email, username: newUser.username, isAdmin: newUser.isAdmin });
-    res.json({ success: true, user: newUser, token });
   });
 
   // API - Auth login
-  app.post("/api/auth/login", (req, res) => {
-    const { email, password } = req.body;
-    const user = db.users.find(u => u.email === email || u.username === email);
-    if (!user) {
-      return res.status(401).json({ error: "Invalid credentials" });
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, username, password } = req.body;
+      const identifier = email || username;
+      if (!identifier || !password) {
+        return res.status(400).json({ error: "Email/username and password are required" });
+      }
+
+      const user = await prisma.user.findFirst({
+        where: { OR: [{ email: identifier }, { username: identifier }] }
+      });
+      if (!user) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const isValidPassword = verifyPassword(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const token = signJWT({ id: user.id, email: user.email, username: user.username, isAdmin: user.isAdmin });
+      const safeUser = sanitizeUser(user);
+      res.json({ success: true, user: safeUser, token });
+    } catch (err: any) {
+      console.error("Login Error:", err);
+      res.status(500).json({ error: "Internal server error during login" });
     }
-    const token = signJWT({ id: user.id, email: user.email, username: user.username, isAdmin: user.isAdmin });
-    res.json({ success: true, user, token });
   });
 
   // API - Auth Current User (/me)
-  app.get("/api/auth/me", authenticateToken, (req: any, res) => {
-    const user = db.users.find(u => u.id === req.user.id);
-    if (!user) return res.status(404).json({ error: "User not found" });
-    res.json({ success: true, user });
+  app.get("/api/auth/me", authenticateToken, async (req: any, res) => {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id }
+      });
+      if (!user) return res.status(404).json({ error: "User not found" });
+      res.json({ success: true, user: sanitizeUser(user) });
+    } catch (err: any) {
+      res.status(500).json({ error: "Error fetching user profile" });
+    }
   });
 
   // API - Auth Logout
@@ -542,348 +613,412 @@ async function startServer() {
     res.json({ success: true, message: "Your credentials have been securely refreshed." });
   });
 
+  function formatProblem(p: any) {
+    if (!p) return null;
+    return {
+      ...p,
+      tags: typeof p.tags === "string" ? JSON.parse(p.tags || "[]") : p.tags,
+      examples: typeof p.examples === "string" ? JSON.parse(p.examples || "[]") : p.examples,
+      testCases: typeof p.testCases === "string" ? JSON.parse(p.testCases || "[]") : p.testCases,
+      hints: typeof p.hints === "string" ? JSON.parse(p.hints || "[]") : p.hints,
+    };
+  }
+
   // API - Problems list
-  app.get("/api/problems", (req, res) => {
-    res.json(db.problems);
+  app.get("/api/problems", async (req, res) => {
+    try {
+      const difficulty = req.query.difficulty as string;
+      const tag = req.query.tag as string;
+      const search = req.query.search as string;
+
+      const where: any = {};
+      if (difficulty) where.difficulty = difficulty;
+      
+      const problems = await prisma.problem.findMany({ where });
+      let formatted = problems.map(formatProblem);
+
+      if (tag) {
+        formatted = formatted.filter(p => p.tags && Array.isArray(p.tags) && p.tags.includes(tag));
+      }
+      if (search) {
+        const lower = search.toLowerCase();
+        formatted = formatted.filter(p => p.title.toLowerCase().includes(lower) || p.description.toLowerCase().includes(lower));
+      }
+
+      res.json(formatted);
+    } catch (err: any) {
+      console.error("Fetch Problems Error:", err);
+      res.status(500).json({ error: "Failed to retrieve problems from database" });
+    }
+  });
+
+  // API - Get Single Problem
+  app.get("/api/problems/:id", async (req, res) => {
+    try {
+      const problem = await prisma.problem.findUnique({
+        where: { id: req.params.id }
+      });
+      if (!problem) return res.status(404).json({ error: "Problem not found" });
+      res.json(formatProblem(problem));
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to retrieve problem" });
+    }
   });
 
   // API - Problems CRUD
-  app.post("/api/problems", (req, res) => {
-    const { title, difficulty, tags, description, constraints, inputFormat, outputFormat, examples, testCases, hints, editorial } = req.body;
-    if (!title || !description) {
-      return res.status(400).json({ error: "Title and description are required" });
+  app.post("/api/problems", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { title, difficulty, tags, description, constraints, inputFormat, outputFormat, examples, testCases, hints, editorial } = req.body;
+      if (!title || !description) {
+        return res.status(400).json({ error: "Title and description are required" });
+      }
+      const created = await prisma.problem.create({
+        data: {
+          id: "prob-" + Date.now(),
+          title,
+          difficulty: difficulty || "Easy",
+          description,
+          constraints: constraints || "None",
+          inputFormat: inputFormat || "",
+          outputFormat: outputFormat || "",
+          editorial: editorial || "",
+          tags: JSON.stringify(tags || []),
+          examples: JSON.stringify(examples || []),
+          testCases: JSON.stringify(testCases || []),
+          hints: JSON.stringify(hints || [])
+        }
+      });
+      res.status(201).json(formatProblem(created));
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to create problem" });
     }
-    const newProblem = {
-      id: "prob-" + Date.now(),
-      title,
-      difficulty: difficulty || "Easy",
-      tags: tags || [],
-      description,
-      constraints: constraints || "None",
-      inputFormat: inputFormat || "",
-      outputFormat: outputFormat || "",
-      examples: examples || [],
-      testCases: testCases || [],
-      hints: hints || [],
-      editorial: editorial || "Editorial solution writeup is pending updates."
-    };
-    db.problems.push(newProblem);
-    saveDB();
-    res.json(newProblem);
   });
 
-  app.put("/api/problems/:id", (req, res) => {
-    const index = db.problems.findIndex(p => p.id === req.params.id);
-    if (index === -1) {
-      return res.status(404).json({ error: "Problem not found" });
+  app.put("/api/problems/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { title, difficulty, description, constraints, inputFormat, outputFormat, editorial, tags, examples, testCases, hints } = req.body;
+      const data: any = {};
+      if (title !== undefined) data.title = title;
+      if (difficulty !== undefined) data.difficulty = difficulty;
+      if (description !== undefined) data.description = description;
+      if (constraints !== undefined) data.constraints = constraints;
+      if (inputFormat !== undefined) data.inputFormat = inputFormat;
+      if (outputFormat !== undefined) data.outputFormat = outputFormat;
+      if (editorial !== undefined) data.editorial = editorial;
+      if (tags !== undefined) data.tags = JSON.stringify(tags);
+      if (examples !== undefined) data.examples = JSON.stringify(examples);
+      if (testCases !== undefined) data.testCases = JSON.stringify(testCases);
+      if (hints !== undefined) data.hints = JSON.stringify(hints);
+
+      const updated = await prisma.problem.update({
+        where: { id: req.params.id },
+        data
+      });
+      res.json(formatProblem(updated));
+    } catch (err: any) {
+      res.status(404).json({ error: "Problem not found or update failed" });
     }
-    db.problems[index] = { ...db.problems[index], ...req.body };
-    saveDB();
-    res.json(db.problems[index]);
   });
 
-  app.delete("/api/problems/:id", (req, res) => {
-    const initialLen = db.problems.length;
-    db.problems = db.problems.filter(p => p.id !== req.params.id);
-    if (db.problems.length === initialLen) {
-      return res.status(404).json({ error: "Problem not found" });
+  app.delete("/api/problems/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      await prisma.problem.delete({
+        where: { id: req.params.id }
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(404).json({ error: "Problem not found" });
     }
-    saveDB();
-    res.json({ success: true });
   });
 
   // API - Run & Submit code
   app.post("/api/problems/:id/submit", async (req, res) => {
-    const { userId, language, code, customInput, isSubmission } = req.body;
-    const problem = db.problems.find(p => p.id === req.params.id);
-    if (!problem) {
-      return res.status(404).json({ error: "Problem not found" });
-    }
+    try {
+      const { userId, language = "javascript", code = "", isSubmission = true } = req.body;
+      const targetUserId = userId || "std-1";
 
-    const testRuns = problem.testCases || [];
-    let success = true;
-    let errMessage = "";
-    let systemOutput = "";
-    
-    // Simulate compilation
-    if (code.trim().length < 10) {
-      success = false;
-      errMessage = "Compilation Error: Code is excessively short or missing structures.";
-    } else {
-      // Evaluate actual code logic if JavaScript is run basic mock-up
-      try {
-        if (language.toLowerCase() === "javascript" || language.toLowerCase() === "nodejs") {
-          // Extremely rudimentary execution test matching lines to run code simulation
-          testRuns.forEach((tc: any, i: number) => {
-            if (isSubmission || i === 0) {
-              // Mock evaluation: code must at least contain the expected output string or 'true'/'false' depending on the answer
-              const expectedStr = String(tc.expectedOutput);
-              if (!code.includes(expectedStr)) {
-                success = false;
-                errMessage = `Failed Test Case ${i + 1}: Expected output not produced.`;
-              }
-            }
-          });
-        }
-      } catch (runErr: any) {
-        success = false;
-        errMessage = "Runtime Exception: " + runErr?.message;
+      const problem = await prisma.problem.findUnique({
+        where: { id: req.params.id }
+      });
+      if (!problem) {
+        return res.status(404).json({ error: "Problem not found" });
       }
-    }
 
-    // Call Gemini as the "AI Code Reviewer & Sandbox Judge" only if API key present
-    let reviewText = "";
-    if (ai) {
-      try {
-        const prompt = `You are a real-time code evaluation sandboxed judge.
-The problem is: "${problem.title}". Description: "${problem.description}".
-Language used by user is: "${language}".
-The code provided is:
+      const formattedProb = formatProblem(problem);
+      const testCases = formattedProb.testCases || [];
+
+      let success = true;
+      let errMessage = "";
+
+      if (code.trim().length < 15) {
+        success = false;
+        errMessage = "Compilation Error: Code submission is missing logic or essential structure.";
+      } else {
+        // Code validation check
+        const langLower = language.toLowerCase();
+        if (langLower.includes("py") && !code.includes("def") && !code.includes("return") && !code.includes("print")) {
+          success = false;
+          errMessage = "Syntax Warning: Missing Python function declaration or return statement.";
+        } else if ((langLower.includes("js") || langLower.includes("ts") || langLower.includes("node")) && !code.includes("function") && !code.includes("=>") && !code.includes("return")) {
+          success = false;
+          errMessage = "Syntax Warning: Missing JavaScript function definition or return statement.";
+        }
+      }
+
+      let reviewText = "";
+      let estimatedTimeComplexity = "O(N)";
+      let estimatedMemoryUsage = "12.4 MB";
+      let aiAnalysis: any = null;
+
+      // Gemini Code Evaluation
+      if (ai) {
+        try {
+          const prompt = `You are a real-time code evaluation judge for Placify-AI.
+Problem: "${problem.title}". Description: "${problem.description}".
+Language: "${language}". Code:
 \`\`\`
 ${code}
 \`\`\`
-Provide a high-fidelity, concise code review in JSON format matching this schema:
+Analyze syntax correctness, complexity, and produce evaluation JSON matching:
 {
   "syntaxValid": true/false,
   "runsAccepted": true/false,
   "estimatedTimeComplexity": "O(...)",
   "estimatedMemoryUsage": "... MB",
-  "feedback": "Step-by-step suggestions.",
+  "feedback": "Concise review feedback",
   "cleanCodeScore": 0 to 100
 }`;
-        const aiResponse = await ai.models.generateContent({
-          model: "gemini-3.6-flash",
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                syntaxValid: { type: Type.BOOLEAN },
-                runsAccepted: { type: Type.BOOLEAN },
-                estimatedTimeComplexity: { type: Type.STRING },
-                estimatedMemoryUsage: { type: Type.STRING },
-                feedback: { type: Type.STRING },
-                cleanCodeScore: { type: Type.INTEGER }
-              },
-              required: ["syntaxValid", "runsAccepted", "estimatedTimeComplexity", "estimatedMemoryUsage", "feedback", "cleanCodeScore"]
+          const aiResponse = await ai.models.generateContent({
+            model: "gemini-1.5-flash",
+            contents: prompt,
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  syntaxValid: { type: Type.BOOLEAN },
+                  runsAccepted: { type: Type.BOOLEAN },
+                  estimatedTimeComplexity: { type: Type.STRING },
+                  estimatedMemoryUsage: { type: Type.STRING },
+                  feedback: { type: Type.STRING },
+                  cleanCodeScore: { type: Type.INTEGER }
+                },
+                required: ["syntaxValid", "runsAccepted", "estimatedTimeComplexity", "estimatedMemoryUsage", "feedback", "cleanCodeScore"]
+              }
             }
+          });
+          aiAnalysis = JSON.parse(aiResponse.text || "{}");
+          if (aiAnalysis) {
+            success = success && Boolean(aiAnalysis.runsAccepted);
+            reviewText = aiAnalysis.feedback || "";
+            estimatedTimeComplexity = aiAnalysis.estimatedTimeComplexity || "O(N)";
+            estimatedMemoryUsage = aiAnalysis.estimatedMemoryUsage || "12.4 MB";
+          }
+        } catch (aiErr) {
+          console.error("Gemini Sandbox Judge Error:", aiErr);
+        }
+      }
+
+      const status = success ? "Accepted" : "Wrong Answer";
+      const xpReward = success 
+        ? (problem.difficulty === "Easy" ? 20 : problem.difficulty === "Medium" ? 50 : 100) 
+        : 2;
+
+      // Update User state in Prisma
+      let user = await prisma.user.findUnique({ where: { id: targetUserId } });
+      if (!user) {
+        // Fallback user if missing
+        user = await prisma.user.findFirst();
+      }
+
+      if (user) {
+        const newXp = user.xp + xpReward;
+        const newLevel = Math.floor(newXp / 500) + 1;
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            xp: newXp,
+            level: newLevel,
+            lastActiveDate: new Date().toISOString().split("T")[0]
           }
         });
-        const ans = JSON.parse(aiResponse.text || "{}");
-        success = ans.runsAccepted && success;
-        const reviewText = ans.feedback;
-        const subId = "sub-" + Date.now();
-        const scoreGain = success ? (problem.difficulty === "Easy" ? 10 : problem.difficulty === "Medium" ? 20 : 30) : 2;
+      }
 
-        // Update User Statistics
-        const user = db.users.find(u => u.id === (userId || "std-1"));
-        if (user) {
-          user.xp += scoreGain;
-          user.level = Math.floor(user.xp / 500) + 1;
-          if (!user.problemsSolved.includes(problem.id) && success) {
-            user.problemsSolved.push(problem.id);
-          }
-          user.accuracy = Math.round((user.problemsSolved.length / Math.max(1, db.submissions.filter(s => s.userId === user.id).length)) * 100);
-        }
-
-        // Fetch Next Recommended Topic from Python ML
-        let recommendedNextTopic = "";
-        try {
-          const recResponse = await fetch("http://localhost:8000/api/ai/recommend", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              user_id: user ? user.id : "std-1",
-              level: user ? user.level : 1,
-              accuracy: user ? user.accuracy : 50,
-              time_spent: user ? user.xp / 10 : 10
-            })
-          });
+      // Fetch Next Recommended Topic from Python ML
+      let recommendedNextTopic = "";
+      try {
+        const fetchFn = (globalThis as any).fetch;
+        const recResponse = await fetchFn(`${ML_SERVICE_URL}/ml/recommend-problems`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ solved_ids: [problem.id], top_n: 1 }),
+          signal: AbortSignal.timeout(3000)
+        });
+        if (recResponse.ok) {
           const recData = await recResponse.json();
-          recommendedNextTopic = recData.recommended_topic;
-        } catch (recErr) {
-          console.error("Failed to fetch ML recommendation for submission:", recErr);
+          if (recData.recommended_problems && recData.recommended_problems.length > 0) {
+            recommendedNextTopic = recData.recommended_problems[0].title || recData.recommended_problems[0].id;
+          }
         }
+      } catch (recErr) {
+        // ML unavailable, proceed gracefully
+      }
 
-        const submission = {
-          id: subId,
-          userId: userId || "std-1",
-          problemId: problem.id,
+      const finalReview = (reviewText ? reviewText : "Code structure analyzed. Ensure optimal time complexity and edge case handling.") + 
+        (recommendedNextTopic ? `\n\n💡 **AI Recommender:** Next recommended problem: **${recommendedNextTopic}**` : "");
+
+      const submission = await prisma.submission.create({
+        data: {
+          id: "sub-" + Date.now(),
           language,
           code,
-          status: success ? "Accepted" : "Wrong Answer",
-          timeComplexity: ans.estimatedTimeComplexity || "O(N)",
-          memoryUsage: ans.estimatedMemoryUsage || "12.4 MB",
-          errorMessage: success ? "" : (errMessage || "Some test cases failed."),
-          aiReview: reviewText + (recommendedNextTopic ? `\n\n💡 **AI Recommender:** Based on your performance, you should practice **${recommendedNextTopic}** next!` : ""),
-          xpEarned: scoreGain,
-          submittedAt: new Date().toISOString()
-        };
-
-        db.submissions.push(submission);
-        saveDB();
-
-        return res.json({ submission, success, analysis: ans });
-      } catch (aiErr) {
-        console.error("Gemini Code Sandbox Judge Error:", aiErr);
-      }
-    }
-
-    // Standard Fallback Judge
-    const subId = "sub-" + Date.now();
-    const isOk = success && (code.length > 20);
-    const scoreGain = isOk ? 15 : 2;
-
-    const user = db.users.find(u => u.id === (userId || "std-1"));
-    if (user) {
-      user.xp += scoreGain;
-      user.level = Math.floor(user.xp / 500) + 1;
-      if (!user.problemsSolved.includes(problem.id) && isOk) {
-        user.problemsSolved.push(problem.id);
-      }
-      user.accuracy = Math.round((user.problemsSolved.length / Math.max(1, db.submissions.filter(s => s.userId === user.id).length)) * 100);
-    }
-
-    // Fetch Next Recommended Topic from Python ML
-    let recommendedNextTopic = "";
-    try {
-      const recResponse = await fetch("http://localhost:8000/api/ai/recommend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: user ? user.id : "std-1",
-          level: user ? user.level : 1,
-          accuracy: user ? user.accuracy : 50,
-          time_spent: user ? user.xp / 10 : 10
-        })
+          status,
+          timeComplexity: estimatedTimeComplexity,
+          memoryUsage: estimatedMemoryUsage,
+          errorMessage: success ? "" : (errMessage || "Test case verification failed."),
+          submittedAt: new Date().toISOString(),
+          xpEarned: xpReward,
+          aiReview: finalReview,
+          userId: user ? user.id : targetUserId,
+          problemId: problem.id
+        }
       });
-      const recData = await recResponse.json();
-      recommendedNextTopic = recData.recommended_topic;
-    } catch (recErr) {
-      console.error("Failed to fetch ML recommendation for submission:", recErr);
+
+      res.json({ submission, success, analysis: aiAnalysis });
+    } catch (err: any) {
+      console.error("Submission error:", err);
+      res.status(500).json({ error: "Failed to evaluate code submission" });
     }
-
-    const submission = {
-      id: subId,
-      userId: userId || "std-1",
-      problemId: problem.id,
-      language,
-      code,
-      status: isOk ? "Accepted" : "Wrong Answer",
-      timeComplexity: "O(N)",
-      memoryUsage: "15.2 MB",
-      errorMessage: isOk ? "" : (errMessage || "Failed base assertion cases."),
-      aiReview: "Your logic has correct loops. Try to structure with more optimization comments." + (recommendedNextTopic ? `\n\n💡 **AI Recommender:** Based on your performance, you should practice **${recommendedNextTopic}** next!` : ""),
-      xpEarned: scoreGain,
-      submittedAt: new Date().toISOString()
-    };
-
-    db.submissions.push(submission);
-    saveDB();
-
-    res.json({ submission, success: isOk });
   });
 
   // API - Get submissions
-  app.get("/api/submissions", (req, res) => {
-    const userId = req.query.userId as string;
-    const filtered = userId ? db.submissions.filter(s => s.userId === userId) : db.submissions;
-    res.json(filtered.reverse());
+  app.get("/api/submissions", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      const where: any = {};
+      if (userId) where.userId = userId;
+
+      const submissions = await prisma.submission.findMany({
+        where,
+        orderBy: { submittedAt: "desc" },
+        take: 50
+      });
+      res.json(submissions);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to fetch submissions" });
+    }
   });
+
+  function formatMockInterview(mi: any) {
+    if (!mi) return null;
+    return {
+      ...mi,
+      questions: typeof mi.questions === "string" ? JSON.parse(mi.questions || "[]") : mi.questions,
+      answers: typeof mi.answers === "string" ? JSON.parse(mi.answers || "[]") : mi.answers,
+      scores: typeof mi.scores === "string" ? JSON.parse(mi.scores || "[]") : mi.scores,
+      feedback: typeof mi.feedback === "string" ? JSON.parse(mi.feedback || "[]") : mi.feedback,
+    };
+  }
 
   // API - Dashboard AI Analytics & Readiness Prediction
   app.get("/api/dashboard/analytics/:userId", async (req, res) => {
-    const userId = req.params.userId;
-    const user = db.users.find(u => u.id === userId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const codingScore = Math.min(100, Math.round((user.problemsSolved.length / 500) * 100) + 40);
-    const mockInterviews = db.interviews.filter(i => i.userId === userId && i.status === "Completed");
-    const interviewScore = mockInterviews.length > 0 
-      ? Math.round(mockInterviews.reduce((acc, curr) => acc + (curr.overallScore || 0), 0) / mockInterviews.length)
-      : 65;
-    
-    // Default metrics for ML readiness predictor
-    const resumeScore = 75;
-    const aptitudeScore = 70;
-    const attendance = 92;
-    const dailyStudyTime = 3.5;
-    const projectsCompleted = 3;
-
     try {
-      const fetchFn = (globalThis as any).fetch;
-      // 1. Get Readiness from FastAPI ML
-      const readinessResponse = await fetchFn("http://localhost:8000/ml/placement-score", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          xp: user.xp,
-          level: user.level,
-          streak: user.streak,
-          accuracy: user.accuracy,
-          problems_solved: user.problemsSolved.length,
-          submission_count: Math.max(user.problemsSolved.length, 10),
-          user_id: user.id
-        })
-      });
-      const readinessData = await readinessResponse.json();
+      const userId = req.params.userId;
+      let user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        user = await prisma.user.findFirst();
+      }
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
 
-      // 2. Get Next Recommended Topic from FastAPI ML
-      const recResponse = await fetchFn("http://localhost:8000/ml/recommend-problems", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          solved_ids: user.problemsSolved,
-          top_n: 5
-        })
-      });
-      const recData = await recResponse.json();
+      const submissions = await prisma.submission.findMany({ where: { userId: user.id } });
+      const mockInterviews = await prisma.mockInterview.findMany({ where: { userId: user.id, status: "Completed" } });
+      
+      const codingScore = Math.min(100, Math.round((submissions.filter(s => s.status === "Accepted").length / 50) * 100) + 40);
+      const interviewScore = mockInterviews.length > 0 
+        ? Math.round(mockInterviews.reduce((acc, curr) => acc + (curr.overallScore || 0), 0) / mockInterviews.length)
+        : 65;
+      
+      const resumeScore = 75;
+      const aptitudeScore = 70;
+      const attendance = 92;
+      const dailyStudyTime = 3.5;
+      const projectsCompleted = 3;
 
-      res.json({
-        readiness: readinessData,
-        recommendation: recData,
-        metrics: {
-          codingScore,
-          interviewScore,
-          resumeScore,
-          aptitudeScore,
-          attendance,
-          dailyStudyTime,
-          projectsCompleted
-        }
-      });
+      try {
+        const fetchFn = (globalThis as any).fetch;
+        const readinessResponse = await fetchFn(`${ML_SERVICE_URL}/ml/placement-score`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            xp: user.xp,
+            level: user.level,
+            streak: user.streak,
+            accuracy: user.accuracy,
+            problems_solved: submissions.filter(s => s.status === "Accepted").length,
+            submission_count: Math.max(submissions.length, 10),
+            user_id: user.id
+          }),
+          signal: AbortSignal.timeout(5000)
+        });
+        const readinessData = await readinessResponse.json();
+
+        const recResponse = await fetchFn(`${ML_SERVICE_URL}/ml/recommend-problems`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            solved_ids: submissions.filter(s => s.status === "Accepted").map(s => s.problemId),
+            top_n: 5
+          }),
+          signal: AbortSignal.timeout(5000)
+        });
+        const recData = await recResponse.json();
+
+        res.json({
+          readiness: readinessData,
+          recommendation: recData,
+          metrics: {
+            codingScore,
+            interviewScore,
+            resumeScore,
+            aptitudeScore,
+            attendance,
+            dailyStudyTime,
+            projectsCompleted
+          }
+        });
+      } catch (err: any) {
+        console.error("ML service offline fallback for dashboard:", err?.message || err);
+        res.json({
+          readiness: {
+            readiness_percentage: Math.min(100, Math.round((user.xp / 1540) * 85)),
+            interview_success_probability: Math.min(100, Math.round((user.accuracy / 100) * 80)),
+            expected_skill_level: user.level > 4 ? "Advanced" : "Intermediate",
+            weak_areas: ["Data Structures & Algorithms", "System Paging"]
+          },
+          recommendation: {
+            recommended_topic: "Strings"
+          },
+          metrics: {
+            codingScore,
+            interviewScore,
+            resumeScore,
+            aptitudeScore,
+            attendance,
+            dailyStudyTime,
+            projectsCompleted
+          }
+        });
+      }
     } catch (err: any) {
-      console.error("AI Engine offline, using rule-based metrics fallback:", err);
-      // Fallback
-      res.json({
-        readiness: {
-          readiness_percentage: Math.min(100, Math.round((user.xp / 1540) * 85)),
-          interview_success_probability: Math.min(100, Math.round((user.accuracy / 100) * 80)),
-          expected_skill_level: user.level > 4 ? "Advanced" : "Intermediate",
-          weak_areas: ["Data Structures & Algorithms", "System Paging"]
-        },
-        recommendation: {
-          recommended_topic: "Strings"
-        },
-        metrics: {
-          codingScore,
-          interviewScore,
-          resumeScore,
-          aptitudeScore,
-          attendance,
-          dailyStudyTime,
-          projectsCompleted
-        }
-      });
+      res.status(500).json({ error: "Failed to load dashboard analytics" });
     }
   });
 
   // API - General AI Coding Mentor chat (Proxies directly to FastAPI RAG pipeline)
   app.post("/api/mentor/ask", async (req, res) => {
-    const { prompt, question, chatHistory, userId } = req.body;
+    const { prompt, question } = req.body;
     const query = prompt || question;
     if (!query) {
       return res.status(400).json({ error: "Prompt or question is required" });
@@ -891,13 +1026,11 @@ Provide a high-fidelity, concise code review in JSON format matching this schema
 
     try {
       const fetchFn = (globalThis as any).fetch;
-      const response = await fetchFn("http://localhost:8000/rag/mentor-ask", {
+      const response = await fetchFn(`${ML_SERVICE_URL}/rag/mentor-ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: query,
-          top_k: 5
-        })
+        body: JSON.stringify({ question: query, top_k: 5 }),
+        signal: AbortSignal.timeout(10000)
       });
       const data = await response.json();
       res.json({
@@ -907,9 +1040,9 @@ Provide a high-fidelity, concise code review in JSON format matching this schema
         method: data.method
       });
     } catch (err: any) {
-      console.error("AI Engine connection failed, using fallback advisor:", err);
+      console.error("AI RAG connection failed, using fallback advisor:", err?.message || err);
       res.json({
-        text: "💡 [Notice: AI Engine Offline. Configure GEMINI_API_KEY and run Python service!]\n\n**Demo Advisor Response:** Study core DSA patterns like Arrays and Hashing. Start by writing small recursive steps.",
+        text: "💡 [Notice: Python ML Service Offline. Running on fallback advisor.]\n\n**Advisor Response:** Study core DSA patterns like Arrays and Hashing. Focus on building recursive and sliding window logic.",
         sources: []
       });
     }
@@ -917,28 +1050,57 @@ Provide a high-fidelity, concise code review in JSON format matching this schema
 
   // API - AI Roadmap generator
   app.post("/api/roadmap/generate", async (req, res) => {
-    const { currentYear, skills, targetCompany, targetRole, dailyStudyHours, codingScore, interviewScore } = req.body;
+    const { currentYear, skills, targetCompany, targetRole, dailyStudyHours, codingScore, interviewScore, userId } = req.body;
+    const targetUserId = userId || "std-1";
+
+    const dailyPlan = ["Morning: Practice 1 Arrays problem", "Afternoon: Study OS Concurrency Notes", "Evening: Mock MCQs on Placify"];
+    const weeklyPlan = ["Week 1: Arrays and Hashing", "Week 2: Linked Lists & Two Pointers", "Week 3: Stack & DBMS Normalization", "Week 4: Mock Internship Test Prep"];
+    const monthlyPlan = ["Month 1: DSA Core foundation", "Month 2: Core Engineering Subjects & DBMS", "Month 3: Full Project and Resume Analyzer Scan"];
 
     try {
-      const response = await fetch("http://localhost:8000/api/ai/roadmap", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: "std-1",
-          target_companies: [targetCompany],
-          target_role: targetRole,
-          coding_score: codingScore || 50.0,
-          interview_score: interviewScore || 50.0
-        })
+      const roadmap = await prisma.roadmap.upsert({
+        where: { userId: targetUserId },
+        update: {
+          currentYear: String(currentYear || "Final Year"),
+          skills: String(skills || "Java, Python"),
+          targetCompany: String(targetCompany || "Google"),
+          targetRole: String(targetRole || "SDE 1"),
+          generatedAt: new Date().toISOString(),
+          dailyPlan: JSON.stringify(dailyPlan),
+          weeklyPlan: JSON.stringify(weeklyPlan),
+          monthlyPlan: JSON.stringify(monthlyPlan)
+        },
+        create: {
+          id: "roadmap-" + Date.now(),
+          currentYear: String(currentYear || "Final Year"),
+          skills: String(skills || "Java, Python"),
+          targetCompany: String(targetCompany || "Google"),
+          targetRole: String(targetRole || "SDE 1"),
+          generatedAt: new Date().toISOString(),
+          dailyPlan: JSON.stringify(dailyPlan),
+          weeklyPlan: JSON.stringify(weeklyPlan),
+          monthlyPlan: JSON.stringify(monthlyPlan),
+          userId: targetUserId
+        }
       });
-      const data = await response.json();
-      res.json({ ...data, generatedAt: new Date().toISOString() });
-    } catch (err: any) {
-      console.error("Roadmap generation failed, using legacy demo fallback:", err);
+
       res.json({
-        dailyPlan: ["Morning: Practice 1 Arrays problem", "Afternoon: Study OS Concurrency Notes", "Evening: Mock MCQs on Placify"],
-        weeklyPlan: ["Week 1: Arrays and Hashing", "Week 2: Linked Lists & Two Pointers", "Week 3: Stack & DBMS Normalization", "Week 4: Mock Intership Test Prep"],
-        monthlyPlan: ["Month 1: DSA Core foundation", "Month 2: Core Engineering Subjects & DBMS", "Month 3: Full Project and Resume Analyzer Scan"],
+        id: roadmap.id,
+        currentYear: roadmap.currentYear,
+        skills: roadmap.skills,
+        targetCompany: roadmap.targetCompany,
+        targetRole: roadmap.targetRole,
+        dailyPlan,
+        weeklyPlan,
+        monthlyPlan,
+        generatedAt: roadmap.generatedAt
+      });
+    } catch (err: any) {
+      console.error("Roadmap generation error:", err);
+      res.json({
+        dailyPlan,
+        weeklyPlan,
+        monthlyPlan,
         generatedAt: new Date().toISOString()
       });
     }
@@ -946,94 +1108,124 @@ Provide a high-fidelity, concise code review in JSON format matching this schema
 
   // API - Mock Interviews
   app.post("/api/mock-interview/start", async (req, res) => {
-    const { type, userId } = req.body;
-    
-    // Predetermined questions for demo, and we can generate more via AI if needed
-    const hrQuestions = [
-      "Tell me about yourself and your absolute key technical achievements.",
-      "Why do you want to join this organization, and how do you handle collaborative stress?",
-      "Describe a situation where you had a conflict during a group project. How did you resolve it?"
-    ];
-    const techQuestions = [
-      "Explain the key differences between SQL (Relational) and NoSQL databases. When would you choose which?",
-      "How does process scheduling work in modern Operating Systems? What is Round-Robin vs Priority Scheduling?",
-      "Design an active rate limiter API representing maximum 10 requests per second. How do you construct this?"
-    ];
-    const behavioralQuestions = [
-      "Describe a time when you received severe negative criticism. How did you process and react?",
-      "What is your strategy to lead an engineering team under compressed release windows?",
-      "Discuss a project of yours that completely failed. What were your key indicators and learnings?"
-    ];
+    try {
+      const { type, userId } = req.body;
+      const targetUserId = userId || "std-1";
+      
+      const hrQuestions = [
+        "Tell me about yourself and your absolute key technical achievements.",
+        "Why do you want to join this organization, and how do you handle collaborative stress?",
+        "Describe a situation where you had a conflict during a group project. How did you resolve it?"
+      ];
+      const techQuestions = [
+        "Explain the key differences between SQL (Relational) and NoSQL databases. When would you choose which?",
+        "How does process scheduling work in modern Operating Systems? What is Round-Robin vs Priority Scheduling?",
+        "Design an active rate limiter API representing maximum 10 requests per second. How do you construct this?"
+      ];
+      const behavioralQuestions = [
+        "Describe a time when you received severe negative criticism. How did you process and react?",
+        "What is your strategy to lead an engineering team under compressed release windows?",
+        "Discuss a project of yours that completely failed. What were your key indicators and learnings?"
+      ];
 
-    const chosen = type === "Technical" ? techQuestions : type === "HR" ? hrQuestions : behavioralQuestions;
+      const chosen = type === "Technical" ? techQuestions : type === "HR" ? hrQuestions : behavioralQuestions;
 
-    const interview = {
-      id: "interview-" + Date.now(),
-      userId: userId || "std-1",
-      type,
-      status: "In Progress",
-      currentQuestionIndex: 0,
-      questions: chosen,
-      answers: [],
-      scores: [],
-      feedback: [],
-      createdAt: new Date().toISOString()
-    };
+      const created = await prisma.mockInterview.create({
+        data: {
+          id: "interview-" + Date.now(),
+          userId: targetUserId,
+          type: type || "Technical",
+          status: "In Progress",
+          currentQuestionIndex: 0,
+          questions: JSON.stringify(chosen),
+          answers: JSON.stringify([]),
+          scores: JSON.stringify([]),
+          feedback: JSON.stringify([]),
+          createdAt: new Date().toISOString()
+        }
+      });
 
-    db.interviews.push(interview);
-    saveDB();
-    res.json(interview);
+      res.json(formatMockInterview(created));
+    } catch (err: any) {
+      console.error("Start interview error:", err);
+      res.status(500).json({ error: "Failed to start mock interview" });
+    }
   });
 
   app.post("/api/mock-interview/:id/answer", async (req, res) => {
-    const { answer } = req.body;
-    const interview = db.interviews.find(i => i.id === req.params.id);
-    if (!interview) {
-      return res.status(404).json({ error: "Interview not found" });
-    }
-
-    const currentIdx = interview.currentQuestionIndex;
-    interview.answers.push(answer);
-
-    let score = 75;
-    let feedback = "Nice outline. Add more technical terminologies matching industrial specs.";
-
-    // Call FastAPI ML Service for interview answer scoring
     try {
-      const fetchFn = (globalThis as any).fetch;
-      const mlRes = await fetchFn("http://localhost:8000/ml/interview-score", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: interview.questions[currentIdx],
-          answer,
-          interview_type: interview.type
-        })
+      const { answer } = req.body;
+      const interview = await prisma.mockInterview.findUnique({
+        where: { id: req.params.id }
       });
-      if (mlRes.ok) {
-        const mlData = await mlRes.json();
-        score = mlData.score;
-        feedback = mlData.feedback;
+      if (!interview) {
+        return res.status(404).json({ error: "Interview not found" });
       }
-    } catch (e) {
-      console.error("FastAPI ML Interview Scorer error:", e);
+
+      const formatted = formatMockInterview(interview);
+      const currentIdx = formatted.currentQuestionIndex;
+      const questions = formatted.questions;
+      const answers = [...formatted.answers, answer];
+
+      let score = 75;
+      let feedback = "Nice outline. Add more technical terminologies matching industrial specs.";
+
+      try {
+        const fetchFn = (globalThis as any).fetch;
+        const mlRes = await fetchFn(`${ML_SERVICE_URL}/ml/interview-score`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: questions[currentIdx],
+            answer,
+            interview_type: interview.type
+          }),
+          signal: AbortSignal.timeout(5000)
+        });
+        if (mlRes.ok) {
+          const mlData = await mlRes.json();
+          score = mlData.score;
+          feedback = mlData.feedback;
+        }
+      } catch (e) {
+        console.error("FastAPI ML Interview Scorer error:", e);
+      }
+
+      const scores = [...formatted.scores, score];
+      const feedbacks = [...formatted.feedback, feedback];
+
+      let nextStatus = interview.status;
+      let nextIdx = currentIdx;
+      let overallScore = interview.overallScore;
+      let overallFeedback = interview.overallFeedback;
+
+      if (currentIdx < questions.length - 1) {
+        nextIdx += 1;
+      } else {
+        nextStatus = "Completed";
+        const total = scores.reduce((a: number, b: number) => a + b, 0);
+        overallScore = Math.round(total / questions.length);
+        overallFeedback = "Great effort! " + (overallScore > 80 ? "You display strong corporate suitability." : "Spend extra effort reviewing theoretical concepts.");
+      }
+
+      const updated = await prisma.mockInterview.update({
+        where: { id: interview.id },
+        data: {
+          currentQuestionIndex: nextIdx,
+          status: nextStatus,
+          answers: JSON.stringify(answers),
+          scores: JSON.stringify(scores),
+          feedback: JSON.stringify(feedbacks),
+          overallScore,
+          overallFeedback
+        }
+      });
+
+      res.json(formatMockInterview(updated));
+    } catch (err: any) {
+      console.error("Answer interview error:", err);
+      res.status(500).json({ error: "Failed to record interview answer" });
     }
-
-    interview.scores.push(score);
-    interview.feedback.push(feedback);
-
-    if (interview.currentQuestionIndex < interview.questions.length - 1) {
-      interview.currentQuestionIndex += 1;
-    } else {
-      interview.status = "Completed";
-      // Aggregate scores
-      const total = interview.scores.reduce((a: number, b: number) => a + b, 0);
-      interview.overallScore = Math.round(total / interview.questions.length);
-      interview.overallFeedback = "Great effort! " + (interview.overallScore > 80 ? "You display strong corporate suitability." : "Spend extra effort reviewing theoretical concepts.");
-    }
-
-    saveDB();
-    res.json(interview);
   });
 
   // API - Resume Analyzer
@@ -1066,7 +1258,7 @@ Provide in JSON schema:
   "suggestions": ["suggestion1", "suggestion2", ...]
 }`;
       const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: GEMINI_MODEL,
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -1104,65 +1296,125 @@ Provide in JSON schema:
     res.json(contest);
   });
 
+  function formatDiscussion(d: any) {
+    if (!d) return null;
+    return {
+      ...d,
+      likedBy: typeof d.likedBy === "string" ? JSON.parse(d.likedBy || "[]") : d.likedBy,
+      replies: d.replies || []
+    };
+  }
+
   // API - Discussions CRUD
-  app.get("/api/discussions", (req, res) => {
-    res.json(db.discussions);
+  app.get("/api/discussions", async (req, res) => {
+    try {
+      const threads = await prisma.discussionThread.findMany({
+        include: { replies: true },
+        orderBy: { createdAt: "desc" }
+      });
+      res.json(threads.map(formatDiscussion));
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to fetch discussion threads" });
+    }
   });
 
-  app.post("/api/discussions", (req, res) => {
-    const { title, content, userId, username, category } = req.body;
-    if (!title || !content) {
-      return res.status(400).json({ error: "Fields are blank." });
+  app.post("/api/discussions", async (req, res) => {
+    try {
+      const { title, content, userId, username, category } = req.body;
+      if (!title || !content) {
+        return res.status(400).json({ error: "Title and content are required" });
+      }
+
+      const targetUserId = userId || "std-1";
+      const validUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+      const finalUserId = validUser ? validUser.id : (await prisma.user.findFirst())?.id || "std-1";
+
+      const created = await prisma.discussionThread.create({
+        data: {
+          id: "disc-" + Date.now(),
+          title,
+          content,
+          username: username || "anonymous",
+          category: category || "General",
+          likes: 0,
+          likedBy: JSON.stringify([]),
+          createdAt: new Date().toISOString(),
+          userId: finalUserId
+        },
+        include: { replies: true }
+      });
+
+      res.status(201).json(formatDiscussion(created));
+    } catch (err: any) {
+      console.error("Create discussion error:", err);
+      res.status(500).json({ error: "Failed to create discussion thread" });
     }
-    const newThread = {
-      id: "disc-" + Date.now(),
-      title,
-      content,
-      userId: userId || "std-1",
-      username: username || "anonymous",
-      category: category || "General",
-      likes: 0,
-      likedBy: [],
-      replies: [],
-      createdAt: new Date().toISOString()
-    };
-    db.discussions.push(newThread);
-    saveDB();
-    res.json(newThread);
   });
 
-  app.post("/api/discussions/:id/reply", (req, res) => {
-    const thread = db.discussions.find(d => d.id === req.params.id);
-    if (!thread) {
-      return res.status(404).json({ error: "Discussion post not found" });
+  app.post("/api/discussions/:id/reply", async (req, res) => {
+    try {
+      const { content, username } = req.body;
+      if (!content) return res.status(400).json({ error: "Reply content required" });
+
+      const thread = await prisma.discussionThread.findUnique({
+        where: { id: req.params.id }
+      });
+      if (!thread) return res.status(404).json({ error: "Discussion thread not found" });
+
+      await prisma.reply.create({
+        data: {
+          id: "reply-" + Date.now(),
+          username: username || "anonymous",
+          content,
+          createdAt: new Date().toISOString(),
+          threadId: thread.id
+        }
+      });
+
+      const updated = await prisma.discussionThread.findUnique({
+        where: { id: thread.id },
+        include: { replies: true }
+      });
+
+      res.json(formatDiscussion(updated));
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to add reply" });
     }
-    const reply = {
-      id: "reply-" + Date.now(),
-      userId: req.body.userId || "std-1",
-      username: req.body.username || "anonymous",
-      content: req.body.content,
-      createdAt: new Date().toISOString()
-    };
-    thread.replies.push(reply);
-    saveDB();
-    res.json(thread);
   });
 
-  app.post("/api/discussions/:id/like", (req, res) => {
-    const thread = db.discussions.find(d => d.id === req.params.id);
-    const userId = req.body.userId || "std-1";
-    if (!thread) {
-      return res.status(404).json({ error: "Discussion not found" });
+  app.post("/api/discussions/:id/like", async (req, res) => {
+    try {
+      const { userId = "std-1" } = req.body;
+      const thread = await prisma.discussionThread.findUnique({
+        where: { id: req.params.id },
+        include: { replies: true }
+      });
+      if (!thread) return res.status(404).json({ error: "Discussion thread not found" });
+
+      let likedBy: string[] = typeof thread.likedBy === "string" ? JSON.parse(thread.likedBy || "[]") : thread.likedBy;
+      let likes = thread.likes;
+
+      if (likedBy.includes(userId)) {
+        likedBy = likedBy.filter(u => u !== userId);
+        likes = Math.max(0, likes - 1);
+      } else {
+        likedBy.push(userId);
+        likes += 1;
+      }
+
+      const updated = await prisma.discussionThread.update({
+        where: { id: thread.id },
+        data: {
+          likes,
+          likedBy: JSON.stringify(likedBy)
+        },
+        include: { replies: true }
+      });
+
+      res.json(formatDiscussion(updated));
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to like thread" });
     }
-    if (thread.likedBy.includes(userId)) {
-      thread.likedBy = thread.likedBy.filter((uid: string) => uid !== userId);
-      thread.likes = Math.max(0, thread.likes - 1);
-    } else {
-      thread.likedBy.push(userId);
-      thread.likes += 1;
-    }
-    saveDB();
-    res.json(thread);
   });
 
   
@@ -1415,7 +1667,7 @@ Return the result in JSON matching this exact schema:
 }`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: GEMINI_MODEL,
         contents: prompt,
         config: {
           responseMimeType: "application/json",
