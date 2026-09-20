@@ -6,6 +6,7 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import { PrismaClient } from "@prisma/client";
@@ -17,6 +18,54 @@ dotenv.config();
 const prisma = new PrismaClient();
 const PORT = 3000;
 const DB_FILE = path.join(process.cwd(), "server-db.json");
+const JWT_SECRET = process.env.JWT_SECRET || "placify_super_secret_jwt_key_2026";
+
+// JWT Helper Functions using Node.js crypto
+function base64url(str: string | Buffer): string {
+  const b64 = typeof str === "string" ? Buffer.from(str).toString("base64") : str.toString("base64");
+  return b64.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+
+function signJWT(payload: object, expiresInSec: number = 86400): string {
+  const header = { alg: "HS256", typ: "JWT" };
+  const exp = Math.floor(Date.now() / 1000) + expiresInSec;
+  const fullPayload = { ...payload, iat: Math.floor(Date.now() / 1000), exp };
+  
+  const encodedHeader = base64url(JSON.stringify(header));
+  const encodedPayload = base64url(JSON.stringify(fullPayload));
+  const data = `${encodedHeader}.${encodedPayload}`;
+  
+  const signature = crypto.createHmac("sha256", JWT_SECRET).update(data).digest();
+  return `${data}.${base64url(signature)}`;
+}
+
+function verifyJWT(token: string): any {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const [header, payload, signature] = parts;
+    const data = `${header}.${payload}`;
+    const expectedSig = base64url(crypto.createHmac("sha256", JWT_SECRET).update(data).digest());
+    if (signature !== expectedSig) return null;
+    
+    const decoded = JSON.parse(Buffer.from(payload, "base64").toString("utf-8"));
+    if (decoded.exp && Math.floor(Date.now() / 1000) > decoded.exp) return null;
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
+function authenticateToken(req: any, res: any, next: any) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
+  if (!token) return res.status(401).json({ error: "Access token missing" });
+  
+  const decoded = verifyJWT(token);
+  if (!decoded) return res.status(401).json({ error: "Invalid or expired token" });
+  req.user = decoded;
+  next();
+}
 
 // System-wide Gemini client
 let ai: GoogleGenAI | null = null;
@@ -406,6 +455,31 @@ async function startServer() {
 
   app.use(express.json());
 
+  // System Health Check
+  app.get("/api/health", async (req, res) => {
+    let dbOk = false;
+    let mlOk = false;
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      dbOk = true;
+    } catch {}
+
+    try {
+      const fetchFn = (globalThis as any).fetch;
+      const mlRes = await fetchFn("http://localhost:8000/health", { signal: AbortSignal.timeout(3000) });
+      mlOk = mlRes.ok;
+    } catch {}
+
+    const status = dbOk && mlOk ? "healthy" : dbOk ? "degraded (ML offline)" : "unhealthy";
+    res.status(dbOk ? 200 : 503).json({
+      status,
+      node: "online",
+      database: dbOk ? "connected" : "disconnected",
+      mlService: mlOk ? "connected" : "disconnected",
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // API - Auth register
   app.post("/api/auth/register", (req, res) => {
     const { email, username, password } = req.body;
@@ -432,7 +506,8 @@ async function startServer() {
     };
     db.users.push(newUser);
     saveDB();
-    res.json({ success: true, user: newUser });
+    const token = signJWT({ id: newUser.id, email: newUser.email, username: newUser.username, isAdmin: newUser.isAdmin });
+    res.json({ success: true, user: newUser, token });
   });
 
   // API - Auth login
@@ -442,7 +517,20 @@ async function startServer() {
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
+    const token = signJWT({ id: user.id, email: user.email, username: user.username, isAdmin: user.isAdmin });
+    res.json({ success: true, user, token });
+  });
+
+  // API - Auth Current User (/me)
+  app.get("/api/auth/me", authenticateToken, (req: any, res) => {
+    const user = db.users.find(u => u.id === req.user.id);
+    if (!user) return res.status(404).json({ error: "User not found" });
     res.json({ success: true, user });
+  });
+
+  // API - Auth Logout
+  app.post("/api/auth/logout", (req, res) => {
+    res.json({ success: true, message: "Logged out successfully" });
   });
 
   // API - Reset passwords
@@ -726,32 +814,30 @@ Provide a high-fidelity, concise code review in JSON format matching this schema
     const projectsCompleted = 3;
 
     try {
+      const fetchFn = (globalThis as any).fetch;
       // 1. Get Readiness from FastAPI ML
-      const readinessResponse = await fetch("http://localhost:8000/api/ai/readiness", {
+      const readinessResponse = await fetchFn("http://localhost:8000/ml/placement-score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: user.id,
-          coding_score: codingScore,
-          interview_score: interviewScore,
-          resume_score: resumeScore,
-          aptitude_score: aptitudeScore,
-          attendance,
-          daily_study_time: dailyStudyTime,
-          projects_completed: projectsCompleted
+          xp: user.xp,
+          level: user.level,
+          streak: user.streak,
+          accuracy: user.accuracy,
+          problems_solved: user.problemsSolved.length,
+          submission_count: Math.max(user.problemsSolved.length, 10),
+          user_id: user.id
         })
       });
       const readinessData = await readinessResponse.json();
 
       // 2. Get Next Recommended Topic from FastAPI ML
-      const recResponse = await fetch("http://localhost:8000/api/ai/recommend", {
+      const recResponse = await fetchFn("http://localhost:8000/ml/recommend-problems", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: user.id,
-          level: user.level,
-          accuracy: user.accuracy,
-          time_spent: user.xp / 10
+          solved_ids: user.problemsSolved,
+          top_n: 5
         })
       });
       const recData = await recResponse.json();
@@ -795,27 +881,30 @@ Provide a high-fidelity, concise code review in JSON format matching this schema
     }
   });
 
-  // API - General AI Coding Mentor chat
+  // API - General AI Coding Mentor chat (Proxies directly to FastAPI RAG pipeline)
   app.post("/api/mentor/ask", async (req, res) => {
-    const { prompt, chatHistory, userId } = req.body;
-    if (!prompt) {
-      return res.status(400).json({ error: "Prompt is required" });
+    const { prompt, question, chatHistory, userId } = req.body;
+    const query = prompt || question;
+    if (!query) {
+      return res.status(400).json({ error: "Prompt or question is required" });
     }
 
     try {
-      const response = await fetch("http://localhost:8000/api/ai/mentor", {
+      const fetchFn = (globalThis as any).fetch;
+      const response = await fetchFn("http://localhost:8000/rag/mentor-ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt,
-          student_id: userId || "std-1",
-          chat_history: chatHistory || []
+          question: query,
+          top_k: 5
         })
       });
       const data = await response.json();
       res.json({
-        text: data.response || data.text,
-        sources: data.sources || []
+        text: data.answer || data.text,
+        response: data.answer || data.response,
+        sources: data.sources || [],
+        method: data.method
       });
     } catch (err: any) {
       console.error("AI Engine connection failed, using fallback advisor:", err);
@@ -909,38 +998,25 @@ Provide a high-fidelity, concise code review in JSON format matching this schema
     let score = 75;
     let feedback = "Nice outline. Add more technical terminologies matching industrial specs.";
 
-    if (ai) {
-      try {
-        const prompt = `You are a strict placement interviewer scoring answers during a ${interview.type} mock interview.
-Question asked: "${interview.questions[currentIdx]}"
-Student Answer: "${answer}"
-Analyze this response. Score it out of 100.
-Provide response in schema:
-{
-  "score": 0 to 100,
-  "feedback": "constructive criticisms, missing technical terms, grammatical review"
-}`;
-        const response = await ai.models.generateContent({
-          model: "gemini-3.6-flash",
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                score: { type: Type.INTEGER },
-                feedback: { type: Type.STRING }
-              },
-              required: ["score", "feedback"]
-            }
-          }
-        });
-        const ans = JSON.parse(response.text || "{}");
-        score = ans.score;
-        feedback = ans.feedback;
-      } catch (e) {
-        console.error("AI Interview scorer error:", e);
+    // Call FastAPI ML Service for interview answer scoring
+    try {
+      const fetchFn = (globalThis as any).fetch;
+      const mlRes = await fetchFn("http://localhost:8000/ml/interview-score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: interview.questions[currentIdx],
+          answer,
+          interview_type: interview.type
+        })
+      });
+      if (mlRes.ok) {
+        const mlData = await mlRes.json();
+        score = mlData.score;
+        feedback = mlData.feedback;
       }
+    } catch (e) {
+      console.error("FastAPI ML Interview Scorer error:", e);
     }
 
     interview.scores.push(score);
