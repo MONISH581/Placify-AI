@@ -1,9 +1,16 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const DB_FILE = path.join(process.cwd(), "server-db.json");
+
+function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, "sha512").toString("hex");
+  return `${salt}:${hash}`;
+}
 
 async function main() {
   if (!fs.existsSync(DB_FILE)) {
@@ -15,14 +22,18 @@ async function main() {
   console.log("Migrating data...");
 
   // Migrate Users
+  const defaultPassHash = hashPassword("password123");
   for (const user of data.users || []) {
     await prisma.user.upsert({
       where: { email: user.email },
-      update: {},
+      update: {
+        password: user.password ? hashPassword(user.password) : defaultPassHash,
+      },
       create: {
         id: user.id,
         email: user.email,
         username: user.username,
+        password: user.password ? hashPassword(user.password) : defaultPassHash,
         isAdmin: user.isAdmin || false,
         xp: user.xp || 0,
         level: user.level || 1,
