@@ -1789,6 +1789,27 @@ Return the result in JSON matching this exact schema:
     await proxyToML(req, res, "/rag/mentor-ask");
   });
 
+  // ── Canonical Sprint Endpoints Proxies ──────────────────────────────────
+  app.post("/api/predict/placement", async (req, res) => {
+    await proxyToML(req, res, "/predict/placement");
+  });
+
+  app.post("/api/predict/difficulty", async (req, res) => {
+    await proxyToML(req, res, "/predict/difficulty");
+  });
+
+  app.post("/api/recommend/problems", async (req, res) => {
+    await proxyToML(req, res, "/recommend/problems");
+  });
+
+  app.post("/api/evaluate/interview", async (req, res) => {
+    await proxyToML(req, res, "/evaluate/interview");
+  });
+
+  app.post("/api/rag/query", async (req, res) => {
+    await proxyToML(req, res, "/rag/query");
+  });
+
   // 6. ML Service Health
   app.get("/api/ml/health", async (req, res) => {
     await proxyToML(req, res, "/");

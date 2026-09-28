@@ -70,16 +70,19 @@ REFERENCE_ANSWERS = {
 }
 
 
+_st_model = None
+
 def _get_model():
-    """Lazy-load sentence-transformers model."""
-    cache_path = os.path.join(MODELS_DIR, "sentence_transformer_cache.pkl")
-    try:
-        from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer("all-MiniLM-L6-v2")
-        return model
-    except Exception as e:
-        print(f"[InterviewScorer] sentence-transformers unavailable: {e}")
-        return None
+    """Lazy-load sentence-transformers model (cached singleton)."""
+    global _st_model
+    if _st_model is None:
+        try:
+            from sentence_transformers import SentenceTransformer
+            _st_model = SentenceTransformer("all-MiniLM-L6-v2")
+        except Exception as e:
+            print(f"[InterviewScorer] sentence-transformers unavailable: {e}")
+            return None
+    return _st_model
 
 
 def _match_reference_bank(question: str) -> list:
