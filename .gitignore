@@ -10,5 +10,12 @@ coverage/
 __pycache__/
 *.pyc
 *.pkl
+*.bin
+*.pdf
+*.pptx
+ml_service/saved_models/
 chroma_data/
 prisma/*.db
+*.db
+server-db.json
+

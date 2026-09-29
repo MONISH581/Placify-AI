@@ -92,15 +92,28 @@ export function CodingArena({
     c: `// C implementation\n#include <stdio.h>\n#include <stdlib.h>\n\nchar* solve(char* input) {\n    // Implement logic here\n    return "0 1";\n}`
   };
 
+  const [codeBuffers, setCodeBuffers] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (selectedProblem) {
-      const problemStarter = selectedProblem.starterCode?.[lang];
-      setCode(problemStarter || defaultTemplates[lang] || defaultTemplates['javascript']);
+      const problemStarter = (selectedProblem.starterCode as Record<string, string> | undefined)?.[lang];
+      const initialCode = codeBuffers[lang] || problemStarter || defaultTemplates[lang] || defaultTemplates['javascript'];
+      setCode(initialCode);
       setUnlockedHintLevel(0);
       setSubmissionResult(null);
       fetchSubmissions();
     }
   }, [selectedProblem, lang]);
+
+  const handleLanguageChange = (newLang: string) => {
+    setCodeBuffers(prev => ({ ...prev, [lang]: code }));
+    setLang(newLang);
+    if (selectedProblem) {
+      const starter = (selectedProblem.starterCode as Record<string, string> | undefined)?.[newLang];
+      const nextCode = codeBuffers[newLang] || starter || defaultTemplates[newLang] || defaultTemplates['javascript'];
+      setCode(nextCode);
+    }
+  };
 
   const fetchSubmissions = async () => {
     if (!selectedProblem) return;
@@ -506,7 +519,7 @@ export function CodingArena({
               <div className="flex items-center gap-2">
                 <select
                   value={lang}
-                  onChange={(e) => setLang(e.target.value)}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
                   className="bg-black border border-slate-800 text-[11px] px-2 py-1 rounded-lg text-white outline-none focus:border-cyan-400"
                   id="language-select"
                 >

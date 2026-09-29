@@ -32,7 +32,7 @@ export function ResumeAnalyzer() {
   };
 
   const handleSimulateResumeUpload = () => {
-    const mockResume = `Monish Sai\nEmail: monishsai581@gmail.com\n\nExperience:\n- Backend Engineer Intern at TechCorp\n- Created full-stack APIs using Node.js and Express\n- Wrote tests and managed relational MySQL data stores\n\nKeywords: REST API, Express.js, JavaScript, React, MySQL, MongoDB.`;
+    const mockResume = `Demo Student\nEmail: student@placify.com\n\nExperience:\n- Backend Engineer Intern at TechCorp\n- Created full-stack APIs using Node.js and Express\n- Wrote tests and managed relational MySQL data stores\n\nKeywords: REST API, Express.js, JavaScript, React, MySQL, MongoDB.`;
     setResumeText(mockResume);
   };
 

@@ -646,7 +646,7 @@ const seedDatabase = () => {
           outputFormat: template.outputFormat,
           examples: template.examples,
           testCases: template.testCases,
-          hints: template.hints.map((hint, hIdx) => `Level ${hIdx + 1}: ${hint}`),
+          hints: template.hints.map((hint: string, hIdx: number) => `Level ${hIdx + 1}: ${hint}`),
           editorial: template.editorial,
           solutions: template.solutions,
           starterCode: template.starterCode
@@ -659,7 +659,7 @@ const seedDatabase = () => {
     users: [
       {
         id: "std-1",
-        email: "monishsai581@gmail.com",
+        email: "student@placify.com",
         username: "student",
         isAdmin: false,
         xp: 1540,

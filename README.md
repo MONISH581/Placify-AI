@@ -21,7 +21,6 @@ Node.js Express Backend (Port 3000)
 
 - **Node.js API Server**: Port 3000 (`server.ts`)
 - **Python ML Microservice**: Port 8000 (`ml_service/main.py`)
-- **Optional AI Engine**: Port 8001 (`ai-engine/app/main.py`)
 - **Database**: SQLite `prisma/dev.db` managed via Prisma ORM
 
 ---
@@ -33,8 +32,7 @@ Copy `.env.example` to `.env`:
 ```bash
 PORT=3000
 ML_SERVICE_URL=http://localhost:8000
-AI_ENGINE_URL=http://localhost:8001
-JWT_SECRET=placify_super_secret_jwt_key_2026
+JWT_SECRET=your_jwt_secret_key_here
 GEMINI_API_KEY=your_optional_gemini_key
 ```
 

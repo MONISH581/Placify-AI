@@ -18,19 +18,27 @@ export function MockInterview({ userId, onAddXp }: MockInterviewProps) {
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [voiceRecording, setVoiceRecording] = useState(false);
 
+  const [errorState, setErrorState] = useState<string | null>(null);
+
   const startInterview = async () => {
     setIsLoading(true);
     setSession(null);
+    setErrorState(null);
     try {
       const res = await fetch("/api/mock-interview/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: interviewType, userId })
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || `HTTP ${res.status}`);
+      }
       const data = await res.json();
       setSession(data);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error("Start interview error:", e);
+      setErrorState(e.message || "Failed to start mock interview. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -53,20 +61,26 @@ export function MockInterview({ userId, onAddXp }: MockInterviewProps) {
   const submitAnswer = async () => {
     if (!session || !currentAnswer.trim()) return;
     setIsLoading(true);
+    setErrorState(null);
     try {
       const res = await fetch(`/api/mock-interview/${session.id}/answer`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answer: currentAnswer })
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || `HTTP ${res.status}`);
+      }
       const data = await res.json();
       setSession(data);
       setCurrentAnswer('');
 
       // Add small reward XP per answer
       onAddXp(20);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error("Submit answer error:", e);
+      setErrorState(e.message || "Failed to submit answer. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -102,6 +116,11 @@ export function MockInterview({ userId, onAddXp }: MockInterviewProps) {
             ))}
           </div>
 
+          {errorState && (
+            <div className="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-300 font-mono">
+              {errorState}
+            </div>
+          )}
           <button
             onClick={startInterview}
             disabled={isLoading}

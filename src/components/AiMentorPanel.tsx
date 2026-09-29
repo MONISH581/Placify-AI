@@ -5,11 +5,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MessageSquare, X, Send, Sparkles, Loader2, Bot, User, HelpCircle, Terminal } from 'lucide-react';
+import { MessageSquare, X, Send, Sparkles, Loader2, Bot, User as UserIcon, HelpCircle, Terminal } from 'lucide-react';
+import type { User as UserProfile } from '../types';
 
 interface AiMentorPanelProps {
-  userId: string;
-  activeTab: string;
+  user?: UserProfile | null;
+  userId?: string;
+  activeTab?: string;
 }
 
 interface Message {
@@ -187,7 +189,7 @@ export function AiMentorPanel({ userId, activeTab }: AiMentorPanelProps) {
                     </div>
                     {!isAI && (
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-cyan-400 text-black">
-                        <User className="h-4 w-4" />
+                        <UserIcon className="h-4 w-4" />
                       </div>
                     )}
                   </div>

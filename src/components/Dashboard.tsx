@@ -59,7 +59,7 @@ export function Dashboard({ user, problems, onSelectProblem, onNavigate }: Dashb
       body: JSON.stringify(payload)
     })
       .then(res => res.json())
-      .then(data => setAiData(prev => ({ ...prev, readiness: data })))
+      .then(data => setAiData((prev: any) => ({ ...prev, readiness: data })))
       .catch(err => console.error("Error fetching AI Readiness:", err));
       
     // Fetch Recommendations
@@ -69,7 +69,7 @@ export function Dashboard({ user, problems, onSelectProblem, onNavigate }: Dashb
       body: JSON.stringify(payload)
     })
       .then(res => res.json())
-      .then(data => setAiData(prev => ({ ...prev, recommendation: data })))
+      .then(data => setAiData((prev: any) => ({ ...prev, recommendation: data })))
       .catch(err => console.error("Error fetching AI Recommendation:", err));
   }, [user]);
 

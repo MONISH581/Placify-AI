@@ -95,9 +95,12 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173")
+allowed_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173", "*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -529,10 +532,16 @@ def rag_retrieve(req: RAGRequest):
 # ==============================================================================
 # 6. Admin Endpoints
 # ==============================================================================
+from fastapi import Header
+
 @app.post("/admin/retrain", tags=["Admin"])
-async def retrain():
-    """Trigger full model retraining (admin endpoint)."""
-    async def _retrain():
+async def retrain(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
+    """Trigger full model retraining (admin endpoint). Required internal API key."""
+    expected_key = os.getenv("INTERNAL_API_KEY")
+    if expected_key and x_api_key != expected_key:
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid internal API key")
+
+    def _retrain():
         import subprocess
         result = subprocess.run(
             [sys.executable, os.path.join(BASE_DIR, "models", "train_all.py")],
