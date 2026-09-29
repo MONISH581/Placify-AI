@@ -1,6 +1,10 @@
+// Placify-AI database schema (SQLite via Prisma).
+// DATABASE_URL is read from the root .env; a relative "file:./dev.db" resolves to prisma/dev.db.
+// Apply changes with `npx prisma db push` (or `npm run setup`), then `npx prisma generate`.
+
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -8,280 +12,165 @@ generator client {
 }
 
 model User {
-  id             String       @id @default(uuid())
-  email          String       @unique
-  username       String       @unique
-  password       String       @default("")
-  isAdmin        Boolean      @default(false)
-  xp             Int          @default(0)
-  level          Int          @default(1)
-  streak         Int          @default(0)
-  lastActiveDate String       // Format: YYYY-MM-DD
-  accuracy       Int          @default(0)
-  verified       Boolean      @default(false)
-  
-  // Relations
-  badges         Badge[]
-  problemsSolved Problem[]    @relation("SolvedProblems")
-  roadmap        Roadmap?
-  submissions    Submission[]
-  mockInterviews MockInterview[]
-  discussions    DiscussionThread[]
-  notifications  Notification[]
-  streaks        Streak[]
-  aiProfile      StudentAIProfile?
-  learningEvents LearningEvent[]
-  recommendations Recommendation[]
-  readinessSnapshots ReadinessSnapshot[]
+  id             String  @id @default(uuid())
+  email          String  @unique
+  username       String  @unique
+  password       String
+  isAdmin        Boolean @default(false)
+  xp             Int     @default(0)
+  level          Int     @default(1)
+  streak         Int     @default(0)
+  lastActiveDate String // YYYY-MM-DD (UTC)
+  accuracy       Int     @default(0) // accepted submissions / total submissions * 100
+  verified       Boolean @default(false)
+
+  badges              Badge[]
+  problemsSolved      Problem[]             @relation("SolvedProblems")
+  submissions         Submission[]
+  mockInterviews      MockInterview[]
+  discussions         DiscussionThread[]
+  contestRegistrations ContestRegistration[]
+  topicCompletions    TopicCompletion[]
 }
 
 model Badge {
-  id          String @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
   description String
   icon        String
   criteria    String
-  userId      String
-  user        User   @relation(fields: [userId], references: [id])
+  awardedAt   DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
 }
 
 model Problem {
-  id            String       @id @default(uuid())
-  title         String
-  difficulty    String       // Easy, Medium, Hard
-  description   String
-  constraints   String
-  inputFormat   String
-  outputFormat  String
-  editorial     String?
-  
-  // Stored as JSON arrays
-  tags          String       // JSON string array
-  examples      String       // JSON string
-  testCases     String       // JSON string
-  hints         String       // JSON string array
+  id           String  @id @default(uuid())
+  title        String
+  difficulty   String // Easy | Medium | Hard
+  description  String
+  constraints  String
+  inputFormat  String
+  outputFormat String
+  editorial    String?
+
+  // JSON-encoded columns (SQLite has no native JSON/array type)
+  tags        String // string[] (topic + company tags)
+  examples    String // { input, output, explanation? }[]
+  testCases   String // { input, expectedOutput, isHidden }[]
+  hints       String // string[]
+  starterCode String @default("{}") // { javascript, python, java, cpp, c }
+  solutions   String @default("{}") // { javascript, python, java, cpp, c }
 
   submissions   Submission[]
   solvedByUsers User[]       @relation("SolvedProblems")
 }
 
 model Submission {
-  id             String   @id @default(uuid())
+  id             String  @id @default(uuid())
   language       String
   code           String
-  status         String
+  status         String // Accepted | Wrong Answer | Runtime Error | Time Limit Exceeded | Compilation Error
   timeComplexity String?
   memoryUsage    String?
   errorMessage   String?
-  submittedAt    String
-  xpEarned       Int      @default(0)
+  submittedAt    String // ISO timestamp
+  xpEarned       Int     @default(0)
   aiReview       String?
 
-  userId         String
-  user           User     @relation(fields: [userId], references: [id])
-  problemId      String
-  problem        Problem  @relation(fields: [problemId], references: [id])
-}
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId String
+  problem   Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
 
-model Roadmap {
-  id             String   @id @default(uuid())
-  currentYear    String
-  skills         String
-  targetCompany  String
-  targetRole     String
-  generatedAt    String
-  
-  // Stored as JSON string arrays
-  dailyPlan      String
-  weeklyPlan     String
-  monthlyPlan    String
-
-  userId         String   @unique
-  user           User     @relation(fields: [userId], references: [id])
+  @@index([userId, submittedAt])
+  @@index([problemId])
 }
 
 model MockInterview {
-  id                   String   @id @default(uuid())
-  type                 String   // Technical, HR, Behavioral
-  status               String   // In Progress, Completed
-  currentQuestionIndex Int      @default(0)
-  createdAt            String
+  id                   String  @id @default(uuid())
+  type                 String // Technical | HR | Behavioral
+  status               String // In Progress | Completed
+  currentQuestionIndex Int     @default(0)
+  createdAt            String // ISO timestamp
   overallScore         Float?
   overallFeedback      String?
+  xpEarned             Int     @default(0)
 
-  // Stored as JSON string arrays
-  questions            String
-  answers              String
-  scores               String
-  feedback             String
+  // JSON-encoded arrays
+  questions String
+  answers   String
+  scores    String
+  feedback  String
 
-  userId               String
-  user                 User     @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model DiscussionThread {
-  id          String   @id @default(uuid())
-  title       String
-  content     String
-  username    String
-  category    String
-  likes       Int      @default(0)
-  createdAt   String
-  
-  // Stored as JSON string arrays
-  likedBy     String
+  id        String @id @default(uuid())
+  title     String
+  content   String
+  username  String
+  category  String
+  likes     Int    @default(0)
+  createdAt String // ISO timestamp
+  likedBy   String // JSON-encoded string[] of user ids
 
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  replies     Reply[]
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replies Reply[]
 }
 
 model Reply {
-  id         String   @id @default(uuid())
-  username   String
-  content    String
-  createdAt  String
+  id        String  @id @default(uuid())
+  username  String
+  content   String
+  createdAt String // ISO timestamp
+  userId    String?
 
-  threadId   String
-  thread     DiscussionThread @relation(fields: [threadId], references: [id])
-}
-
-model Notification {
-  id        String   @id @default(uuid())
-  title     String
-  message   String
-  type      String
-  read      Boolean  @default(false)
-  createdAt String
-
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-}
-
-model Streak {
-  id            String   @id @default(uuid())
-  currentStreak Int      @default(0)
-  maxStreak     Int      @default(0)
-  
-  // Stored as JSON string array
-  dates         String
-
-  userId        String
-  user          User     @relation(fields: [userId], references: [id])
-}
-
-model Quiz {
-  id       String         @id @default(uuid())
-  trackId  String
-  title    String
-  questions QuizQuestion[]
-}
-
-model QuizQuestion {
-  id            String @id @default(uuid())
-  question      String
-  correctOption Int
-  explanation   String
-  
-  // Stored as JSON string array
-  options       String
-
-  quizId        String
-  quiz          Quiz   @relation(fields: [quizId], references: [id])
-}
-
-model StudentAIProfile {
-  id               String   @id @default(uuid())
-  userId           String   @unique
-  user             User     @relation(fields: [userId], references: [id])
-  
-  // High level scores (0-100)
-  overallReadiness Float    @default(0)
-  codingScore      Float    @default(0)
-  dsaScore         Float    @default(0)
-  csFundamentals   Float    @default(0)
-  interviewScore   Float    @default(0)
-  resumeScore      Float    @default(0)
-
-  // Tracking metrics
-  problemsAttempted Int     @default(0)
-  problemsSolved    Int     @default(0)
-  hintsUsed         Int     @default(0)
-  averageTimeSecs   Float   @default(0)
-  
-  // JSON arrays/strings
-  strongTopics     String   @default("[]")
-  weakTopics       String   @default("[]")
-  targetCompanies  String   @default("[]")
-  targetRole       String   @default("")
-
-  lastUpdated      String   // Format: ISO DateTime
-}
-
-model LearningEvent {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  
-  eventType   String   // e.g. "problem_attempted", "problem_solved", "quiz_completed", "hint_requested"
-  entityId    String   // ID of problem/quiz/interview
-  topic       String?
-  difficulty  String?
-  result      String?  // e.g. "success", "failed"
-  score       Float?
-  timeTaken   Int?     // in seconds
-  
-  // JSON metadata
-  metadata    String   @default("{}")
-  
-  createdAt   String   // Format: ISO DateTime
-}
-
-model Recommendation {
-  id             String   @id @default(uuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id])
-  
-  type           String   // e.g. "problem", "lesson", "mock_interview"
-  entityId       String
-  reasoning      String
-  status         String   // "pending", "completed", "skipped", "failed"
-  
-  createdAt      String   // Format: ISO DateTime
-  completedAt    String?  // Format: ISO DateTime
-}
-
-model ReadinessSnapshot {
-  id              String   @id @default(uuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
-  
-  overallReadiness Float
-  codingScore      Float
-  dsaScore         Float
-  csFundamentals   Float
-  
-  recordedAt      String   // Format: ISO DateTime
-}
-
-model ModelVersion {
-  id          String   @id @default(uuid())
-  modelType   String   // "readiness", "recommender"
-  version     String
-  metrics     String   // JSON string of evaluation metrics (MAE, RMSE, etc.)
-  isActive    Boolean  @default(false)
-  deployedAt  String   // Format: ISO DateTime
-  trainedAt   String   // Format: ISO DateTime
+  threadId String
+  thread   DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 }
 
 model Contest {
-  id               String   @id @default(uuid())
-  title            String
-  description      String
-  startTime        String
-  durationMinutes  Int
-  problems         String   // Stored as JSON string array
-  registrantsCount Int      @default(0)
-  participants     String   // Stored as JSON string array of { userId, username, score, timeSpentSeconds }
+  id              String @id @default(uuid())
+  title           String
+  description     String
+  startTime       String // ISO timestamp
+  durationMinutes Int
+  problems        String // JSON-encoded string[] of problem ids
+
+  registrations ContestRegistration[]
 }
 
+model ContestRegistration {
+  id           String   @id @default(uuid())
+  registeredAt DateTime @default(now())
+
+  contestId String
+  contest   Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([contestId, userId])
+}
+
+model TopicCompletion {
+  id          String   @id @default(uuid())
+  trackId     String
+  topicId     String
+  quizScore   Int
+  xpEarned    Int
+  completedAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, trackId, topicId])
+}

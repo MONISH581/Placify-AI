@@ -1,58 +1,84 @@
 @echo off
-title Placify-AI Master Launcher
-echo ============================================================
-echo   🚀 PLACIFY-AI -- FULL-STACK RECRUITMENT PLATFORM
-echo ============================================================
-echo.
-
+setlocal EnableExtensions DisableDelayedExpansion
+title Placify-AI Launcher
 cd /d "%~dp0"
 
-REM 1. Check Python
-python --version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [ERROR] Python 3.10+ is required but not found in PATH.
-    echo Please install Python and ensure it is added to your PATH.
-    pause
-    exit /b 1
-)
-
-REM 2. Check Node.js
-node -v >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [ERROR] Node.js 18+ is required but not found in PATH.
-    echo Please install Node.js and ensure it is added to your PATH.
-    pause
-    exit /b 1
-)
-
-echo [OK] Python and Node.js runtimes detected.
+echo ============================================================
+echo   PLACIFY-AI - Placement Preparation Platform
+echo ============================================================
 echo.
 
-REM 3. Check ML model artifacts
-if not exist "ml_service\saved_models\placement_model.pkl" (
-    echo [INFO] Training ML models (first-time run)...
-    python ml_service\models\train_all.py
+rem --- 1. Node.js 20+ ------------------------------------------------------
+where node >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] Node.js 20+ is required but was not found in PATH.
+    echo         Install it from https://nodejs.org/ and open a new terminal.
+    goto :fail
+)
+node -e "process.exit(Number(process.versions.node.split('.')[0]) >= 20 ? 0 : 1)"
+if errorlevel 1 (
+    echo [ERROR] Node.js 20 or newer is required. Please upgrade from https://nodejs.org/
+    goto :fail
 )
 
-REM 4. Check SQLite Database
-if not exist "prisma\dev.db" (
-    echo [INFO] Initializing SQLite database...
-    call npx prisma db push
-    call npx tsx migrate.ts
+rem --- 2. Python 3.10-3.12 (used by the ML service) -------------------------
+set "PY_OK="
+call :check_python python
+if not defined PY_OK call :check_python py -3.12
+if not defined PY_OK call :check_python py -3.11
+if not defined PY_OK call :check_python py -3.10
+if not defined PY_OK (
+    echo [ERROR] Python 3.10, 3.11 or 3.12 is required for the ML service but was not found.
+    echo         Install it from https://www.python.org/downloads/ ^(tick "Add python.exe to PATH"^).
+    goto :fail
+)
+echo [OK] Node.js and Python runtimes detected.
+
+rem --- 3. npm dependencies ---------------------------------------------------
+if not exist "%~dp0node_modules\" (
+    echo [INFO] Installing npm dependencies ^(first run^) ...
+    call npm install
+    if errorlevel 1 (
+        echo [ERROR] npm install failed.
+        goto :fail
+    )
+)
+
+rem --- 4. .env, database schema and seed data --------------------------------
+set "NEED_SETUP="
+if not exist "%~dp0.env" set "NEED_SETUP=1"
+if not exist "%~dp0prisma\dev.db" set "NEED_SETUP=1"
+if defined NEED_SETUP (
+    echo [INFO] Running first-time setup ^(.env, database schema, seed data^) ...
+    call npm run setup
+    if errorlevel 1 (
+        echo [ERROR] npm run setup failed.
+        goto :fail
+    )
 )
 
 echo.
 echo ============================================================
-echo   Starting Services:
-echo   1. FastAPI ML Engine:  http://localhost:8000
-echo   2. Placify Web & API:   http://localhost:3000
+echo   Starting services:
+echo     1. ML service ^(FastAPI^):  http://127.0.0.1:8000  ^(separate window^)
+echo     2. Placify web ^& API:      http://127.0.0.1:3000
 echo ============================================================
 echo.
 
-REM Start FastAPI ML Service in a background command window
-start "Placify ML Engine (Port 8000)" cmd /k "cd /d %~dp0ml_service && python main.py"
+rem The ML window creates its own virtual environment, installs requirements and trains models on first run.
+start "Placify ML" cmd /k call "%~dp0ml_service\start.bat"
 
-REM Start Express Full-Stack Server in current window
 call npm run dev
+if errorlevel 1 goto :fail
+exit /b 0
 
-pause
+rem --- helpers ---------------------------------------------------------------
+:check_python
+%* -c "import sys; sys.exit(0 if (3, 10) <= sys.version_info[:2] <= (3, 12) else 1)" >nul 2>&1
+if not errorlevel 1 set "PY_OK=1"
+exit /b 0
+
+:fail
+echo.
+if not defined PLACIFY_NO_PAUSE pause
+exit /b 1

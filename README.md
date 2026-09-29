@@ -1,76 +1,144 @@
-# Placify-AI — SDE Placement & AI Readiness Platform
+# Placify-AI
 
-Placify-AI is a high-performance placement readiness platform integrating a **Node.js/Express TypeScript backend**, **Prisma ORM with SQLite**, and a **Python FastAPI ML Microservice** serving trained Machine Learning models and FAISS vector retrieval.
+Placify-AI is a placement-preparation platform: a coding arena with a real code runner, learning tracks,
+mock interviews, resume analysis, contests, a discussion forum and ML-based placement-readiness insights.
 
----
+- **Web app + API**: React (Vite) frontend served by a Node.js / Express / TypeScript server (`server.ts`, `server/`)
+- **Database**: SQLite through Prisma (`prisma/schema.prisma`, default file `prisma/dev.db`)
+- **ML service**: Python FastAPI microservice (`ml_service/`) for readiness scoring, problem recommendations,
+  interview-answer scoring and the RAG mentor. The web app keeps working (with clearly labelled fallbacks) when it is offline.
 
-## 🏗️ Core System Architecture
+## Architecture
 
-```
-Frontend (React + Vite)
-       │
-       ▼
-Node.js Express Backend (Port 3000)
-       ├── Prisma ORM ──► SQLite Database (prisma/dev.db)
-       └── ML Client   ──► Python FastAPI Service (Port 8000)
-                              ├── placement_model.pkl
-                              ├── difficulty_model.pkl
-                              ├── recommender_model.pkl
-                              └── FAISS Vector RAG Index (192 vectors)
-```
-
-- **Node.js API Server**: Port 3000 (`server.ts`)
-- **Python ML Microservice**: Port 8000 (`ml_service/main.py`)
-- **Database**: SQLite `prisma/dev.db` managed via Prisma ORM
-
----
-
-## 🚀 Quick Setup & Execution
-
-### 1. Environment Configuration
-Copy `.env.example` to `.env`:
-```bash
-PORT=3000
-ML_SERVICE_URL=http://localhost:8000
-JWT_SECRET=your_jwt_secret_key_here
-GEMINI_API_KEY=your_optional_gemini_key
+```text
+Browser (React SPA)
+   |  /api/*  (JSON, Bearer JWT)
+   v
+Node.js Express server  (127.0.0.1:3000)
+   |-- Prisma --------------> SQLite  prisma/dev.db
+   |-- code runner ---------> Judge0 (production)  or  local sandboxed child processes (development only)
+   |-- Gemini (optional) ---> code reviews, resume analysis, learning-topic content
+   '-- X-API-Key -----------> Python ML service (127.0.0.1:8000)
+                                 |-- placement readiness model
+                                 |-- problem recommender / difficulty model
+                                 |-- interview answer scorer
+                                 '-- RAG mentor (reads the problem bank from prisma/dev.db)
 ```
 
-### 2. Install Dependencies & Database Setup
-```bash
-npm install
-npx prisma db push
-npx prisma generate
-npx tsx migrate.ts
-```
+Server layout: `server/config.ts` (validated env), `server/auth.ts` (JWT + middleware), `server/passwords.ts`,
+`server/codeRunner.ts`, `server/ml.ts`, `server/ai.ts`, `server/routes/*.ts` (one router per feature),
+`server/data/*` (problem bank, learning tracks, interview questions).
 
-### 3. Start Microservices
+## Requirements
 
-#### Start Python ML Microservice (Port 8000):
-```bash
-python ml_service/main.py
-```
+- **Node.js 20+** (Node 22/24 recommended)
+- **Python 3.10 - 3.12** for the ML service (and for Python submissions on the local code runner)
 
-#### Start Node.js Backend (Port 3000):
-```bash
-npm run dev
-```
-
----
-
-## 🧪 Running Verification Tests
-
-Run the full integration test suite covering Authentication, Database Persistence, ML Readiness, Recommendations, Coding Submissions, Mock Interviews, and RAG Assistant:
+## Setup
 
 ```bash
-npx tsx scratch/test_all_phases.ts
+npm install          # also runs `prisma generate`
+npm run setup        # creates .env (random JWT_SECRET / INTERNAL_API_KEY), applies the schema, seeds the database
 ```
 
----
+`npm run setup` is idempotent: it keeps an existing `.env`, only filling in missing secrets.
 
-## 🔐 Key Security & Architectural Enhancements
+### Run (Windows, one click)
 
-1. **Authoritative Persistence**: All user profiles, problems, code submissions, mock interviews, and roadmaps are stored in `prisma/dev.db` using Prisma ORM.
-2. **Secure Auth & Password Hashing**: Passwords are hashed using PBKDF2-SHA512 with random salts and timing-safe comparison. Admin privileges are derived from trusted database role fields.
-3. **Consolidated Python ML Microservice**: ML endpoints (`/ml/placement-score`, `/ml/recommend-problems`, `/ml/interview-score`, `/rag/mentor-ask`) run on port 8000 without port collisions.
-4. **Code Judge & AI Integration**: Updated Gemini model identifier to `gemini-1.5-flash`, fixed variable shadowing in review feedback, and isolated untrusted execution boundaries.
+```bat
+start.bat
+```
+
+`start.bat` checks Node.js and Python, runs `npm install` / `npm run setup` when needed, opens the ML service in a
+separate window (`ml_service\start.bat` creates `ml_service\.venv`, installs requirements and trains missing models)
+and then starts the web server.
+
+### Run (any OS, manually)
+
+1. ML service (first run installs dependencies and trains models):
+   - Windows: `ml_service\start.bat`
+   - macOS / Linux:
+
+     ```bash
+     cd ml_service
+     python3 -m venv .venv && . .venv/bin/activate
+     pip install -r requirements.txt
+     python models/train_all.py --only-missing
+     python main.py
+     ```
+
+2. Web app + API: `npm run dev` and open <http://127.0.0.1:3000>
+
+### Production build
+
+```bash
+npm run build        # dist/client (static React app) + dist/server.cjs (bundled server)
+npm start            # runs dist/server.cjs; NODE_ENV defaults to production
+```
+
+In production demo accounts are not seeded, the local code runner is disabled unless explicitly selected, and
+error messages do not include internal details. Configure Judge0 to enable code execution.
+
+## Demo accounts (seeded when NODE_ENV is not production)
+
+| Role    | Email                | Username  | Password     |
+| ------- | -------------------- | --------- | ------------ |
+| Student | student@placify.com  | `student` | `student123` |
+| Admin   | admin@placify.com    | `admin`   | `admin123`   |
+
+## Environment variables (root `.env`, shared by Node and the ML service)
+
+| Variable | Default | Description |
+| -------- | ------- | ----------- |
+| `NODE_ENV` | `development` (`npm start`: `production`) | `development`, `production` or `test` |
+| `HOST` | `127.0.0.1` | Address the Node server binds to |
+| `PORT` | `3000` | Node server port |
+| `DATABASE_URL` | `file:./dev.db` | Prisma SQLite URL, relative to `prisma/` |
+| `JWT_SECRET` | **required** | JWT signing secret (>= 32 chars). Generated by `npm run setup`. No fallback. |
+| `INTERNAL_API_KEY` | **required** | Shared secret sent as `X-API-Key` to the ML service. Generated by `npm run setup`. |
+| `ML_SERVICE_URL` | `http://127.0.0.1:8000` | Where Node reaches the ML service |
+| `ML_HOST` / `ML_PORT` | `127.0.0.1` / `8000` | Bind address of the ML service |
+| `ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated origins allowed for cross-origin API calls |
+| `GEMINI_API_KEY` | empty (disabled) | Optional Google Gemini key |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model name |
+| `CODE_RUNNER` | auto | `judge0`, `local`, or empty = Judge0 if `JUDGE0_API_URL` is set, otherwise `local` outside production (disabled in production) |
+| `JUDGE0_API_URL` | empty | Judge0 base URL, e.g. `https://judge0-ce.p.rapidapi.com` |
+| `JUDGE0_API_KEY` / `JUDGE0_API_HOST` | empty | Sent as `X-RapidAPI-Key` / `X-RapidAPI-Host` when set |
+| `PYTHON_BIN` | auto | Python interpreter for the local runner (`python` / `py -3` on Windows, `python3` elsewhere) |
+| `RATE_LIMIT_AUTH_MAX` / `RATE_LIMIT_AI_MAX` | `20` / `30` | Requests per minute per IP for auth and AI / code-execution routes |
+
+## Code runner security
+
+User code is **never** executed inside the server process.
+
+- **Judge0 (use this in production)**: every test case is run by Judge0 (JavaScript, Python, Java, C++, C) with CPU,
+  wall-time and memory limits.
+- **Local runner (local development only)**: JavaScript runs in a separate `node --permission` process (no file
+  system, child processes, workers or native addons) and Python in `python -I` with an audit-hook guard, each in a
+  fresh temp directory with a stripped environment (no secrets), a 3-second limit per test and a 64 KB output cap.
+  This is defence in depth, **not a hardened sandbox** (for example, Node 24 cannot block outbound network access).
+  Java / C++ / C require Judge0.
+
+Solutions receive the raw test input as a string and return the output string, e.g.
+`function solve(input) { ... return "answer"; }` or `def solve(input_str): ... return "answer"`.
+Hidden test cases are never sent to the browser, and XP is awarded only for the first accepted submission of a problem.
+
+## Testing
+
+```bash
+npm test                     # API end-to-end tests: temp SQLite DB + server child process (ML offline fallbacks)
+npm run lint                 # TypeScript type check (tsc --noEmit)
+cd ml_service && .venv\Scripts\python -m pytest     # ML service tests (Windows; use .venv/bin/python elsewhere)
+```
+
+`npm test` also runs every reference solution in the problem bank against all of its test cases.
+
+## Useful scripts
+
+| Script | Purpose |
+| ------ | ------- |
+| `npm run setup` | Create `.env`, apply the Prisma schema, generate the client, seed data |
+| `npm run seed` | Re-seed the problem bank and demo data (idempotent) |
+| `npm run dev` | Development server with Vite middleware |
+| `npm run build` / `npm start` | Production build / run |
+| `npm run clean` | Remove `dist/` |

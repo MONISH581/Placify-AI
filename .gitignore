@@ -4,18 +4,29 @@ dist/
 coverage/
 .DS_Store
 *.log
-.env*
+
+# Environment (never commit secrets)
+.env
+.env.*
 !.env.example
 
+# Python
 __pycache__/
 *.pyc
 *.pkl
 *.bin
-*.pdf
-*.pptx
+ml_service/.venv/
 ml_service/saved_models/
+ml_service/data/generated/
 chroma_data/
+
+# Databases (dev + test)
 prisma/*.db
+prisma/*.db-journal
 *.db
+*.db-journal
 server-db.json
 
+# Documents
+*.pdf
+*.pptx
