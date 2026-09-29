@@ -1,137 +1,172 @@
 """
 train_all.py
-Master training script -- runs all ML model training in sequence.
-Run this ONCE after installing requirements to build all saved models.
+Training pipeline for every Placify ML artifact.
+
+    python models/train_all.py                 # (re)train everything
+    python models/train_all.py --only-missing  # train only missing/stale artifacts (used by start.bat)
+
+Steps (each independent; one failing does not stop the others):
+  placement    synthetic cohort -> placement readiness classifier
+  difficulty   curated examples -> difficulty classifier
+  recommender  problem bank (prisma/dev.db) -> content-based recommender
+  rag          learning notes + problem bank -> FAISS index (needs the sentence encoder)
+
+All outputs go to gitignored locations (saved_models/, data/generated/ or the
+PLACIFY_MODELS_DIR / PLACIFY_DATA_DIR overrides). Exit code 1 if any step failed.
 """
 
+import argparse
+import logging
 import os
 import sys
 import time
+from typing import Callable, Dict, Iterable, List, Optional
 
-# Force UTF-8 output on Windows to avoid cp1252 encode errors
-if sys.platform == "win32":
-    import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+if __package__ in (None, ""):
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Add parent directory to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core import config, embeddings
+from core.bundle import DIFFICULTY_FILE, PLACEMENT_FILE, RECOMMENDER_FILE, bundle_is_current
+from core.problem_bank import ProblemBankError, fingerprint, load_problems
+from rag import knowledge_builder, rag_pipeline
 
-BANNER = """
-============================================================
-   Placify AI -- ML Model Training Pipeline
-   Training: Placement Scorer, Difficulty Classifier,
-             Problem Recommender, Interview Scorer, RAG
-============================================================
-"""
+logger = logging.getLogger("placify.train")
+
+STEPS = ("placement", "difficulty", "recommender", "rag")
 
 
-def run_step(name: str, fn):
-    print(f"\n{'='*60}")
-    print(f"  STEP: {name}")
-    print(f"{'='*60}")
-    start = time.time()
-    try:
-        result = fn()
-        elapsed = time.time() - start
-        print(f"  ✅ {name} completed in {elapsed:.1f}s")
-        return True
-    except Exception as e:
-        print(f"  ❌ {name} FAILED: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+def _train_placement() -> Dict:
+    from data.generate_training_data import generate_placement_data
+    from models import placement_scorer
+
+    generate_placement_data()
+    return placement_scorer.train()
 
 
-def main():
-    print(BANNER)
+def _train_difficulty() -> Dict:
+    from data.generate_training_data import generate_difficulty_data
+    from models import difficulty_classifier
 
-    results = {}
+    generate_difficulty_data()
+    return difficulty_classifier.train()
 
-    # ── Step 1: Generate training data ────────────────────────────────────────
-    def step_generate_data():
-        from data.generate_training_data import load_db, generate_placement_data
-        from data.generate_training_data import generate_difficulty_data, generate_recommendation_data
-        from data.generate_training_data import save_problem_metadata
 
-        db = load_db()
-        generate_placement_data(db)
-        generate_difficulty_data(db)
-        generate_recommendation_data(db)
-        save_problem_metadata(db)
+def _train_recommender() -> Dict:
+    from models import problem_recommender
 
-    results["data_generation"] = run_step("Training Data Generation", step_generate_data)
+    return problem_recommender.train()
 
-    # ── Step 2: Train Placement Scorer ────────────────────────────────────────
-    def step_placement():
-        from models.placement_scorer import train
-        train()
 
-    results["placement_scorer"] = run_step("Placement Readiness Model (RandomForest)", step_placement)
-
-    # ── Step 3: Train Difficulty Classifier ───────────────────────────────────
-    def step_difficulty():
-        from models.difficulty_classifier import train
-        train()
-
-    results["difficulty_classifier"] = run_step("Difficulty Classifier (TF-IDF + LogReg)", step_difficulty)
-
-    # ── Step 4: Train Problem Recommender ─────────────────────────────────────
-    def step_recommender():
-        from models.problem_recommender import train
-        train()
-
-    results["problem_recommender"] = run_step("Problem Recommender (Content-Based)", step_recommender)
-
-    # ── Step 5: Build RAG Knowledge Base ──────────────────────────────────────
-    def step_rag_knowledge():
-        from rag.knowledge_builder import build_knowledge_chunks, save_chunks
-        chunks = build_knowledge_chunks()
-        save_chunks(chunks)
-        print(f"  Knowledge base: {len(chunks)} chunks saved.")
-
-    results["rag_knowledge"] = run_step("RAG Knowledge Base Builder", step_rag_knowledge)
-
-    # ── Step 6: Build FAISS Index ─────────────────────────────────────────────
-    def step_faiss():
-        from rag.rag_pipeline import build_index
-        success = build_index()
-        if not success:
-            raise RuntimeError("FAISS index build failed")
-
-    results["faiss_index"] = run_step("FAISS Vector Index (sentence-transformers)", step_faiss)
-
-    # ── Step 7: Test Interview Scorer (no training needed) ────────────────────
-    def step_interview():
-        from models.interview_scorer import score_answer
-        result = score_answer(
-            "What is dynamic programming?",
-            "Dynamic programming breaks problems into subproblems and stores solutions for reuse. It uses memoization or tabulation."
+def build_rag() -> Dict:
+    """Rebuild the knowledge chunks from the problem bank and (re)index them."""
+    problems = load_problems()  # fail fast (with a setup hint) before loading the encoder
+    if embeddings.get_encoder() is None:
+        raise rag_pipeline.RagUnavailable(
+            "sentence encoder unavailable (the first run needs internet access to download "
+            f"{config.embedding_model_name()})"
         )
-        print(f"  Test score: {result['score']}/100, method: {result['method']}")
+    chunks = knowledge_builder.build_knowledge_chunks(problems)
+    knowledge_builder.save_chunks(chunks)
+    return {"chunks_indexed": rag_pipeline.build_index(chunks, problem_fingerprint=fingerprint(problems))}
 
-    results["interview_scorer"] = run_step("Interview Scorer (sentence-transformers test)", step_interview)
 
-    # ── Summary ────────────────────────────────────────────────────────────────
-    print(f"\n{'='*60}")
-    print("  TRAINING SUMMARY")
-    print(f"{'='*60}")
-    all_passed = True
-    for step, ok in results.items():
-        status = "✅ PASS" if ok else "❌ FAIL"
-        print(f"  {status}  {step}")
-        if not ok:
-            all_passed = False
+_RUNNERS: Dict[str, Callable[[], Dict]] = {
+    "placement": _train_placement,
+    "difficulty": _train_difficulty,
+    "recommender": _train_recommender,
+    "rag": build_rag,
+}
 
-    print(f"\n{'='*60}")
-    if all_passed:
-        print("  🎉 ALL MODELS TRAINED SUCCESSFULLY!")
-        print("  Run 'python main.py' to start the ML API server on port 8000.")
-    else:
-        print("  ⚠️  Some models failed. Check errors above.")
-    print(f"{'='*60}\n")
 
-    return 0 if all_passed else 1
+def artifact_status() -> Dict[str, bool]:
+    """
+    True when an artifact exists, loads, matches the installed library versions and
+    (for the recommender / RAG index) was built from the current problem bank.
+    """
+    try:
+        bank = fingerprint(load_problems())
+    except ProblemBankError:
+        bank = None  # cannot compare; the training step itself reports the problem
+    bank_expect = {"problem_fingerprint": bank} if bank else None
+
+    models = config.models_dir()
+    return {
+        "placement": bundle_is_current(models / PLACEMENT_FILE),
+        "difficulty": bundle_is_current(models / DIFFICULTY_FILE),
+        "recommender": bundle_is_current(models / RECOMMENDER_FILE, expect=bank_expect),
+        "rag": rag_pipeline.index_is_current(problem_fingerprint=bank),
+    }
+
+
+def run_training(only_missing: bool = False, steps: Optional[Iterable[str]] = None) -> Dict[str, Dict]:
+    """
+    Run the requested steps and return {step: {"ok", "skipped", "seconds", "error"?, "details"?}}.
+    Error strings are safe to return to API callers (no exception text).
+    """
+    selected: List[str] = [s for s in (steps or STEPS) if s in _RUNNERS]
+    status = artifact_status() if only_missing else {}
+    results: Dict[str, Dict] = {}
+
+    for step in selected:
+        if only_missing and status.get(step):
+            logger.info("[%s] up to date, skipping", step)
+            results[step] = {"ok": True, "skipped": True, "seconds": 0.0}
+            continue
+        logger.info("[%s] training ...", step)
+        start = time.perf_counter()
+        try:
+            details = _RUNNERS[step]() or {}
+            results[step] = {"ok": True, "skipped": False,
+                             "seconds": round(time.perf_counter() - start, 1), "details": details}
+            logger.info("[%s] done in %.1fs", step, results[step]["seconds"])
+        except ProblemBankError as exc:
+            logger.error("[%s] FAILED: %s", step, exc)
+            results[step] = {"ok": False, "skipped": False,
+                             "seconds": round(time.perf_counter() - start, 1),
+                             "error": "problem bank unavailable - run `npm run setup` first"}
+        except rag_pipeline.RagUnavailable as exc:
+            logger.error("[%s] FAILED: %s", step, exc)
+            results[step] = {"ok": False, "skipped": False,
+                             "seconds": round(time.perf_counter() - start, 1),
+                             "error": "sentence encoder unavailable - see ML service logs"}
+        except Exception:
+            logger.exception("[%s] FAILED", step)
+            results[step] = {"ok": False, "skipped": False,
+                             "seconds": round(time.perf_counter() - start, 1),
+                             "error": "training failed - see ML service logs"}
+    return results
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    parser = argparse.ArgumentParser(description="Train Placify ML models")
+    parser.add_argument("--only-missing", action="store_true",
+                        help="only train artifacts that are missing or stale")
+    parser.add_argument("--steps", default=",".join(STEPS),
+                        help=f"comma-separated subset of: {', '.join(STEPS)}")
+    args = parser.parse_args(argv)
+
+    config.setup_logging()
+    steps = [s.strip() for s in args.steps.split(",") if s.strip()]
+    unknown = [s for s in steps if s not in STEPS]
+    if unknown:
+        parser.error(f"unknown steps: {unknown}")
+
+    logger.info("Placify ML training (models -> %s, data -> %s)",
+                config.models_dir(), config.generated_data_dir())
+    results = run_training(only_missing=args.only_missing, steps=steps)
+
+    logger.info("Training summary:")
+    for step, result in results.items():
+        state = "SKIP (up to date)" if result.get("skipped") else ("OK" if result["ok"] else "FAIL")
+        suffix = f" - {result['error']}" if result.get("error") else ""
+        logger.info("  %-12s %s%s", step, state, suffix)
+
+    failed = [s for s, r in results.items() if not r["ok"]]
+    if failed:
+        logger.error("Some steps failed: %s", ", ".join(failed))
+        return 1
+    logger.info("All requested models are ready.")
+    return 0
 
 
 if __name__ == "__main__":

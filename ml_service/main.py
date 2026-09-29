@@ -1,156 +1,208 @@
 """
-main.py - Placify ML FastAPI Microservice
-Serves all trained ML models + RAG pipeline via REST API.
-Runs on port 8000. Node.js server proxies to this service.
+main.py - Placify ML FastAPI microservice.
+
+Serves the trained models and the RAG mentor to the Node backend
+(server-to-server). Every route except GET / and GET /health requires the
+shared secret INTERNAL_API_KEY in the X-API-Key header; the service refuses to
+start without it.
+
+Run:  python main.py            (binds ML_HOST:ML_PORT, default 127.0.0.1:8000)
+Train missing models first with: python models/train_all.py --only-missing
 """
 
+import asyncio
+import hmac
+import logging
 import os
 import sys
-import json
-import asyncio
-from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
+from typing import Dict, List, Literal, Optional
 
-import joblib
-import numpy as np
-import uvicorn
-from fastapi import FastAPI, HTTPException, Request, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, field_validator
-from dotenv import load_dotenv
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# --- Path setup --------------------------------------------------------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, BASE_DIR)
-load_dotenv(os.path.join(os.path.dirname(BASE_DIR), ".env"))
+from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Request  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.responses import JSONResponse  # noqa: E402
+from pydantic import BaseModel, Field, field_validator, model_validator  # noqa: E402
 
-MODELS_DIR = os.path.join(BASE_DIR, "saved_models")
-os.makedirs(MODELS_DIR, exist_ok=True)
+from core import config, embeddings  # noqa: E402
+from core.bundle import DIFFICULTY_FILE, PLACEMENT_FILE, RECOMMENDER_FILE, load_bundle  # noqa: E402
+from core.problem_bank import ProblemBankError  # noqa: E402
+from models import difficulty_classifier, interview_scorer, placement_scorer, problem_recommender  # noqa: E402
+from models import train_all  # noqa: E402
+from rag import rag_pipeline  # noqa: E402
 
-# --- Model registry (loaded at startup) --------------------------------------
-_models = {}
+logger = logging.getLogger("placify.ml")
+
+SERVICE_NAME = "Placify ML API"
+SERVICE_VERSION = "2.0.0"
+TRAIN_HINT = "Train it with `python models/train_all.py` (or start.bat), or POST /admin/retrain."
 
 
-def load_model(name: str, filename: str) -> bool:
-    path = os.path.join(MODELS_DIR, filename)
-    if os.path.exists(path):
+# -----------------------------------------------------------------------------
+# Model registry
+# -----------------------------------------------------------------------------
+class ModelRegistry:
+    """Holds the loaded model bundles. Attribute swaps are atomic, so request
+    handlers never see a half-loaded model while /admin/retrain reloads."""
+
+    def __init__(self) -> None:
+        self.placement: Optional[dict] = None
+        self.difficulty: Optional[dict] = None
+        self.recommender: Optional[dict] = None
+
+    @staticmethod
+    def _load(filename: str, kind: str) -> Optional[dict]:
+        path = config.models_dir() / filename
+        if not path.is_file():
+            logger.warning("%s model not found at %s", kind, path)
+            return None
         try:
-            _models[name] = joblib.load(path)
-            print(f"[ML] [OK] Loaded model: {name} <- {filename}")
-            return True
-        except Exception as e:
-            print(f"[ML] [ERROR] Failed to load {name}: {e}")
-    else:
-        print(f"[ML] [WARN] Model not found: {filename} (run train_all.py first)")
-    return False
+            bundle = load_bundle(path, kind)
+        except Exception:
+            logger.exception("Failed to load %s model from %s", kind, path)
+            return None
+        logger.info("Loaded %s model: %s", kind, bundle["model_name"])
+        return bundle
+
+    def load_all(self) -> Dict[str, bool]:
+        """Blocking: load every artifact that exists and log which ones are missing."""
+        self.placement = self._load(PLACEMENT_FILE, "placement")
+        self.difficulty = self._load(DIFFICULTY_FILE, "difficulty")
+        self.recommender = self._load(RECOMMENDER_FILE, "recommender")
+        embeddings.get_encoder()
+        rag_pipeline.load_index()
+
+        readiness = self.readiness()
+        missing = [name for name, ready in readiness.items() if not ready]
+        if missing:
+            logger.warning("Models NOT available: %s. %s", ", ".join(missing), TRAIN_HINT)
+            if "placement" in missing:
+                logger.warning("Placement scores will use the documented heuristic-fallback.")
+        else:
+            logger.info("All models loaded.")
+        return readiness
+
+    def readiness(self) -> Dict[str, bool]:
+        return {
+            "placement": self.placement is not None,
+            "recommender": self.recommender is not None,
+            "difficulty": self.difficulty is not None,
+            "interview": embeddings.is_ready(),
+            "rag": rag_pipeline.is_ready(),
+        }
 
 
+registry = ModelRegistry()
+_admin_lock = asyncio.Lock()
+
+
+# -----------------------------------------------------------------------------
+# Auth
+# -----------------------------------------------------------------------------
+def require_api_key(x_api_key: Optional[str] = Header(default=None, alias="X-API-Key")) -> None:
+    expected = config.internal_api_key()
+    if not expected or not x_api_key or not hmac.compare_digest(
+        x_api_key.encode("utf-8"), expected.encode("utf-8")
+    ):
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+
+
+def ensure_api_key_configured() -> None:
+    if not config.internal_api_key():
+        message = (
+            "INTERNAL_API_KEY is not set (or still has the .env.example placeholder). "
+            f"Set it in {config.ENV_FILE} (run `npm run setup`) - refusing to start."
+        )
+        logger.critical(message)
+        raise RuntimeError(message)
+
+
+# -----------------------------------------------------------------------------
+# App
+# -----------------------------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load all models at startup."""
-    print("\n" + "=" * 60)
-    print("  Placify ML Service - Starting Up")
-    print("=" * 60)
-
-    load_model("placement", "placement_model.pkl")
-    load_model("difficulty", "difficulty_model.pkl")
-    load_model("recommender", "recommender_model.pkl")
-
-    # Pre-warm sentence-transformer model for interview scorer
-    try:
-        from models.interview_scorer import _get_model
-        _get_model()
-        print("[ML] [OK] Interview scorer pre-warmed")
-    except Exception as e:
-        print(f"[ML] [WARN] Interview scorer pre-warm: {e}")
-
-    # RAG index - lazy, try loading
-    try:
-        from rag.rag_pipeline import load_index
-        if load_index():
-            _models["rag_ready"] = True
-            print("[RAG] [OK] FAISS index loaded")
-        else:
-            _models["rag_ready"] = False
-            print("[RAG] [WARN] FAISS index load returned False")
-    except Exception as e:
-        print(f"[RAG] [WARN] RAG index not ready: {e}")
-        _models["rag_ready"] = False
-
-    print("=" * 60)
-    print("  All models checked. Server ready at http://localhost:8000")
-    print("=" * 60 + "\n")
-
-    yield  # App runs here
-
-    print("[ML] Shutting down ML service.")
+    ensure_api_key_configured()
+    logger.info("%s %s starting (models dir %s)", SERVICE_NAME, SERVICE_VERSION, config.models_dir())
+    await asyncio.to_thread(registry.load_all)
+    yield
+    logger.info("%s shutting down", SERVICE_NAME)
 
 
-# --- FastAPI App --------------------------------------------------------------
+_docs_enabled = config.env("PLACIFY_ENABLE_DOCS") == "1"
 app = FastAPI(
-    title="Placify ML API",
-    description="ML microservice: placement scorer, problem recommender, difficulty classifier, interview scorer, RAG mentor",
-    version="1.0.0",
-    lifespan=lifespan
+    title=SERVICE_NAME,
+    version=SERVICE_VERSION,
+    lifespan=lifespan,
+    docs_url="/docs" if _docs_enabled else None,
+    redoc_url=None,
+    openapi_url="/openapi.json" if _docs_enabled else None,
 )
 
-allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173")
-allowed_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
-
+# Node calls this service server-to-server; CORS is only a browser safety net.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=config.allowed_origins(),
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "X-API-Key"],
 )
 
 
-# --- Request / Response Models ------------------------------------------------
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    # The traceback is logged server-side by uvicorn; clients only get a generic message.
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
-# 1. Placement Readiness
+
+protected = APIRouter(dependencies=[Depends(require_api_key)])
+
+
+# -----------------------------------------------------------------------------
+# Schemas
+# -----------------------------------------------------------------------------
 class PlacementRequest(BaseModel):
-    xp: int = Field(default=0, ge=0, description="Total user experience points")
-    level: int = Field(default=1, ge=1, description="Current user level (minimum 1)")
-    streak: int = Field(default=0, ge=0, description="Daily problem streak count")
-    accuracy: float = Field(default=50.0, ge=0.0, le=100.0, description="Submission accuracy percentage (0-100)")
-    problems_solved: int = Field(default=0, ge=0, description="Total problems solved")
-    submission_count: int = Field(default=0, ge=0, description="Total submission attempts")
-    user_id: Optional[str] = Field(default=None, description="Optional user identifier")
+    xp: int = Field(default=0, ge=0, le=100_000_000)
+    level: int = Field(default=1, ge=1, le=10_000)
+    streak: int = Field(default=0, ge=0, le=100_000)
+    accuracy: float = Field(default=0.0, ge=0.0, le=100.0, description="Submission accuracy, 0-100")
+    problems_solved: int = Field(default=0, ge=0, le=1_000_000)
+    submission_count: int = Field(default=0, ge=0, le=10_000_000)
+    user_id: Optional[str] = Field(default=None, max_length=128)
 
 
 class PlacementResponse(BaseModel):
     placement_ready: bool
     score: int = Field(ge=0, le=100)
     probability: float = Field(ge=0.0, le=1.0)
-    insights: List[str] = Field(default_factory=list)
+    insights: List[str]
     model: str
+    is_demo: bool = True
 
 
-# 2. Problem Recommender
 class RecommendRequest(BaseModel):
-    user_id: Optional[str] = Field(default=None, description="User ID for personalized recommendations")
-    solved_ids: List[str] = Field(default_factory=list, description="List of problem IDs already solved")
-    top_n: int = Field(default=10, ge=1, le=50, description="Number of recommendations to return (1-50)")
-    difficulty_filter: Optional[str] = Field(default=None, description="Optional difficulty filter: 'Easy', 'Medium', 'Hard'")
+    solved_ids: List[str] = Field(default_factory=list, max_length=10_000)
+    top_n: int = Field(default=10, ge=1, le=50)
+    difficulty_filter: Optional[str] = None
+    user_id: Optional[str] = Field(default=None, max_length=128)
 
     @field_validator("difficulty_filter")
     @classmethod
-    def validate_difficulty(cls, v: Optional[str]) -> Optional[str]:
-        if v is None or not v.strip():
+    def _difficulty(cls, value: Optional[str]) -> Optional[str]:
+        if value is None or not value.strip():
             return None
-        v_title = v.strip().capitalize()
-        if v_title not in ("Easy", "Medium", "Hard"):
-            raise ValueError("difficulty_filter must be one of 'Easy', 'Medium', or 'Hard'")
-        return v_title
+        value = value.strip().capitalize()
+        if value not in ("Easy", "Medium", "Hard"):
+            raise ValueError("difficulty_filter must be 'Easy', 'Medium' or 'Hard'")
+        return value
 
 
 class ProblemRecommendation(BaseModel):
     problem_id: str
     title: str
     difficulty: str
-    tags: Optional[str] = ""
+    tags: List[str]
     score: float
 
 
@@ -159,45 +211,66 @@ class RecommendResponse(BaseModel):
     total: int
     model: str
     solved_count: int
-    user_id: Optional[str] = None
+    strategy: Literal["content", "cold-start"]
 
 
-# 3. Difficulty Classifier
 class DifficultyRequest(BaseModel):
-    text: Optional[str] = Field(default=None, description="Full problem text description")
-    title: Optional[str] = Field(default="", description="Problem title")
-    description: Optional[str] = Field(default="", description="Detailed problem statement")
-    tags: Optional[List[str]] = Field(default_factory=list, description="List of tags or categories")
-    constraints: Optional[str] = Field(default="", description="Problem constraints and limits")
+    title: str = Field(default="", max_length=500)
+    description: str = Field(default="", max_length=20_000)
+    tags: List[str] = Field(default_factory=list, max_length=50)
+    constraints: str = Field(default="", max_length=5_000)
+
+    @model_validator(mode="after")
+    def _has_text(self) -> "DifficultyRequest":
+        if not difficulty_classifier.build_text(self.title, self.description, self.tags, self.constraints):
+            raise ValueError("Provide at least a title or description")
+        return self
 
 
 class DifficultyResponse(BaseModel):
-    difficulty: str
-    confidence: float
+    difficulty: Literal["Easy", "Medium", "Hard"]
+    confidence: float = Field(ge=0.0, le=1.0)
     probabilities: Dict[str, float]
     model: str
 
 
-# 4. Interview Scorer
 class InterviewScoreRequest(BaseModel):
-    question: str = Field(..., description="The interview question asked")
-    answer: str = Field(..., description="The student's response")
-    interview_type: Optional[str] = Field(default="Technical", description="Type of interview (e.g. Technical, Behavioral)")
+    question: str = Field(min_length=1, max_length=2_000)
+    answer: str = Field(min_length=1, max_length=5_000)
+    interview_type: str = Field(default="Technical", max_length=32)
+
+    @field_validator("question", "answer")
+    @classmethod
+    def _not_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("must not be blank")
+        return value.strip()
 
 
 class InterviewScoreResponse(BaseModel):
     score: int = Field(ge=0, le=100)
     feedback: str
-    semantic_similarity: float
+    semantic_similarity: float = Field(ge=0.0, le=1.0)
     method: str
-    interview_type: Optional[str] = "Technical"
+    interview_type: str
 
 
-# 5. RAG Mentor
+class ChatTurn(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(max_length=5_000)
+
+
 class RAGRequest(BaseModel):
-    question: str = Field(..., description="Student's question (at least 3 characters)")
-    top_k: int = Field(default=5, ge=1, le=10, description="Number of knowledge chunks to retrieve")
-    chat_history: Optional[List[dict]] = Field(default=None, description="Optional conversational chat history")
+    question: str = Field(min_length=1, max_length=4_000)
+    top_k: int = Field(default=5, ge=1, le=10)
+    chat_history: Optional[List[ChatTurn]] = Field(default=None, max_length=20)
+
+    @field_validator("question")
+    @classmethod
+    def _question(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("question must not be blank")
+        return value.strip()
 
 
 class RAGSource(BaseModel):
@@ -208,474 +281,198 @@ class RAGSource(BaseModel):
 
 class RAGResponse(BaseModel):
     answer: str
-    sources: List[RAGSource] = Field(default_factory=list)
+    sources: List[RAGSource]
     method: str
-    chunks_retrieved: int = 0
+    chunks_retrieved: int
 
 
-# --- Health Check & Root ------------------------------------------------------
+class RetrieveRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=4_000)
+    top_k: int = Field(default=5, ge=1, le=20)
+
+
+# -----------------------------------------------------------------------------
+# Public routes
+# -----------------------------------------------------------------------------
+def _status(readiness: Dict[str, bool]) -> str:
+    return "ok" if all(readiness.values()) else "degraded"
+
+
 @app.get("/", tags=["Health"])
 def root():
-    models_status = {
-        "placement_scorer": "placement" in _models,
-        "difficulty_classifier": "difficulty" in _models,
-        "problem_recommender": "recommender" in _models,
-        "interview_scorer": True,  # Always available (sentence-transformers / keyword fallback)
-        "rag_pipeline": _models.get("rag_ready", False)
-    }
-    all_ready = all(models_status.values())
-    return {
-        "service": "Placify ML API",
-        "version": "1.0.0",
-        "status": "healthy" if all_ready else "degraded",
-        "models": models_status
-    }
+    return {"service": SERVICE_NAME, "version": SERVICE_VERSION, "status": _status(registry.readiness())}
 
 
 @app.get("/health", tags=["Health"])
 def health():
-    return {"status": "ok"}
+    readiness = registry.readiness()
+    return {"status": _status(readiness), "models": readiness}
 
 
-# --- Core Inference Handlers -------------------------------------------------
+# -----------------------------------------------------------------------------
+# Inference routes (X-API-Key required). Sync handlers run in FastAPI's threadpool.
+# -----------------------------------------------------------------------------
+@protected.post("/ml/placement-score", response_model=PlacementResponse, tags=["Placement"])
+def placement_score(req: PlacementRequest):
+    features = req.model_dump(exclude={"user_id"})
+    bundle = registry.placement
+    try:
+        if bundle is None:
+            result = placement_scorer.heuristic_predict(features)
+        else:
+            result = placement_scorer.predict(bundle, features)
+    except Exception:
+        logger.exception("Placement scoring failed")
+        raise HTTPException(status_code=500, detail="Placement scoring failed") from None
+    return PlacementResponse(**result, insights=placement_scorer.insights(features), is_demo=True)
 
-def _get_insights(features: dict, score: int) -> list:
-    """Generate ASCII-safe actionable feedback based on user profile."""
-    insights = []
-    if features.get("problems_solved", 0) < 30:
-        insights.append("[Practice] Solve at least 30 more DSA problems to strengthen your profile.")
-    if features.get("streak", 0) < 15:
-        insights.append("[Consistency] Maintain a daily streak of 15+ days to demonstrate consistency.")
-    if features.get("accuracy", 0) < 70:
-        insights.append("[Accuracy] Improve submission accuracy - focus on testing edge cases before submitting.")
-    if features.get("xp", 0) < 2000:
-        insights.append("[XP] Earn more XP by solving Medium and Hard problems.")
-    if not insights:
-        insights.append("[Profile] Excellent profile! You are well-prepared for placement interviews.")
-    return insights
 
-
-def _handle_placement_score(req: PlacementRequest) -> PlacementResponse:
-    from models.placement_scorer import predict
-
-    # Model inference
-    if "placement" in _models:
-        try:
-            req_dict = req.model_dump()
-            result = predict(_models["placement"], req_dict)
-            insights = _get_insights(req_dict, result["score"])
-            return PlacementResponse(
-                placement_ready=result["placement_ready"],
-                score=result["score"],
-                probability=result["probability"],
-                insights=insights,
-                model=result.get("model", "RandomForest + GradientBoosting Ensemble")
-            )
-        except Exception as e:
-            print(f"[ML] [ERROR] Placement inference failed: {e}")
-            raise HTTPException(status_code=500, detail=f"Placement inference failed: {str(e)}")
-
-    # Heuristic fallback if model not loaded
-    score = min(100, int(
-        (req.xp / 100) * 0.3 +
-        (req.problems_solved * 2) +
-        (req.streak * 0.5) +
-        req.accuracy * 0.3
-    ))
-    return PlacementResponse(
-        placement_ready=score >= 55,
-        score=score,
-        probability=round(score / 100.0, 4),
-        insights=_get_insights(req.model_dump(), score),
-        model="heuristic-fallback"
+@protected.post("/ml/recommend-problems", response_model=RecommendResponse, tags=["Recommendations"])
+def recommend_problems(req: RecommendRequest):
+    bundle = registry.recommender
+    if bundle is None:
+        raise HTTPException(status_code=503, detail=f"Problem recommender is not trained. {TRAIN_HINT}")
+    try:
+        result = problem_recommender.recommend(bundle, req.solved_ids, req.top_n, req.difficulty_filter)
+    except Exception:
+        logger.exception("Recommendation failed")
+        raise HTTPException(status_code=500, detail="Recommendation failed") from None
+    recs = result["recommendations"]
+    return RecommendResponse(
+        recommendations=recs,
+        total=len(recs),
+        model=result["model"],
+        solved_count=len({s.strip() for s in req.solved_ids if s and s.strip()}),
+        strategy=result["strategy"],
     )
 
 
-def _handle_difficulty_predict(req: DifficultyRequest) -> DifficultyResponse:
-    from models.difficulty_classifier import predict
-
-    # Extract text from either explicit text or combination of title, tags, description, constraints
-    if req.text and req.text.strip():
-        text = req.text.strip()
-    else:
-        tags_str = " ".join(req.tags) if req.tags else ""
-        text = f"{req.title or ''} {tags_str} {req.description or ''} {req.constraints or ''}".strip()
-
-    if not text:
-        raise HTTPException(status_code=400, detail="Problem description/text cannot be empty.")
-
-    if "difficulty" in _models:
-        try:
-            result = predict(_models["difficulty"], text)
-            return DifficultyResponse(
-                difficulty=result["difficulty"],
-                confidence=result["confidence"],
-                probabilities=result["probabilities"],
-                model=result.get("model", "TF-IDF + Classifier")
-            )
-        except Exception as e:
-            print(f"[ML] [ERROR] Difficulty prediction failed: {e}")
-            raise HTTPException(status_code=500, detail=f"Difficulty prediction failed: {str(e)}")
-
-    # Fallback if model not loaded
-    return DifficultyResponse(
-        difficulty="Medium",
-        confidence=0.5,
-        probabilities={"Easy": 0.33, "Medium": 0.34, "Hard": 0.33},
-        model="unavailable-fallback"
-    )
+@protected.post("/ml/difficulty-predict", response_model=DifficultyResponse, tags=["Difficulty"])
+def difficulty_predict(req: DifficultyRequest):
+    bundle = registry.difficulty
+    if bundle is None:
+        raise HTTPException(status_code=503, detail=f"Difficulty classifier is not trained. {TRAIN_HINT}")
+    text = difficulty_classifier.build_text(req.title, req.description, req.tags, req.constraints)
+    try:
+        return difficulty_classifier.predict(bundle, text)
+    except Exception:
+        logger.exception("Difficulty prediction failed")
+        raise HTTPException(status_code=500, detail="Difficulty prediction failed") from None
 
 
-def _handle_problem_recommend(req: RecommendRequest) -> RecommendResponse:
-    from models.problem_recommender import recommend
-
-    if "recommender" not in _models:
+@protected.post("/ml/interview-score", response_model=InterviewScoreResponse, tags=["Interview"])
+def interview_score(req: InterviewScoreRequest):
+    interview_type = interview_scorer.normalize_interview_type(req.interview_type)
+    try:
+        result = interview_scorer.score_answer(req.question, req.answer, interview_type)
+    except interview_scorer.ScorerUnavailable:
         raise HTTPException(
             status_code=503,
-            detail="Recommender model not loaded. Run train_all.py first."
-        )
+            detail="Interview scorer unavailable: the sentence encoder could not be loaded.",
+        ) from None
+    except Exception:
+        logger.exception("Interview scoring failed")
+        raise HTTPException(status_code=500, detail="Interview scoring failed") from None
+    return InterviewScoreResponse(**result, interview_type=interview_type)
 
+
+_RAG_NOT_READY = "AI mentor knowledge index is not ready. " + TRAIN_HINT
+
+
+@protected.post("/rag/mentor-ask", response_model=RAGResponse, tags=["RAG"])
+async def mentor_ask(req: RAGRequest):
+    if not rag_pipeline.is_ready():
+        raise HTTPException(status_code=503, detail=_RAG_NOT_READY)
+    history = [turn.model_dump() for turn in req.chat_history or []]
     try:
-        recs = recommend(
-            _models["recommender"],
-            solved_ids=req.solved_ids,
-            top_n=req.top_n,
-            difficulty_filter=req.difficulty_filter
-        )
-
-        formatted_recs = [
-            ProblemRecommendation(
-                problem_id=r["problem_id"],
-                title=r["title"],
-                difficulty=r["difficulty"],
-                tags=r.get("tags", ""),
-                score=r["score"]
-            )
-            for r in recs
-        ]
-
-        return RecommendResponse(
-            recommendations=formatted_recs,
-            total=len(formatted_recs),
-            model="TF-IDF Content-Based Recommender",
-            solved_count=len(req.solved_ids),
-            user_id=req.user_id
-        )
-    except Exception as e:
-        print(f"[ML] [ERROR] Recommendation failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Recommendation failed: {str(e)}")
+        result = await rag_pipeline.answer_with_rag(req.question, top_k=req.top_k, chat_history=history)
+    except rag_pipeline.RagUnavailable:
+        raise HTTPException(status_code=503, detail=_RAG_NOT_READY) from None
+    except Exception:
+        logger.exception("RAG mentor query failed")
+        raise HTTPException(status_code=500, detail="Mentor query failed") from None
+    return result
 
 
-def _handle_interview_score(req: InterviewScoreRequest) -> InterviewScoreResponse:
-    from models.interview_scorer import score_answer
-
-    if not req.question or not req.question.strip():
-        raise HTTPException(status_code=400, detail="Question cannot be empty.")
-    if not req.answer or not req.answer.strip():
-        raise HTTPException(status_code=400, detail="Answer cannot be empty.")
-
+@protected.post("/rag/retrieve", tags=["RAG"])
+async def rag_retrieve(req: RetrieveRequest):
+    """Raw retrieval results (debugging / admin tooling)."""
+    if not rag_pipeline.is_ready():
+        raise HTTPException(status_code=503, detail=_RAG_NOT_READY)
     try:
-        result = score_answer(req.question.strip(), req.answer.strip())
-        return InterviewScoreResponse(
-            score=result["score"],
-            feedback=result["feedback"],
-            semantic_similarity=result["semantic_similarity"],
-            method=result["method"],
-            interview_type=req.interview_type or "Technical"
-        )
-    except Exception as e:
-        print(f"[ML] [ERROR] Interview scoring failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Interview scoring failed: {str(e)}")
-
-
-async def _handle_rag_query(req: RAGRequest) -> RAGResponse:
-    if not req.question or len(req.question.strip()) < 3:
-        raise HTTPException(status_code=400, detail="Question must be at least 3 characters.")
-
-    if not _models.get("rag_ready", False):
-        # Attempt lazy index build/load
-        try:
-            from rag.rag_pipeline import build_index
-            success = build_index()
-            _models["rag_ready"] = success
-        except Exception as e:
-            print(f"[RAG] [WARN] Lazy index initialization failed: {e}")
-
-    try:
-        from rag.rag_pipeline import answer_with_rag
-        gemini_key = os.getenv("GEMINI_API_KEY")
-        result = await answer_with_rag(req.question.strip(), gemini_api_key=gemini_key, top_k=req.top_k)
-
-        raw_sources = result.get("sources", [])
-        sources = [
-            RAGSource(
-                source=s.get("source", "Knowledge Base"),
-                topic=s.get("topic", "General"),
-                relevance=s.get("relevance", 0.0)
-            )
-            for s in raw_sources
-        ]
-
-        return RAGResponse(
-            answer=result.get("answer", ""),
-            sources=sources,
-            method=result.get("method", "RAG"),
-            chunks_retrieved=result.get("chunks_retrieved", len(sources))
-        )
-    except Exception as e:
-        print(f"[RAG] [ERROR] Query failed: {e}")
-        raise HTTPException(status_code=500, detail=f"RAG query execution failed: {str(e)}")
-
-
-# ==============================================================================
-# 1. Placement Readiness Scorer Endpoints
-# ==============================================================================
-@app.post("/predict/placement", response_model=PlacementResponse, tags=["Placement"])
-def predict_placement(req: PlacementRequest):
-    """
-    Canonical sprint endpoint for predicting placement readiness.
-    Accepts: xp, level, streak, accuracy, problems_solved, submission_count, user_id.
-    Returns: placement_ready, score (0-100), probability, insights, model name.
-    """
-    return _handle_placement_score(req)
-
-
-@app.post("/ml/placement-score", response_model=PlacementResponse, tags=["Placement"])
-def placement_score_legacy(req: PlacementRequest):
-    """Backward-compatible route for placement readiness."""
-    return _handle_placement_score(req)
-
-
-# ==============================================================================
-# 2. Difficulty Classifier Endpoints
-# ==============================================================================
-@app.post("/predict/difficulty", response_model=DifficultyResponse, tags=["Difficulty"])
-def predict_difficulty(req: DifficultyRequest):
-    """
-    Canonical sprint endpoint for classifying DSA problem difficulty.
-    Accepts: text (or title, tags, description, constraints).
-    Returns: difficulty (Easy/Medium/Hard), confidence, probabilities, model name.
-    """
-    return _handle_difficulty_predict(req)
-
-
-@app.post("/ml/difficulty-predict", response_model=DifficultyResponse, tags=["Difficulty"])
-def difficulty_predict_legacy(req: DifficultyRequest):
-    """Backward-compatible route for difficulty classification."""
-    return _handle_difficulty_predict(req)
-
-
-# ==============================================================================
-# 3. Problem Recommender Endpoints
-# ==============================================================================
-@app.post("/recommend/problems", response_model=RecommendResponse, tags=["Recommendations"])
-def recommend_problems(req: RecommendRequest):
-    """
-    Canonical sprint endpoint for recommending next problems.
-    Accepts: solved_ids, top_n (1-50), difficulty_filter ('Easy', 'Medium', 'Hard'), user_id.
-    Returns: ranked recommended problems with similarity scores.
-    """
-    return _handle_problem_recommend(req)
-
-
-@app.post("/ml/recommend-problems", response_model=RecommendResponse, tags=["Recommendations"])
-def recommend_problems_legacy(req: RecommendRequest):
-    """Backward-compatible route for problem recommendations."""
-    return _handle_problem_recommend(req)
-
-
-# ==============================================================================
-# 4. Interview Answer Scorer Endpoints
-# ==============================================================================
-@app.post("/evaluate/interview", response_model=InterviewScoreResponse, tags=["Interview"])
-def evaluate_interview(req: InterviewScoreRequest):
-    """
-    Canonical sprint endpoint for scoring mock interview answers.
-    Accepts: question, answer, interview_type.
-    Returns: score (0-100), feedback, semantic_similarity, method.
-    """
-    return _handle_interview_score(req)
-
-
-@app.post("/ml/interview-score", response_model=InterviewScoreResponse, tags=["Interview"])
-def interview_score_legacy(req: InterviewScoreRequest):
-    """Backward-compatible route for interview answer scoring."""
-    return _handle_interview_score(req)
-
-
-# ==============================================================================
-# 5. RAG Mentor Endpoints
-# ==============================================================================
-@app.post("/rag/query", response_model=RAGResponse, tags=["RAG"])
-async def rag_query(req: RAGRequest):
-    """
-    Canonical sprint endpoint for RAG AI Mentor queries.
-    Retrieves context from the FAISS vector index and synthesizes an answer.
-    """
-    return await _handle_rag_query(req)
-
-
-@app.post("/rag/mentor-ask", response_model=RAGResponse, tags=["RAG"])
-async def rag_mentor_legacy(req: RAGRequest):
-    """Backward-compatible route for RAG mentor queries."""
-    return await _handle_rag_query(req)
-
-
-@app.post("/rag/retrieve", tags=["RAG"])
-def rag_retrieve(req: RAGRequest):
-    """Retrieve raw chunks for a query (for debugging/admin)."""
-    from rag.rag_pipeline import retrieve
-    chunks = retrieve(req.question, top_k=req.top_k)
+        chunks = await asyncio.to_thread(rag_pipeline.retrieve, req.question.strip(), req.top_k)
+    except rag_pipeline.RagUnavailable:
+        raise HTTPException(status_code=503, detail=_RAG_NOT_READY) from None
     return {"chunks": chunks, "total": len(chunks)}
 
 
-# ==============================================================================
-# 6. Admin Endpoints
-# ==============================================================================
-from fastapi import Header
+# -----------------------------------------------------------------------------
+# Admin routes (X-API-Key required)
+# -----------------------------------------------------------------------------
+def _busy() -> HTTPException:
+    return HTTPException(status_code=409, detail="A retrain or RAG rebuild is already running")
 
-@app.post("/admin/retrain", tags=["Admin"])
-async def retrain(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
-    """Trigger full model retraining (admin endpoint). Required internal API key."""
-    expected_key = os.getenv("INTERNAL_API_KEY")
-    if expected_key and x_api_key != expected_key:
-        raise HTTPException(status_code=401, detail="Unauthorized: Invalid internal API key")
 
-    def _retrain():
-        import subprocess
-        result = subprocess.run(
-            [sys.executable, os.path.join(BASE_DIR, "models", "train_all.py")],
-            capture_output=True, text=True, cwd=BASE_DIR
-        )
-        return result.returncode == 0, result.stdout, result.stderr
-
-    success, out, err = await asyncio.to_thread(_retrain)
+@protected.post("/admin/retrain", tags=["Admin"])
+async def retrain():
+    """Retrain every model in a worker thread, then reload all models + the RAG index in-process."""
+    if _admin_lock.locked():
+        raise _busy()
+    async with _admin_lock:
+        embeddings.reset()  # allow a previously failed encoder load to be retried
+        details = await asyncio.to_thread(train_all.run_training, False)
+        readiness = await asyncio.to_thread(registry.load_all)
+    success = all(step["ok"] for step in details.values())
     return {
         "success": success,
-        "message": "Retraining completed." if success else "Retraining failed.",
-        "stdout": out[-2000:] if out else "",
-        "stderr": err[-1000:] if err else ""
+        "message": "Retraining completed; models reloaded." if success
+        else "Retraining finished with failures; successfully trained models were reloaded.",
+        "details": details,
+        "models": readiness,
     }
 
 
-@app.post("/admin/rebuild-rag", tags=["Admin"])
+@protected.post("/admin/rebuild-rag", tags=["Admin"])
 async def rebuild_rag():
-    """Rebuild the FAISS RAG index."""
-    from rag.knowledge_builder import build_knowledge_chunks, save_chunks
-    from rag.rag_pipeline import build_index
-
-    chunks = build_knowledge_chunks()
-    save_chunks(chunks)
-    success = build_index(chunks)
-    if success:
-        _models["rag_ready"] = True
-    return {"success": success, "chunks_indexed": len(chunks)}
-
-
-# ==============================================================================
-# 7. Legacy /api/ai/* Compatibility Layer
-# ==============================================================================
-@app.post("/api/ai/readiness", tags=["Legacy AI"])
-def legacy_ai_readiness(data: dict):
-    """Compatibility route for legacy Node server calls to /api/ai/readiness."""
-    req = PlacementRequest(
-        xp=int(data.get("xp", 0) or 0),
-        level=int(data.get("level", 1) or 1),
-        streak=int(data.get("streak", 0) or 0),
-        accuracy=float(data.get("accuracy", 50.0) or 50.0),
-        problems_solved=int(data.get("problems_solved", data.get("problemsSolved", 0)) or 0),
-        submission_count=int(data.get("submission_count", data.get("submissionCount", 0)) or 0),
-        user_id=data.get("user_id", data.get("userId"))
-    )
-    res = _handle_placement_score(req)
-    # Return structure expected by legacy caller + canonical fields
-    return {
-        "overall_readiness": float(res.score),
-        "coding_readiness": float(res.score),
-        "dsa_score": float(res.score),
-        "placement_ready": res.placement_ready,
-        "score": res.score,
-        "probability": res.probability,
-        "insights": res.insights,
-        "model": res.model
-    }
+    """Rebuild the knowledge chunks from the problem bank and re-index them."""
+    if _admin_lock.locked():
+        raise _busy()
+    async with _admin_lock:
+        embeddings.reset()
+        try:
+            result = await asyncio.to_thread(train_all.build_rag)
+        except ProblemBankError as exc:
+            logger.error("RAG rebuild failed: %s", exc)
+            raise HTTPException(status_code=503,
+                                detail="Problem bank unavailable - run `npm run setup` first.") from None
+        except rag_pipeline.RagUnavailable:
+            raise HTTPException(status_code=503,
+                                detail="Sentence encoder unavailable - see ML service logs.") from None
+        except Exception:
+            logger.exception("RAG rebuild failed")
+            raise HTTPException(status_code=500, detail="RAG rebuild failed") from None
+    return {"success": True, "chunks_indexed": result["chunks_indexed"]}
 
 
-@app.post("/api/ai/recommend", tags=["Legacy AI"])
-def legacy_ai_recommend(data: dict):
-    """Compatibility route for legacy Node server calls to /api/ai/recommend."""
-    req = RecommendRequest(
-        user_id=data.get("user_id"),
-        solved_ids=data.get("solved_ids", []),
-        top_n=int(data.get("top_n", 5)),
-        difficulty_filter=data.get("difficulty_filter")
-    )
-    res = _handle_problem_recommend(req)
-    recommended_topic = res.recommendations[0].title if res.recommendations else "Arrays & Hashing"
-    return {
-        "recommendations": [r.model_dump() for r in res.recommendations],
-        "recommended_topic": recommended_topic,
-        "total": res.total,
-        "model": res.model
-    }
+app.include_router(protected)
 
 
-@app.post("/api/ai/mentor", tags=["Legacy AI"])
-async def legacy_ai_mentor(data: dict):
-    """Compatibility route for legacy Node server calls to /api/ai/mentor."""
-    question = data.get("prompt") or data.get("question") or "How can I improve my placement readiness?"
-    req = RAGRequest(question=question, top_k=int(data.get("top_k", 5)))
-    res = await _handle_rag_query(req)
-    return {
-        "response": res.answer,
-        "answer": res.answer,
-        "sources": [s.model_dump() for s in res.sources],
-        "method": res.method
-    }
+def main() -> None:
+    import uvicorn
+
+    config.setup_logging()
+    try:
+        ensure_api_key_configured()  # logs the reason itself
+    except RuntimeError:
+        sys.exit(1)
+    try:
+        host, port = config.ml_host(), config.ml_port()
+    except ValueError as exc:
+        logger.critical("%s", exc)
+        sys.exit(1)
+    logger.info("Listening on http://%s:%d", host, port)
+    uvicorn.run(app, host=host, port=port, reload=False, log_level="info")
 
 
-@app.post("/api/ai/interview", tags=["Legacy AI"])
-def legacy_ai_interview(data: dict):
-    """Compatibility route for legacy Node server calls to /api/ai/interview."""
-    action = data.get("action", "evaluate_answer")
-    if action == "evaluate_answer":
-        req = InterviewScoreRequest(
-            question=data.get("question", "Explain technical concept"),
-            answer=data.get("answer", ""),
-            interview_type=data.get("interview_type", "Technical")
-        )
-        res = _handle_interview_score(req)
-        return res.model_dump()
-    return {
-        "question": "Explain the difference between an Array and a Linked List, and their time complexities.",
-        "topic": data.get("topic", "Data Structures"),
-        "difficulty": data.get("difficulty", "Medium")
-    }
-
-
-@app.post("/api/ai/roadmap", tags=["Legacy AI"])
-def legacy_ai_roadmap(data: dict):
-    """Compatibility route for legacy Node server calls to /api/ai/roadmap."""
-    role = data.get("target_role", "Software Development Engineer (SDE)")
-    return {
-        "roadmap": [
-            {"step": 1, "topic": "DSA Fundamentals (Arrays, Strings, Hash Maps)", "duration": "Weeks 1-2"},
-            {"step": 2, "topic": "Linear Structures (Linked Lists, Stacks, Queues)", "duration": "Weeks 3-4"},
-            {"step": 3, "topic": "Trees, Graphs & BFS/DFS", "duration": "Weeks 5-7"},
-            {"step": 4, "topic": "Dynamic Programming & Greedy Algorithms", "duration": "Weeks 8-10"},
-            {"step": 5, "topic": "System Design, CS Fundamentals & Mock Interviews", "duration": "Weeks 11-12"}
-        ],
-        "target_role": role,
-        "status": "ready"
-    }
-
-
-# --- Run ----------------------------------------------------------------------
 if __name__ == "__main__":
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=False,
-        log_level="info"
-    )
+    main()

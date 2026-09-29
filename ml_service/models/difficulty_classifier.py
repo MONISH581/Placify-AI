@@ -1,172 +1,155 @@
 """
 difficulty_classifier.py
-Trains a TF-IDF + classifier model to classify problem difficulty (Easy/Medium/Hard)
-from the problem's title, tags, description, and constraints.
+TF-IDF text classifier for problem difficulty (Easy / Medium / Hard) from the
+problem's title, tags, description and constraints.
 
-Key design notes:
-  - Training set is synthetic only (~300 samples, ~100 per class).
-  - max_features=1500 prevents overfitting (8000 features on 240 training samples
-    causes the model to memorise tokens rather than generalise).
-  - Three pipelines are compared (LogReg, SVC, NaiveBayes) and the best by 5-fold CV
-    is saved, making model selection robust on this small dataset.
+- Trained on the curated, hand-labelled examples in data/generate_training_data.py.
+- Candidates: LogisticRegression, LinearSVC wrapped in CalibratedClassifierCV (so it
+  yields real probabilities), MultinomialNB. The winner is chosen by stratified
+  k-fold CV on the TRAINING split only, refit on that split, and evaluated once on
+  the held-out test split.
+- predict() always returns probabilities in [0, 1] that sum to 1.
 """
 
+import logging
 import os
-import joblib
+import sys
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+if __package__ in (None, ""):
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import numpy as np
 import pandas as pd
+from sklearn.base import clone
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import LinearSVC
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
+from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
 from sklearn.pipeline import Pipeline
+from sklearn.svm import LinearSVC
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-MODELS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "saved_models")
-os.makedirs(MODELS_DIR, exist_ok=True)
+from core import config
+from core.bundle import DIFFICULTY_FILE, save_bundle
+from data.generate_training_data import DIFFICULTY_CSV
 
-LABEL_MAP = {"Easy": 0, "Medium": 1, "Hard": 2}
-REVERSE_MAP = {0: "Easy", 1: "Medium", 2: "Hard"}
+logger = logging.getLogger("placify.difficulty")
+
+LABELS = ["Easy", "Medium", "Hard"]
 
 
-def train():
-    csv_path = os.path.join(DATA_DIR, "difficulty_training.csv")
-    if not os.path.exists(csv_path):
-        raise FileNotFoundError(f"Training data not found: {csv_path}\nRun generate_training_data.py first.")
-
-    df = pd.read_csv(csv_path)
-    df = df.dropna(subset=["text", "difficulty"])
-    df = df[df["difficulty"].isin(["Easy", "Medium", "Hard"])]
-    print(f"[Difficulty] Loaded {len(df)} samples")
-    print(f"[Difficulty] Distribution:\n{df['difficulty'].value_counts()}")
-
-    X = df["text"]
-    y = df["difficulty"].map(LABEL_MAP)
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+def _tfidf(ngram_max: int = 3, sublinear: bool = True) -> TfidfVectorizer:
+    # max_features=1500 keeps the vocabulary small relative to ~300 training examples.
+    return TfidfVectorizer(
+        max_features=1500,
+        ngram_range=(1, ngram_max),
+        sublinear_tf=sublinear,
+        min_df=1,
+        token_pattern=r"(?u)\b\w+\b",
     )
 
-    # ── Pipeline 1: TF-IDF + Logistic Regression ────────────────────────────
-    # max_features=1500 prevents overfitting on ~300-sample dataset.
-    # With 8000 features and 240 training samples the model memorises training
-    # tokens and generalises poorly. 1500 retains the most informative terms.
-    lr_pipeline = Pipeline([
-        ("tfidf", TfidfVectorizer(
-            max_features=1500,
-            ngram_range=(1, 3),
-            sublinear_tf=True,
-            min_df=1,
-            analyzer="word",
-            token_pattern=r"(?u)\b\w+\b"
-        )),
-        ("clf", LogisticRegression(
-            max_iter=2000,
-            C=1.0,
-            class_weight="balanced",
-            solver="lbfgs",
-            random_state=42
-        ))
-    ])
 
-    lr_pipeline.fit(X_train, y_train)
-    y_pred_lr = lr_pipeline.predict(X_test)
-    acc_lr = accuracy_score(y_test, y_pred_lr)
-    cv_lr = cross_val_score(lr_pipeline, X, y, cv=5, scoring="accuracy")
-    print(f"[Difficulty] LogisticRegression Test Accuracy: {acc_lr:.4f}")
-    print(f"[Difficulty] LogisticRegression 5-Fold CV: {cv_lr.mean():.4f} +/- {cv_lr.std():.4f}")
-    print(classification_report(y_test, y_pred_lr, target_names=["Easy", "Medium", "Hard"]))
-
-    # ── Pipeline 2: TF-IDF + LinearSVC ──────────────────────────────────────
-    svc_pipeline = Pipeline([
-        ("tfidf", TfidfVectorizer(
-            max_features=1500,
-            ngram_range=(1, 3),
-            sublinear_tf=True,
-            min_df=1,
-            token_pattern=r"(?u)\b\w+\b"
-        )),
-        ("clf", LinearSVC(C=0.5, class_weight="balanced", max_iter=3000, random_state=42))
-    ])
-    svc_pipeline.fit(X_train, y_train)
-    acc_svc = accuracy_score(y_test, svc_pipeline.predict(X_test))
-    cv_svc = cross_val_score(svc_pipeline, X, y, cv=5, scoring="accuracy")
-    print(f"[Difficulty] LinearSVC Test Accuracy: {acc_svc:.4f}")
-    print(f"[Difficulty] LinearSVC 5-Fold CV: {cv_svc.mean():.4f} +/- {cv_svc.std():.4f}")
-
-    # ── Pipeline 3: TF-IDF + Multinomial Naive Bayes ────────────────────────
-    # MultinomialNB is a strong baseline for small text corpora.
-    # sublinear_tf=False because NB needs raw TF (not log-TF) for valid probabilities.
-    # alpha=0.1 (low smoothing) works well since our vocabulary is controlled.
-    nb_pipeline = Pipeline([
-        ("tfidf", TfidfVectorizer(
-            max_features=1500,
-            ngram_range=(1, 2),
-            sublinear_tf=False,
-            min_df=1,
-            token_pattern=r"(?u)\b\w+\b"
-        )),
-        ("clf", MultinomialNB(alpha=0.1))
-    ])
-    nb_pipeline.fit(X_train, y_train)
-    acc_nb = accuracy_score(y_test, nb_pipeline.predict(X_test))
-    cv_nb = cross_val_score(nb_pipeline, X, y, cv=5, scoring="accuracy")
-    print(f"[Difficulty] MultinomialNB Test Accuracy: {acc_nb:.4f}")
-    print(f"[Difficulty] MultinomialNB 5-Fold CV: {cv_nb.mean():.4f} +/- {cv_nb.std():.4f}")
-
-    # ── Select best model by CV mean ────────────────────────────────────────
-    # CV mean is more reliable than a single test split on a 300-sample dataset.
-    candidates = [
-        ("LogisticRegression", lr_pipeline, cv_lr.mean()),
-        ("LinearSVC",          svc_pipeline, cv_svc.mean()),
-        ("MultinomialNB",      nb_pipeline,  cv_nb.mean()),
-    ]
-    best_name, best, best_cv = max(candidates, key=lambda x: x[2])
-    print(f"\n[Difficulty] Selected Best Model: {best_name} (5-Fold CV = {best_cv:.4f})")
-    best_pred = best.predict(X_test)
-    best_acc = accuracy_score(y_test, best_pred)
-    print(f"[Difficulty] Best Model Test Accuracy: {best_acc:.4f}")
-    print(classification_report(y_test, best_pred, target_names=["Easy", "Medium", "Hard"]))
-    cm = confusion_matrix(y_test, best_pred)
-    print(f"[Difficulty] Confusion Matrix (rows: true, cols: pred):\n{cm}")
-
-    model_path = os.path.join(MODELS_DIR, "difficulty_model.pkl")
-    joblib.dump({"model": best, "label_map": LABEL_MAP, "reverse_map": REVERSE_MAP}, model_path)
-    print(f"[Difficulty] Model saved to {model_path}")
-    return best
+def _candidates(seed: int) -> Dict[str, Pipeline]:
+    return {
+        "TF-IDF + LogisticRegression": Pipeline([
+            ("tfidf", _tfidf()),
+            ("clf", LogisticRegression(max_iter=2000, C=1.0, class_weight="balanced",
+                                       random_state=seed)),
+        ]),
+        "TF-IDF + LinearSVC (calibrated)": Pipeline([
+            ("tfidf", _tfidf()),
+            ("clf", CalibratedClassifierCV(
+                estimator=LinearSVC(C=0.5, class_weight="balanced", max_iter=5000,
+                                    random_state=seed),
+                method="sigmoid",
+                cv=3,
+            )),
+        ]),
+        # Naive Bayes expects raw term frequencies, hence sublinear_tf=False.
+        "TF-IDF + MultinomialNB": Pipeline([
+            ("tfidf", _tfidf(ngram_max=2, sublinear=False)),
+            ("clf", MultinomialNB(alpha=0.1)),
+        ]),
+    }
 
 
-def predict(model_data: dict, text: str) -> dict:
-    """
-    Predict difficulty of a problem from its text description.
-    Returns: {"difficulty": "Easy"/"Medium"/"Hard", "confidence": float, "probabilities": {...}}
-    """
-    model = model_data["model"]
-    reverse_map = model_data["reverse_map"]
+def train(csv_path: Optional[Path] = None, models_dir: Optional[Path] = None,
+          cv_folds: int = 5, seed: int = 42) -> Dict[str, Any]:
+    csv_path = Path(csv_path or config.generated_data_dir() / DIFFICULTY_CSV)
+    if not csv_path.is_file():
+        raise FileNotFoundError(f"Difficulty training data not found: {csv_path}")
 
-    pred_label = int(model.predict([text])[0])
-    difficulty = reverse_map[pred_label]
+    df = pd.read_csv(csv_path).dropna(subset=["text", "difficulty"])
+    df = df[df["difficulty"].isin(LABELS)]
+    logger.info("Difficulty: %d samples, distribution %s", len(df),
+                df["difficulty"].value_counts().to_dict())
 
-    # Get probabilities if available (LogisticRegression, MultinomialNB)
-    probs = {}
-    if hasattr(model, "predict_proba"):
-        p = model.predict_proba([text])[0]
-        probs = {reverse_map[i]: round(float(v), 4) for i, v in enumerate(p)}
-        confidence = round(float(max(p)), 4)
-    else:
-        # LinearSVC — use decision function as a proxy
-        df_val = model.decision_function([text])[0]
-        confidence = round(float(max(df_val)), 4)
-        probs = {reverse_map[i]: round(float(v), 4) for i, v in enumerate(df_val)}
+    X_train, X_test, y_train, y_test = train_test_split(
+        df["text"], df["difficulty"], test_size=0.2, random_state=seed, stratify=df["difficulty"]
+    )
+    cv = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=seed)
+
+    cv_results: Dict[str, float] = {}
+    candidates = _candidates(seed)
+    for name, pipeline in candidates.items():
+        scores = cross_val_score(pipeline, X_train, y_train, cv=cv, scoring="accuracy")
+        cv_results[name] = float(scores.mean())
+        logger.info("Difficulty CV (train split) %-32s accuracy %.4f +/- %.4f",
+                    name, scores.mean(), scores.std())
+
+    best_name = max(cv_results, key=cv_results.get)
+    best = clone(candidates[best_name]).fit(X_train, y_train)
+
+    y_pred = best.predict(X_test)
+    metrics = {
+        "selected_by": f"{cv_folds}-fold CV accuracy on the training split",
+        "cv_accuracy": round(cv_results[best_name], 4),
+        "test_accuracy": round(float(accuracy_score(y_test, y_pred)), 4),
+        "test_macro_f1": round(float(f1_score(y_test, y_pred, average="macro")), 4),
+        "train_size": int(len(X_train)),
+        "test_size": int(len(X_test)),
+    }
+    cm = confusion_matrix(y_test, y_pred, labels=LABELS)
+    logger.info("Difficulty selected %s; held-out test accuracy %.4f, macro-F1 %.4f",
+                best_name, metrics["test_accuracy"], metrics["test_macro_f1"])
+    logger.info("Difficulty confusion matrix (rows=true, cols=pred, order %s): %s",
+                LABELS, cm.tolist())
+
+    out = Path(models_dir or config.models_dir()) / DIFFICULTY_FILE
+    save_bundle(out, {"model": best, "labels": LABELS, "metrics": metrics}, model_name=best_name)
+    logger.info("Difficulty model saved to %s", out)
+    return {"model_name": best_name, **metrics}
+
+
+def build_text(title: str = "", description: str = "", tags=None, constraints: str = "") -> str:
+    tag_text = " ".join(t for t in (tags or []) if t)
+    return " ".join(part.strip() for part in (title, tag_text, description, constraints) if part and part.strip())
+
+
+def predict(bundle: Dict[str, Any], text: str) -> Dict[str, Any]:
+    model = bundle["model"]
+    raw = model.predict_proba([text])[0]
+    by_class = {str(c): float(p) for c, p in zip(model.classes_, raw)}
+    probs = np.array([max(0.0, by_class.get(label, 0.0)) for label in LABELS])
+    total = probs.sum()
+    probs = probs / total if total > 0 else np.full(len(LABELS), 1.0 / len(LABELS))
+
+    rounded = [round(float(p), 4) for p in probs]
+    top = int(np.argmax(probs))
+    rounded[top] = round(rounded[top] + (1.0 - sum(rounded)), 4)  # make the sum exactly 1
+    probabilities = {label: rounded[i] for i, label in enumerate(LABELS)}
 
     return {
-        "difficulty": difficulty,
-        "confidence": confidence,
-        "probabilities": probs,
-        "model": "TF-IDF + Classifier"
+        "difficulty": LABELS[top],
+        "confidence": probabilities[LABELS[top]],
+        "probabilities": probabilities,
+        "model": bundle["model_name"],
     }
 
 
 if __name__ == "__main__":
+    config.setup_logging()
     train()
