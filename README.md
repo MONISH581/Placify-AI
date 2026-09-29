@@ -16,7 +16,7 @@ Browser (React SPA)
    v
 Node.js Express server  (127.0.0.1:3000)
    |-- Prisma --------------> SQLite  prisma/dev.db
-   |-- code runner ---------> Judge0 (production)  or  local sandboxed child processes (development only)
+   |-- code runner ---------> Docker sandbox or Judge0 (production)  /  local child processes (development only)
    |-- Gemini (optional) ---> code reviews, resume analysis, learning-topic content
    '-- X-API-Key -----------> Python ML service (127.0.0.1:8000)
                                  |-- placement readiness model
@@ -33,6 +33,8 @@ Server layout: `server/config.ts` (validated env), `server/auth.ts` (JWT + middl
 
 - **Node.js 20+** (Node 22/24 recommended)
 - **Python 3.10 - 3.12** for the ML service (and for Python submissions on the local code runner)
+- **Docker** (optional, recommended for production): runs submissions in the self-hosted sandbox, see
+  [Code runner](#code-runner)
 
 ## Setup
 
@@ -49,9 +51,20 @@ npm run setup        # creates .env (random JWT_SECRET / INTERNAL_API_KEY), appl
 start.bat
 ```
 
-`start.bat` checks Node.js and Python, runs `npm install` / `npm run setup` when needed, opens the ML service in a
-separate window (`ml_service\start.bat` creates `ml_service\.venv`, installs requirements and trains missing models)
-and then starts the web server.
+`start.bat` checks Node.js and Python, runs `npm install` / `npm run setup` when needed, checks that `PORT` and
+`ML_PORT` from `.env` (default 3000 / 8000) are free, opens the ML service in a separate window
+(`ml_service\start.bat` creates `ml_service\.venv`, installs requirements and trains missing models) and then starts
+the web server.
+
+Ports are configurable. If a port is already taken, `start.bat` names the program holding it (it never stops
+anything); pick free ports in `.env` and keep the related values in sync, e.g.:
+
+```ini
+PORT=3100
+ALLOWED_ORIGINS=http://localhost:3100
+ML_PORT=8100
+ML_SERVICE_URL=http://127.0.0.1:8100
+```
 
 ### Run (any OS, manually)
 
@@ -67,7 +80,7 @@ and then starts the web server.
      python main.py
      ```
 
-2. Web app + API: `npm run dev` and open <http://127.0.0.1:3000>
+2. Web app + API: `npm run dev` and open <http://127.0.0.1:3000> (or your `PORT`)
 
 ### Production build
 
@@ -77,7 +90,8 @@ npm start            # runs dist/server.cjs; NODE_ENV defaults to production
 ```
 
 In production demo accounts are not seeded, the local code runner is disabled unless explicitly selected, and
-error messages do not include internal details. Configure Judge0 to enable code execution.
+error messages do not include internal details. Enable code execution with the Docker sandbox
+(`npm run runner:build` + `CODE_RUNNER=docker`) or Judge0; see [Code runner](#code-runner).
 
 ## Demo accounts (seeded when NODE_ENV is not production)
 
@@ -101,32 +115,87 @@ error messages do not include internal details. Configure Judge0 to enable code 
 | `ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated origins allowed for cross-origin API calls |
 | `GEMINI_API_KEY` | empty (disabled) | Optional Google Gemini key |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model name |
-| `CODE_RUNNER` | auto | `judge0`, `local`, or empty = Judge0 if `JUDGE0_API_URL` is set, otherwise `local` outside production (disabled in production) |
+| `CODE_RUNNER` | auto | `docker`, `judge0`, `local`, or empty = Judge0 if `JUDGE0_API_URL` is set, otherwise `local` outside production (disabled in production). An explicit value always wins. |
+| `RUNNER_IMAGE` | `placify-runner:1` | Sandbox image used by `CODE_RUNNER=docker` (build it with `npm run runner:build`) |
 | `JUDGE0_API_URL` | empty | Judge0 base URL, e.g. `https://judge0-ce.p.rapidapi.com` |
 | `JUDGE0_API_KEY` / `JUDGE0_API_HOST` | empty | Sent as `X-RapidAPI-Key` / `X-RapidAPI-Host` when set |
 | `PYTHON_BIN` | auto | Python interpreter for the local runner (`python` / `py -3` on Windows, `python3` elsewhere) |
 | `RATE_LIMIT_AUTH_MAX` / `RATE_LIMIT_AI_MAX` | `20` / `30` | Requests per minute per IP for auth and AI / code-execution routes |
 
-## Code runner security
+## Code runner
 
-User code is **never** executed inside the server process.
+User code is **never** executed inside the server process. `CODE_RUNNER` selects one of three runners; the active
+runner and its state are reported by `GET /api/health` (`codeRunner`, `codeRunnerStatus`).
 
-- **Judge0 (use this in production)**: every test case is run by Judge0 (JavaScript, Python, Java, C++, C) with CPU,
-  wall-time and memory limits.
-- **Local runner (local development only)**: JavaScript runs in a separate `node --permission` process (no file
-  system, child processes, workers or native addons) and Python in `python -I` with an audit-hook guard, each in a
-  fresh temp directory with a stripped environment (no secrets), a 3-second limit per test and a 64 KB output cap.
-  This is defence in depth, **not a hardened sandbox** (for example, Node 24 cannot block outbound network access).
-  Java / C++ / C require Judge0.
+| Runner | Languages | Isolation | Use for |
+| ------ | --------- | --------- | ------- |
+| `docker` | JavaScript, Python, Java 21, C++17, C11 | One locked-down container per submission (details below) | **Production** (self-hosted, no account) |
+| `judge0` | JavaScript, Python, Java, C++, C | Judge0's isolate sandbox, CPU / wall-time / memory limits | Production, if you already run or rent Judge0 |
+| `local` | JavaScript, Python | Separate processes with language-level guards only | **Local development only** |
 
-Solutions receive the raw test input as a string and return the output string, e.g.
-`function solve(input) { ... return "answer"; }` or `def solve(input_str): ... return "answer"`.
-Hidden test cases are never sent to the browser, and XP is awarded only for the first accepted submission of a problem.
+Every runner uses the same contract: the solution receives the raw test input as a string and returns the output
+string (`function solve(input)`, `def solve(input_str)`, Java `public static String solve(String input)` in
+`class Solution`, C++ `string solve(string input)`, C `char* solve(char* input)`). Outputs are compared by the server
+(trailing whitespace and line endings ignored), each test has a 3-second limit and output is capped at 64 KB.
+Hidden test cases are never sent to the browser (failures on hidden tests show no input, output or error details),
+and XP is awarded only for the first accepted submission of a problem.
+
+### Docker sandbox (`CODE_RUNNER=docker`)
+
+```bash
+npm run runner:build          # docker build -t placify-runner:1 deploy/runner  (Alpine: Node 20, Python 3.12, OpenJDK 21, GCC 13)
+# .env
+CODE_RUNNER=docker
+# RUNNER_IMAGE=placify-runner:1   (default)
+```
+
+The server starts one short-lived container per submission and streams the job (harnessed source + test *inputs*;
+expected outputs never enter the container) on stdin. The in-container driver (`deploy/runner/driver.py`)
+compiles once (javac / g++ / gcc), runs every test in a fresh process with a per-test timeout and returns one JSON
+document; the server compares the outputs. Security properties:
+
+- `--network none` (no network, no DNS server), `--read-only` root file system, writable space only in a 64 MB
+  `/tmp` tmpfs that is wiped and rebuilt between tests
+- `--memory 256m --memory-swap 256m --cpus 1 --pids-limit 64` (memory hogs and fork bombs only hurt themselves)
+- `--cap-drop ALL`, `--security-opt no-new-privileges`, non-root user `10001:10001`, Docker's default seccomp profile
+- `--ipc none` plus zeroed SysV / POSIX IPC limits and no core dumps: nothing survives from one test to the next
+- no server environment variables or secrets are passed in; the job never touches the host file system
+- the driver is PID 1 and non-dumpable, so user code cannot kill it, read other tests' inputs from its memory or
+  forge its result; every leftover process is killed after each test
+- the server enforces an overall deadline and `docker kill`s the container by its unique name; at most 4
+  containers run at once (further submissions queue)
+
+If Docker or the image is missing the server still starts, logs a clear error, reports
+`codeRunnerStatus: "unavailable"` in `/api/health` and answers submissions with HTTP 503; it re-checks on its own,
+so running `npm run runner:build` fixes it without a restart. Measured on Docker Desktop (WSL2), a whole submission
+with 3 - 4 tests takes about 0.5 - 0.8 s for JavaScript, Python and C and 1 - 1.5 s for C++ and Java; container
+start-up dominates, and Java / C++ compile in about 0.4 - 0.7 s thanks to a class-data archive and a precompiled
+`<bits/stdc++.h>`. Every test runs in a fresh process, so memory figures include the runtime (e.g. ~35 MB for a JVM).
+
+**Recommended production setup**: a Linux host with Docker Engine, `npm run runner:build` on that host (or push the
+image to your registry, `docker pull` it on the host and set `RUNNER_IMAGE`; the server runs containers with
+`--pull never` and never pulls images itself), `CODE_RUNNER=docker`, and the Node server running as a user that
+may use the Docker socket. Access to the Docker socket is root-equivalent, so keep that server itself locked down,
+or run the containers on a dedicated runner host / VM (set `DOCKER_HOST`). For even stronger isolation, make gVisor
+(`runsc`) the default Docker runtime on that host. Keep `local` for development machines only.
+
+### Judge0 (`CODE_RUNNER=judge0`)
+
+Set `JUDGE0_API_URL` (and `JUDGE0_API_KEY` / `JUDGE0_API_HOST` for RapidAPI). Every test case is a separate Judge0
+submission with CPU, wall-time and memory limits.
+
+### Local runner (development only)
+
+JavaScript runs in a separate `node --permission` process (no file system, child processes, workers or native
+addons) and Python in `python -I` with an audit-hook guard, each in a fresh temp directory with a stripped
+environment (no secrets). This is defence in depth, **not a hardened sandbox** (for example, Node 24 cannot block
+outbound network access). Java / C++ / C need the Docker runner or Judge0.
 
 ## Testing
 
 ```bash
 npm test                     # API end-to-end tests: temp SQLite DB + server child process (ML offline fallbacks)
+npm run test:runner          # Docker sandbox tests (all 5 languages, isolation, limits); skipped without Docker / the image
 npm run lint                 # TypeScript type check (tsc --noEmit)
 cd ml_service && .venv\Scripts\python -m pytest     # ML service tests (Windows; use .venv/bin/python elsewhere)
 ```
@@ -141,4 +210,6 @@ cd ml_service && .venv\Scripts\python -m pytest     # ML service tests (Windows;
 | `npm run seed` | Re-seed the problem bank and demo data (idempotent) |
 | `npm run dev` | Development server with Vite middleware |
 | `npm run build` / `npm start` | Production build / run |
+| `npm run runner:build` | Build the code-runner sandbox image `placify-runner:1` (for `CODE_RUNNER=docker`) |
+| `npm run test:runner` | Docker sandbox runner tests |
 | `npm run clean` | Remove `dist/` |

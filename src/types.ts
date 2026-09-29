@@ -320,6 +320,10 @@ export interface HealthStatus {
   mlService?: string;
   mlModels?: Record<string, boolean>;
   codeRunner?: string;
+  /** ready | configured | unavailable | disabled */
+  codeRunnerStatus?: string;
+  /** Operator hint when the runner is unavailable (not sent in production). */
+  codeRunnerDetail?: string;
   aiProvider?: string;
   timestamp?: string;
 }

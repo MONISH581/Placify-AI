@@ -60,17 +60,32 @@ if (!process.env.DATABASE_URL) {
   process.env.DATABASE_URL = "file:./dev.db";
 }
 
-export type CodeRunnerKind = "judge0" | "local" | "disabled";
+export type CodeRunnerKind = "judge0" | "docker" | "local" | "disabled";
 
+/**
+ * CODE_RUNNER selection. An explicit value always wins ("judge0" without JUDGE0_API_URL means disabled).
+ * Empty / "auto": Judge0 when JUDGE0_API_URL is set, otherwise the local runner outside production and
+ * disabled (HTTP 503) in production. The docker runner is never auto-selected: it must be opted into.
+ */
 function resolveCodeRunner(judge0Url: string): CodeRunnerKind {
   const requested = readString("CODE_RUNNER").toLowerCase();
   if (requested === "judge0") return judge0Url ? "judge0" : "disabled";
+  if (requested === "docker") return "docker";
   if (requested === "local") return "local";
   if (requested && requested !== "auto") {
-    fail(`CODE_RUNNER must be "judge0", "local" or empty (got "${requested}").`);
+    fail(`CODE_RUNNER must be "judge0", "docker", "local" or empty (got "${requested}").`);
   }
   if (judge0Url) return "judge0";
   return isProduction ? "disabled" : "local";
+}
+
+function readRunnerImage(): string {
+  const image = readString("RUNNER_IMAGE", "placify-runner:1") || "placify-runner:1";
+  // Passed to `docker run` as an argument: reject anything that could be parsed as an option.
+  if (!/^[A-Za-z0-9][A-Za-z0-9._\-/:@]{0,254}$/.test(image)) {
+    fail(`RUNNER_IMAGE must be a docker image reference such as "placify-runner:1" (got "${image}").`);
+  }
+  return image;
 }
 
 const judge0Url = readString("JUDGE0_API_URL").replace(/\/+$/, "");
@@ -98,6 +113,8 @@ export const config = {
     apiHost: readString("JUDGE0_API_HOST"),
   },
   pythonBin: readString("PYTHON_BIN"),
+  /** Image used by CODE_RUNNER=docker (built with `npm run runner:build`). */
+  runnerImage: readRunnerImage(),
   rateLimits: {
     authPerMinute: readInt("RATE_LIMIT_AUTH_MAX", 20, 1, 100000),
     aiPerMinute: readInt("RATE_LIMIT_AI_MAX", 30, 1, 100000),

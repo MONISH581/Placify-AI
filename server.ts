@@ -13,6 +13,7 @@ import path from "path";
 import express from "express";
 import { config } from "./server/config";
 import { createApp, errorHandler } from "./server/app";
+import { runnerHealth } from "./server/codeRunner";
 import { prisma } from "./server/db";
 
 process.on("unhandledRejection", (reason) => {
@@ -42,6 +43,20 @@ async function attachClient(app: express.Express) {
   });
 }
 
+/** CODE_RUNNER=docker: verify docker + the runner image at startup and say clearly what is wrong. */
+async function reportDockerRunner() {
+  const runner = await runnerHealth();
+  if (runner.status === "ready") {
+    console.log(`[code-runner] Docker sandbox ready (image ${config.runnerImage}).`);
+    return;
+  }
+  console.error(
+    `\n[code-runner] ERROR: CODE_RUNNER=docker but the Docker sandbox is unavailable: ${runner.detail ?? "unknown error"}\n` +
+      "[code-runner] Code submissions return HTTP 503 (and /api/health reports codeRunnerStatus=unavailable) until this is fixed;\n" +
+      "[code-runner] the server re-checks automatically, no restart needed.\n"
+  );
+}
+
 async function startServer() {
   await prisma.$connect();
   const app = createApp();
@@ -53,8 +68,9 @@ async function startServer() {
     const port = typeof address === "object" && address ? address.port : config.port;
     console.log(`[server] Placify running on http://${config.host}:${port} (${config.nodeEnv}, code runner: ${config.codeRunner})`);
     if (config.codeRunner === "local" && config.isProduction) {
-      console.warn("[server] WARNING: the local code runner is intended for development only. Configure Judge0 for production.");
+      console.warn("[server] WARNING: the local code runner is intended for development only. Use CODE_RUNNER=docker or Judge0 in production.");
     }
+    if (config.codeRunner === "docker") void reportDockerRunner();
   });
   server.on("error", (err) => {
     console.error("[server] Failed to start HTTP server:", err);

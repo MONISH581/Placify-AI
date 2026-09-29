@@ -10,6 +10,8 @@
     "start": "node dist/server.cjs",
     "seed": "tsx seed-db.ts",
     "test": "tsx --test tests/api.test.ts",
+    "test:runner": "tsx --test tests/runner-docker.test.ts",
+    "runner:build": "docker build -t placify-runner:1 deploy/runner",
     "lint": "tsc --noEmit",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "postinstall": "prisma generate"

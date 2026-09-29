@@ -7,10 +7,14 @@
  *
  * Runners (selected by CODE_RUNNER, see config.ts):
  *  - "judge0": Judge0 CE / RapidAPI; all languages; every test case is a separate submission.
+ *  - "docker": self-hosted sandbox (server/dockerRunner.ts + deploy/runner/): one locked-down container per
+ *              submission (no network, read-only root fs, memory / CPU / PID limits, non-root, no
+ *              capabilities); all languages; compiled once, every test case in a fresh process. The same
+ *              harnessed source as for Judge0 is executed; outputs are compared here. No account needed.
  *  - "local":  DEVELOPMENT ONLY. JavaScript runs in a child `node --permission` process (no fs,
  *              child_process, workers or addons), Python in `python -I` with an audit-hook guard.
  *              Both run in a fresh temp dir with a stripped environment, a 3s timeout per test and a
- *              64KB output cap. This is defence-in-depth, NOT a hardened sandbox: use Judge0 in production.
+ *              64KB output cap. This is defence-in-depth, NOT a hardened sandbox: use Docker or Judge0 in production.
  *  - "disabled": every run returns 503.
  */
 
@@ -19,6 +23,16 @@ import fs from "fs/promises";
 import os from "os";
 import path from "path";
 import { config } from "./config";
+import {
+  assertDockerRunnerReady,
+  checkDockerRunner,
+  runInSandbox,
+  SANDBOX_MEMORY_MB,
+  type SandboxRunResult,
+} from "./dockerRunner";
+import { RunnerFailureError, RunnerUnavailableError } from "./runnerErrors";
+
+export { RunnerFailureError, RunnerUnavailableError } from "./runnerErrors";
 
 export const LANGUAGES = ["javascript", "python", "java", "cpp", "c"] as const;
 export type Language = (typeof LANGUAGES)[number];
@@ -51,19 +65,17 @@ export interface JudgeOutcome {
   totalCases: number;
   maxTimeMs: number;
   maxMemoryKb: number | null;
-  runner: "local" | "judge0";
+  runner: RunnerName;
 }
 
-/** Thrown when no runner can execute the requested language (maps to HTTP 503). */
-export class RunnerUnavailableError extends Error {}
-
-/** Thrown when the runner itself failed (Judge0 down, spawn failure...). Maps to HTTP 502/503. */
-export class RunnerFailureError extends Error {}
+type RunnerName = "local" | "judge0" | "docker";
 
 export const TIME_LIMIT_MS = 3000;
 const OUTPUT_LIMIT_BYTES = 64 * 1024;
 const STDERR_LIMIT_BYTES = 16 * 1024;
 const TOTAL_DEADLINE_MS = 30_000;
+/** Docker runner: compile budget for Java / C++ / C (javac and g++ run inside the sandbox too). */
+const COMPILE_LIMIT_MS = 20_000;
 const DISPLAY_LIMIT = 2000;
 const COMPILE_ERROR_EXIT = 86;
 const MISSING_SOLVE_EXIT = 87;
@@ -112,6 +124,8 @@ class Semaphore {
 
 const localSlots = new Semaphore(4, 32);
 const judge0Slots = new Semaphore(8, 64);
+/** Each sandbox container gets 1 CPU and 256 MB, so at most 4 run at once (the rest queue). */
+const dockerSlots = new Semaphore(4, 32);
 
 // ---------------------------------------------------------------------------
 // Harnesses
@@ -551,7 +565,7 @@ async function runLocal(
 ): Promise<JudgeOutcome> {
   if (language !== "javascript" && language !== "python") {
     throw new RunnerUnavailableError(
-      `${languageLabel(language)} is not supported by the local development runner. Configure Judge0 (JUDGE0_API_URL) to enable Java, C++ and C.`
+      `${languageLabel(language)} is not supported by the local development runner. Use the Docker runner (CODE_RUNNER=docker) or Judge0 (JUDGE0_API_URL) to enable Java, C++ and C.`
     );
   }
   let command: string;
@@ -724,14 +738,107 @@ async function runJudge0(language: Language, code: string, tests: TestCase[], mo
 }
 
 // ---------------------------------------------------------------------------
+// Docker sandbox runner
+// ---------------------------------------------------------------------------
+
+const SIGNAL_NOTES: Record<string, string> = {
+  SIGSEGV: "Segmentation fault (invalid memory access or stack overflow).",
+  SIGABRT: "The program aborted.",
+  SIGFPE: "Arithmetic error (for example an integer division by zero).",
+  SIGBUS: "Bus error (invalid memory access).",
+  SIGILL: "Illegal instruction.",
+  SIGXFSZ: "File size limit exceeded.",
+  SIGKILL: "The program was killed.",
+};
+
+function sanitizeSandboxText(text: string): string {
+  return text
+    .replace(/\r\n?/g, "\n")
+    .replace(/\/tmp\/(?:build|src|work)\//g, "")
+    .trim();
+}
+
+function sandboxExecResult(language: Language, r: SandboxRunResult, budgetNote: boolean): ExecResult {
+  let kind: ExecKind;
+  let note = "";
+  if (r.timedOut || r.signal === "SIGXCPU") {
+    kind = "timeout";
+    if (budgetNote) note = "Total execution time limit exceeded.";
+  } else if (r.outputLimit) {
+    kind = "output_limit";
+  } else if (r.exitCode === 0) {
+    kind = "ok";
+  } else if (r.exitCode === COMPILE_ERROR_EXIT && (language === "javascript" || language === "python")) {
+    kind = "compile_error"; // the JS / Python harness reports syntax errors with this exit code
+  } else {
+    if (r.exitCode === 127 && r.stderr.startsWith("sandbox: cannot start")) {
+      console.error(`[code-runner] ${r.stderr.trim()}`);
+      throw new RunnerFailureError("The code runner could not start the program.");
+    }
+    kind = "runtime_error";
+    if (r.oomKilled) note = `Memory limit exceeded (${SANDBOX_MEMORY_MB} MB): the program was killed.`;
+    else if (/JavaScript heap out of memory/.test(r.stderr)) note = "Memory limit exceeded (JavaScript heap).";
+    else if (r.signal) note = SIGNAL_NOTES[r.signal] ?? `The program was terminated by ${r.signal}.`;
+  }
+  // Truncate the program's stderr first so the explanatory note is always visible.
+  const stderr = [truncate(sanitizeSandboxText(r.stderr)), note].filter(Boolean).join("\n");
+  return {
+    kind,
+    stdout: r.stdout,
+    stderr,
+    timeMs: r.timeMs,
+    memoryKb: typeof r.memoryKb === "number" ? r.memoryKb : null,
+  };
+}
+
+async function runDocker(language: Language, code: string, tests: TestCase[], mode: "run" | "submit"): Promise<JudgeOutcome> {
+  await assertDockerRunnerReady();
+  // Same harnessed program as for Judge0: the container itself is the security boundary.
+  const source = harnessFor(language, code, false);
+  return dockerSlots.run(async () => {
+    const batch = await runInSandbox({
+      language,
+      source,
+      inputs: tests.map((t) => t.input),
+      timeLimitMs: TIME_LIMIT_MS,
+      totalLimitMs: TOTAL_DEADLINE_MS,
+      compileLimitMs: COMPILE_LIMIT_MS,
+      outputLimitBytes: OUTPUT_LIMIT_BYTES,
+      stderrLimitBytes: STDERR_LIMIT_BYTES,
+      stopOnError: mode === "submit",
+    });
+    return runCases(tests, mode, "docker", async (_input, _remainingMs, index) => {
+      if (!batch.compile.ok) {
+        return {
+          kind: "compile_error",
+          stdout: "",
+          stderr: truncate(sanitizeSandboxText(batch.compile.output) || "The code could not be compiled."),
+          timeMs: batch.compile.timeMs,
+          memoryKb: null,
+        };
+      }
+      const result = batch.results[index];
+      if (!result) {
+        if (batch.budgetExceeded) {
+          return { kind: "timeout", stdout: "", stderr: "Total execution time limit exceeded.", timeMs: 0, memoryKb: null };
+        }
+        throw new RunnerFailureError("The code runner returned an incomplete result. Please try again later.");
+      }
+      const lastRun = index === batch.results.length - 1;
+      return sandboxExecResult(language, result, batch.budgetExceeded && lastRun);
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Shared test loop
 // ---------------------------------------------------------------------------
 
 async function runCases(
   tests: TestCase[],
   mode: "run" | "submit",
-  runner: "local" | "judge0",
-  execute: (input: string, remainingMs: number) => Promise<ExecResult>
+  runner: RunnerName,
+  execute: (input: string, remainingMs: number, index: number) => Promise<ExecResult>
 ): Promise<JudgeOutcome> {
   const cases: CaseResult[] = [];
   const started = Date.now();
@@ -752,7 +859,7 @@ async function runCases(
       status = "Time Limit Exceeded";
       error = "Total execution time limit exceeded.";
     } else {
-      const exec = await execute(test.input, remaining);
+      const exec = await execute(test.input, remaining, i);
       timeMs = exec.timeMs;
       memoryKb = exec.memoryKb;
       actual = normalizeOutput(exec.stdout);
@@ -811,6 +918,26 @@ export function describeRunner(): string {
   return config.codeRunner;
 }
 
+export interface RunnerHealth {
+  /** ready: can execute code; configured: Judge0 (not probed); unavailable: docker / image missing; disabled. */
+  status: "ready" | "configured" | "unavailable" | "disabled";
+  detail?: string;
+}
+
+/** Runner availability for /api/health and the startup log (the docker check is cached). */
+export async function runnerHealth(): Promise<RunnerHealth> {
+  switch (config.codeRunner) {
+    case "docker":
+      return checkDockerRunner();
+    case "judge0":
+      return { status: "configured" };
+    case "local":
+      return { status: "ready" };
+    default:
+      return { status: "disabled" };
+  }
+}
+
 /**
  * Runs `code` against `tests`. In "submit" mode it stops at the first failing case;
  * in "run" mode it reports every case (stopping only on compile errors / timeouts).
@@ -822,11 +949,13 @@ export async function judgeCode(language: Language, code: string, tests: TestCas
   switch (config.codeRunner) {
     case "judge0":
       return runJudge0(language, code, tests, mode);
+    case "docker":
+      return runDocker(language, code, tests, mode);
     case "local":
       return runLocal(language, code, tests, mode);
     default:
       throw new RunnerUnavailableError(
-        "Code execution is disabled on this server. Configure Judge0 (JUDGE0_API_URL) to enable submissions."
+        "Code execution is disabled on this server. Configure the Docker runner (CODE_RUNNER=docker) or Judge0 (JUDGE0_API_URL) to enable submissions."
       );
   }
 }
