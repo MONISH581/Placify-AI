@@ -36,6 +36,7 @@ threadpoolctl==3.5.0
 
 # --- Embeddings / RAG ---
 torch==2.5.1
+setuptools==84.0.0 ; python_version >= "3.12"
 sympy==1.13.1
 mpmath==1.3.0
 networkx==3.4.2

@@ -27,6 +27,7 @@ if __package__ in (None, ""):
 
 from core import config, embeddings
 from core.bundle import DIFFICULTY_FILE, PLACEMENT_FILE, RECOMMENDER_FILE, bundle_is_current
+from core.placement_features import bundle_signature as placement_signature
 from core.problem_bank import ProblemBankError, fingerprint, load_problems
 from rag import knowledge_builder, rag_pipeline
 
@@ -80,7 +81,8 @@ _RUNNERS: Dict[str, Callable[[], Dict]] = {
 
 def artifact_status() -> Dict[str, bool]:
     """
-    True when an artifact exists, loads, matches the installed library versions and
+    True when an artifact exists, loads, matches the installed library versions,
+    (for the placement model) was trained on the current feature list/version and
     (for the recommender / RAG index) was built from the current problem bank.
     """
     try:
@@ -91,7 +93,7 @@ def artifact_status() -> Dict[str, bool]:
 
     models = config.models_dir()
     return {
-        "placement": bundle_is_current(models / PLACEMENT_FILE),
+        "placement": bundle_is_current(models / PLACEMENT_FILE, expect=placement_signature()),
         "difficulty": bundle_is_current(models / DIFFICULTY_FILE),
         "recommender": bundle_is_current(models / RECOMMENDER_FILE, expect=bank_expect),
         "rag": rag_pipeline.index_is_current(problem_fingerprint=bank),

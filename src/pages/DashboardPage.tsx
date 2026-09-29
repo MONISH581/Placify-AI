@@ -139,8 +139,9 @@ export default function DashboardPage() {
               Welcome back, <span className="text-cyan-400">{user.username}</span>
             </h1>
             <p className="font-sans text-xs leading-relaxed text-zinc-400">
-              Your readiness score is an estimate computed from your XP, streak, accuracy and solved problems. Treat it as a
-              practice signal, not a hiring prediction.
+              Your readiness score is a demo estimate based on the share of the problem bank you have solved, your accuracy,
+              streak, mock-interview scores, completed learning topics and practice volume. Treat it as a practice signal,
+              not a hiring prediction.
             </p>
 
             {analyticsError && (

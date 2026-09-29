@@ -48,7 +48,8 @@ def test_placement_uses_documented_heuristic_without_model(client, registry, mon
     assert data["score"] == _half_up(data["probability"])
 
 
-@pytest.mark.parametrize("bad", [{"accuracy": 150}, {"level": 0}, {"xp": -1}])
+@pytest.mark.parametrize("bad", [{"accuracy": 150}, {"level": 0}, {"xp": -1}, {"interview_average": 101},
+                                 {"total_problems": -1}, {"topics_completed": -1}, {"total_topics": -5}])
 def test_placement_rejects_out_of_range_input(client, bad):
     assert client.post("/ml/placement-score", json={**PROFILE, **bad}, headers=AUTH).status_code == 422
 

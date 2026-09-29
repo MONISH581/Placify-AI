@@ -65,9 +65,19 @@ class ModelRegistry:
         logger.info("Loaded %s model: %s", kind, bundle["model_name"])
         return bundle
 
+    @classmethod
+    def load_placement(cls) -> Optional[dict]:
+        """A placement bundle trained on another feature set counts as missing."""
+        bundle = cls._load(PLACEMENT_FILE, "placement")
+        if bundle is not None and not placement_scorer.is_compatible(bundle):
+            logger.warning("placement model at %s was trained on an older feature set %s; ignoring it. %s",
+                           config.models_dir() / PLACEMENT_FILE, bundle.get("features"), TRAIN_HINT)
+            return None
+        return bundle
+
     def load_all(self) -> Dict[str, bool]:
         """Blocking: load every artifact that exists and log which ones are missing."""
-        self.placement = self._load(PLACEMENT_FILE, "placement")
+        self.placement = self.load_placement()
         self.difficulty = self._load(DIFFICULTY_FILE, "difficulty")
         self.recommender = self._load(RECOMMENDER_FILE, "recommender")
         embeddings.get_encoder()
@@ -163,12 +173,21 @@ protected = APIRouter(dependencies=[Depends(require_api_key)])
 # Schemas
 # -----------------------------------------------------------------------------
 class PlacementRequest(BaseModel):
+    # xp / level are accepted for backwards compatibility but are not model inputs.
     xp: int = Field(default=0, ge=0, le=100_000_000)
     level: int = Field(default=1, ge=1, le=10_000)
     streak: int = Field(default=0, ge=0, le=100_000)
     accuracy: float = Field(default=0.0, ge=0.0, le=100.0, description="Submission accuracy, 0-100")
     problems_solved: int = Field(default=0, ge=0, le=1_000_000)
     submission_count: int = Field(default=0, ge=0, le=10_000_000)
+    total_problems: Optional[int] = Field(
+        default=None, ge=0, le=1_000_000,
+        description="Problems in the app's bank; defaults to the bank this service was trained on")
+    interview_average: Optional[float] = Field(
+        default=None, ge=0.0, le=100.0, description="Mock-interview average 0-100; null = no completed interview")
+    topics_completed: int = Field(default=0, ge=0, le=1_000_000)
+    total_topics: Optional[int] = Field(
+        default=None, ge=0, le=1_000_000, description="Topics across all learning tracks; null = unknown")
     user_id: Optional[str] = Field(default=None, max_length=128)
 
 
@@ -312,9 +331,18 @@ def health():
 # -----------------------------------------------------------------------------
 # Inference routes (X-API-Key required). Sync handlers run in FastAPI's threadpool.
 # -----------------------------------------------------------------------------
+def _known_bank_size() -> Optional[int]:
+    """Problems in the bank the recommender was trained on (None when it is not loaded)."""
+    recommender = registry.recommender
+    items = recommender.get("items") if recommender else None
+    return len(items) if items else None
+
+
 @protected.post("/ml/placement-score", response_model=PlacementResponse, tags=["Placement"])
 def placement_score(req: PlacementRequest):
     features = req.model_dump(exclude={"user_id"})
+    if features["total_problems"] is None:  # legacy caller: measure against the known bank
+        features["total_problems"] = _known_bank_size()  # None -> documented default
     bundle = registry.placement
     try:
         if bundle is None:

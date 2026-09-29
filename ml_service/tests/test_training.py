@@ -53,16 +53,30 @@ def test_database_url_is_resolved_relative_to_prisma_dir(monkeypatch):
 
 
 # --- Training data -----------------------------------------------------------
-def test_placement_data_is_synthetic_balanced_and_outlier_free(tmp_path):
+def test_placement_data_is_synthetic_balanced_and_app_relative(tmp_path):
+    from core.placement_features import FEATURES, NEUTRAL_INTERVIEW
     from data.generate_training_data import generate_placement_data
 
     df = generate_placement_data(n_samples=400, out_dir=tmp_path)
     assert len(df) == 400
-    assert abs(df["placement_ready"].mean() - 0.5) <= 0.01
-    assert df["level"].between(1, 20).all()
-    assert df["streak"].le(200).all() and df["problems_solved"].le(300).all()
-    assert df["accuracy"].between(15, 100).all()
+    assert df["placement_ready"].mean() == 0.5  # balanced exactly
+    assert set(FEATURES) <= set(df.columns)
+    assert not {"xp", "level"} & set(df.columns)
+    for ratio in ("solved_ratio", "streak_sig", "topic_ratio"):
+        assert df[ratio].between(0, 1).all()
+    assert df["accuracy"].between(0, 100).all() and df["interview_average"].between(0, 100).all()
+    assert df["practice_volume"].between(0, 3).all()
+    assert set(df["has_interview"].unique()) == {0.0, 1.0}
+    assert (df.loc[df["has_interview"] == 0, "interview_average"] == NEUTRAL_INTERVIEW).all()
+    assert df["problems_solved"].le(df["total_problems"]).all()
+    # Realistic spread: many beginners, some strong users, many bank sizes.
+    assert (df["readiness_signal"] < 0.25).mean() >= 0.2
+    assert (df["readiness_signal"] > 0.6).mean() >= 0.1
+    assert df["total_problems"].nunique() > 20
     assert (tmp_path / "placement_training.csv").is_file()
+
+    again = generate_placement_data(n_samples=400, out_dir=tmp_path / "again")
+    assert again.equals(df)  # deterministic for a given seed
 
 
 def test_difficulty_examples_have_no_duplicates_or_conflicts():
