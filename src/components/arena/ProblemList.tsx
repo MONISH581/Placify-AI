@@ -7,11 +7,11 @@ import { difficultyBadgeClass } from './difficulty';
 
 /** XP-gated topic regions (client-side gamification only; all problems remain reachable via search). */
 const TOPIC_WORLDS = [
-  { id: 'arrays', name: 'Array Valley', tags: ['Arrays', 'Two Pointers', 'Sliding Window', 'Hashing'], requiredXp: 0 },
+  { id: 'arrays', name: 'Array Valley', tags: ['Arrays', 'Two Pointers', 'Sliding Window', 'Hashing', 'Bit Manipulation'], requiredXp: 0 },
   { id: 'strings', name: 'String Sanctum', tags: ['Strings', 'Two Pointers', 'Tries'], requiredXp: 200 },
   { id: 'linear', name: 'Stack & Queue Yard', tags: ['Stack', 'Stacks', 'Queue', 'Queues', 'Linked Lists', 'Heaps'], requiredXp: 500 },
   { id: 'graphs', name: 'Graph & Tree Heights', tags: ['Trees', 'Binary Search Trees', 'Graphs', 'Segment Trees'], requiredXp: 900 },
-  { id: 'dp', name: 'Recursion & DP Temple', tags: ['Recursion', 'Dynamic Programming', 'Backtracking', 'Greedy Algorithms'], requiredXp: 1300 },
+  { id: 'dp', name: 'Recursion & DP Temple', tags: ['Recursion', 'Dynamic Programming', 'Backtracking', 'Greedy Algorithms', 'Advanced Interview Problems'], requiredXp: 1300 },
 ] as const;
 
 const DIFFICULTY_FILTERS: Array<'All' | Difficulty> = ['All', 'Easy', 'Medium', 'Hard'];
