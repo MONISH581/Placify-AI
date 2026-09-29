@@ -3,115 +3,142 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { MessageSquare, X, Send, Sparkles, Loader2, Bot, User as UserIcon, HelpCircle, Terminal } from 'lucide-react';
-import type { User as UserProfile } from '../types';
+import { Bot, HelpCircle, Loader2, MessageSquare, Send, Sparkles, User as UserIcon, X } from 'lucide-react';
+import { askMentor } from '../services/mentor';
+import { LazyMarkdown } from './LazyMarkdown';
+import { MentorSources } from './MentorSources';
+import type { ChatTurn, MentorSource } from '../types';
 
-interface AiMentorPanelProps {
-  user?: UserProfile | null;
-  userId?: string;
-  activeTab?: string;
-}
-
-interface Message {
-  sender: 'user' | 'ai';
-  text: string;
+interface ChatMessage {
+  id: number;
+  role: 'user' | 'assistant';
+  content: string;
   timestamp: Date;
+  sources?: MentorSource[];
+  fallback?: boolean;
+  /** Local-only messages (greeting, errors) are not sent back as chat history. */
+  localOnly?: boolean;
+  isError?: boolean;
 }
 
-export function AiMentorPanel({ userId, activeTab }: AiMentorPanelProps) {
+const PAGE_LABELS: Record<string, string> = {
+  dashboard: 'Dashboard',
+  arena: 'Coding Arena',
+  tracks: 'Learning Tracks',
+  placement: 'Placement Hub',
+  interview: 'Mock Interview',
+  resume: 'Resume ATS',
+  companies: 'Company Prep',
+  contests: 'Contests',
+  community: 'Community',
+  career: 'Career Roadmap',
+  profile: 'Profile',
+  admin: 'Admin Studio',
+};
+
+const PAGE_PROMPTS: Record<string, string[]> = {
+  arena: [
+    'Suggest a sliding window template',
+    'Explain graph BFS vs DFS complexity',
+    'How do I reduce the space complexity of recursion?',
+  ],
+  resume: [
+    'How do I quantify internship bullet points?',
+    'Which keywords matter for an SDE-1 resume?',
+    'What makes a resume ATS-friendly?',
+  ],
+  companies: [
+    'What do Google coding rounds focus on?',
+    "Summarize Amazon's Leadership Principles",
+    'How should I prepare for a service-company coding test?',
+  ],
+  tracks: [
+    'Explain pointers and memory safety in C/C++',
+    'When should I use a stack over a queue?',
+    'Explain the JavaScript event loop',
+  ],
+  interview: [
+    'How do I structure an answer with the STAR method?',
+    'How should I answer "Tell me about yourself"?',
+    'What do interviewers look for in system design answers?',
+  ],
+};
+
+const DEFAULT_PROMPTS = [
+  'Create a 4-week placement study plan',
+  'How do I practice for behavioral interviews?',
+  'Which DSA topics should I master first?',
+];
+
+let nextMessageId = 1;
+
+export function AiMentorPanel() {
+  const location = useLocation();
+  const pageKey = location.pathname.split('/')[1] || 'dashboard';
+  const pageLabel = PAGE_LABELS[pageKey] ?? 'Placify';
+  const prompts = PAGE_PROMPTS[pageKey] ?? DEFAULT_PROMPTS;
+
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
-      sender: 'ai',
-      text: "Hello! I am your Placify SDE Advisor. Ask me anything about programming concepts, dynamic algorithms, resume optimization, or target company interview loops!",
-      timestamp: new Date()
-    }
+      id: nextMessageId++,
+      role: 'assistant',
+      content:
+        'Hello! I am your Placify mentor. Ask me about programming concepts, algorithms, resumes, or interview preparation.',
+      timestamp: new Date(),
+      localOnly: true,
+    },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom when messages update
   useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
 
-  // Context-aware prompt suggestions
-  const getContextPrompts = () => {
-    switch (activeTab) {
-      case 'arena':
-        return [
-          "Suggest a sliding window template code",
-          "Explain graph BFS vs DFS complexity",
-          "Optimize space complexity of recursive calls"
-        ];
-      case 'resume':
-        return [
-          "How to quantify engineering internship bullets",
-          "What keywords will boost SDE-1 ATS score?",
-          "Review formatting for clean CV standards"
-        ];
-      case 'companies':
-        return [
-          "What is Google's Graph round expectations?",
-          "Summarize Amazon's Leadership Principles",
-          "Explain TCS Digital advanced coding round format"
-        ];
-      case 'tracks':
-        return [
-          "Clarify memory pointer safety in C/C++",
-          "When should I use a stack over a queue?",
-          "Explain asynchronous event loops in JS"
-        ];
-      default:
-        return [
-          "Generate a 4-week SDE placement study plan",
-          "How do I practice for behavioral interviews?",
-          "Recommend top DSA topics to master first"
-        ];
-    }
-  };
+  const handleSend = async (text: string) => {
+    const question = text.trim();
+    if (!question || isLoading) return;
 
-  const handleSend = async (textToSend: string) => {
-    if (!textToSend.trim() || isLoading) return;
-    
-    const userMsg: Message = {
-      sender: 'user',
-      text: textToSend,
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, userMsg]);
+    const history: ChatTurn[] = messages
+      .filter((message) => !message.localOnly)
+      .map((message) => ({ role: message.role, content: message.content }));
+
+    setMessages((prev) => [...prev, { id: nextMessageId++, role: 'user', content: question, timestamp: new Date() }]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/mentor/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: `User is viewing the "${activeTab}" tab. Query: "${textToSend}"`
-        })
-      });
-      const data = await response.json();
-      
-      const aiMsg: Message = {
-        sender: 'ai',
-        text: data.text || "I apologize, but I encountered an issue parsing that query. Please try again.",
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, aiMsg]);
-    } catch (err) {
-      console.error(err);
-      setMessages(prev => [...prev, {
-        sender: 'ai',
-        text: "I am experiencing connectivity issues. Please verify the backend status and try again.",
-        timestamp: new Date()
-      }]);
+      const result = await askMentor(question, history);
+      if (result.ok) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: nextMessageId++,
+            role: 'assistant',
+            content: result.data.text,
+            sources: result.data.sources,
+            fallback: result.data.source === 'fallback',
+            timestamp: new Date(),
+          },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: nextMessageId++,
+            role: 'assistant',
+            content: `Sorry, I could not answer that: ${result.error}`,
+            timestamp: new Date(),
+            localOnly: true,
+            isError: true,
+          },
+        ]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -119,21 +146,22 @@ export function AiMentorPanel({ userId, activeTab }: AiMentorPanelProps) {
 
   return (
     <>
-      {/* Floating Action Trigger Button */}
       <div className="fixed bottom-6 right-6 z-50">
         <motion.button
-          onClick={() => setIsOpen(!isOpen)}
+          type="button"
+          onClick={() => setIsOpen((open) => !open)}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
-          className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 text-white shadow-lg shadow-cyan-500/20 glow-cyan cursor-pointer"
+          aria-label={isOpen ? 'Close AI mentor' : 'Open AI mentor'}
+          aria-expanded={isOpen}
+          className="glow-cyan relative flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 text-white shadow-lg shadow-cyan-500/20"
           id="ai-mentor-floating-btn"
         >
-          <span className="absolute inset-0 rounded-full bg-cyan-400 opacity-25 animate-ping"></span>
-          <MessageSquare className="h-6 w-6" />
+          <span className="absolute inset-0 animate-ping rounded-full bg-cyan-400 opacity-25" aria-hidden="true" />
+          <MessageSquare className="h-6 w-6" aria-hidden="true" />
         </motion.button>
       </div>
 
-      {/* Side Slide-out Chat Drawer */}
       <AnimatePresence>
         {isOpen && (
           <motion.aside
@@ -141,110 +169,131 @@ export function AiMentorPanel({ userId, activeTab }: AiMentorPanelProps) {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-            className="fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] glass-panel shadow-2xl flex flex-col overflow-hidden text-white"
+            className="glass-panel fixed inset-y-0 right-0 z-50 flex w-full flex-col overflow-hidden text-white shadow-2xl sm:w-[460px]"
             id="ai-mentor-drawer"
+            aria-label="AI mentor chat"
           >
-            {/* Header */}
-            <header className="p-5 border-b border-cyan-500/15 flex items-center justify-between bg-black/40">
+            <header className="flex items-center justify-between border-b border-cyan-500/15 bg-black/40 p-5">
               <div className="flex items-center gap-2">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 text-white shadow-inner">
-                  <Sparkles className="h-5 w-5" />
+                  <Sparkles className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <div>
-                  <h3 className="font-heading text-base font-bold tracking-tight">Placify AI SDE Mentor</h3>
-                  <span className="text-[9px] font-mono text-cyan-300 tracking-wider uppercase">Active Intelligence Engine</span>
+                  <h3 className="font-heading text-base font-bold tracking-tight">Placify AI Mentor</h3>
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-cyan-300">Context: {pageLabel}</span>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition text-zinc-400 hover:text-white"
+                aria-label="Close AI mentor"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/10 hover:text-white"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </header>
 
-            {/* Chat Messages Log */}
-            <main className="flex-1 overflow-y-auto p-5 space-y-4 scroll-smooth">
-              {messages.map((msg, index) => {
-                const isAI = msg.sender === 'ai';
+            <div className="flex-1 space-y-4 overflow-y-auto scroll-smooth p-5" aria-live="polite">
+              {messages.map((message) => {
+                const isAssistant = message.role === 'assistant';
                 return (
-                  <div key={index} className={`flex gap-3 ${isAI ? 'justify-start' : 'justify-end'}`}>
-                    {isAI && (
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-zinc-950 border border-cyan-500/20 text-cyan-300">
-                        <Bot className="h-4 w-4" />
+                  <div key={message.id} className={`flex gap-3 ${isAssistant ? 'justify-start' : 'justify-end'}`}>
+                    {isAssistant && (
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-cyan-500/20 bg-zinc-950 text-cyan-300">
+                        <Bot className="h-4 w-4" aria-hidden="true" />
                       </div>
                     )}
                     <div
-                      className={`p-3.5 rounded-2xl max-w-[82%] text-xs leading-relaxed ${
-                        isAI
-                          ? 'bg-[#0a101f]/80 border border-cyan-500/15 text-zinc-100 rounded-tl-sm'
-                          : 'bg-gradient-to-r from-cyan-500/10 to-blue-600/15 border border-cyan-500/25 text-cyan-100 rounded-tr-sm'
+                      className={`max-w-[82%] rounded-2xl p-3.5 text-xs leading-relaxed ${
+                        isAssistant
+                          ? `rounded-tl-sm border bg-[#0a101f]/80 text-zinc-100 ${message.isError ? 'border-rose-500/30' : 'border-cyan-500/15'}`
+                          : 'rounded-tr-sm border border-cyan-500/25 bg-gradient-to-r from-cyan-500/10 to-blue-600/15 text-cyan-100'
                       }`}
                     >
-                      <p className="whitespace-pre-wrap">{msg.text}</p>
-                      <span className="block text-[8px] text-zinc-500 mt-1.5 font-mono text-right">
-                        {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {isAssistant && !message.isError ? (
+                        <LazyMarkdown>{message.content}</LazyMarkdown>
+                      ) : (
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                      )}
+                      {message.fallback && (
+                        <p className="mt-2 font-mono text-[9px] text-amber-300/80">
+                          Offline fallback answer (AI mentor service unavailable)
+                        </p>
+                      )}
+                      {message.sources && <MentorSources sources={message.sources} />}
+                      <span className="mt-1.5 block text-right font-mono text-[8px] text-zinc-500">
+                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-                    {!isAI && (
+                    {!isAssistant && (
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-cyan-400 text-black">
-                        <UserIcon className="h-4 w-4" />
+                        <UserIcon className="h-4 w-4" aria-hidden="true" />
                       </div>
                     )}
                   </div>
                 );
               })}
               {isLoading && (
-                <div className="flex gap-3 justify-start">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-zinc-950 border border-cyan-500/20 text-cyan-300">
-                    <Bot className="h-4 w-4" />
+                <div className="flex justify-start gap-3" role="status">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-cyan-500/20 bg-zinc-950 text-cyan-300">
+                    <Bot className="h-4 w-4" aria-hidden="true" />
                   </div>
-                  <div className="p-3.5 rounded-2xl bg-[#0a101f]/80 border border-cyan-500/15 text-zinc-400 text-xs flex items-center gap-2 rounded-tl-sm">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-400" />
-                    Analyzing codebase context & requirements...
+                  <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm border border-cyan-500/15 bg-[#0a101f]/80 p-3.5 text-xs text-zinc-400">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-400" aria-hidden="true" />
+                    Thinking...
                   </div>
                 </div>
               )}
               <div ref={chatEndRef} />
-            </main>
+            </div>
 
-            {/* Suggestions Footer */}
-            <footer className="p-4 border-t border-cyan-500/15 bg-black/30 space-y-3">
-              <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-mono">
-                <HelpCircle className="h-3.5 w-3.5 text-cyan-400" />
-                <span>Suggestions based on active tab:</span>
+            <footer className="space-y-3 border-t border-cyan-500/15 bg-black/30 p-4">
+              <div className="flex items-center gap-1.5 font-mono text-[10px] text-zinc-400">
+                <HelpCircle className="h-3.5 w-3.5 text-cyan-400" aria-hidden="true" />
+                <span>Suggestions for {pageLabel}:</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {getContextPrompts().map((prompt, i) => (
+                {prompts.map((prompt) => (
                   <button
-                    key={i}
-                    onClick={() => handleSend(prompt)}
-                    className="text-[10px] text-zinc-300 hover:text-white bg-white/5 border border-white/10 hover:border-cyan-500/30 px-2.5 py-1 rounded-md text-left transition cursor-pointer"
+                    type="button"
+                    key={prompt}
+                    onClick={() => void handleSend(prompt)}
+                    disabled={isLoading}
+                    className="cursor-pointer rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-left text-[10px] text-zinc-300 transition hover:border-cyan-500/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {prompt}
                   </button>
                 ))}
               </div>
 
-              {/* Chat Input Bar */}
-              <div className="flex gap-2 pt-2">
+              <form
+                className="flex gap-2 pt-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void handleSend(input);
+                }}
+              >
+                <label htmlFor="ai-mentor-input" className="sr-only">
+                  Ask the AI mentor
+                </label>
                 <input
+                  id="ai-mentor-input"
                   type="text"
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleSend(input); }}
-                  placeholder="Ask a technical or career query..."
-                  className="flex-1 bg-black/60 border border-cyan-500/20 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
+                  maxLength={2000}
+                  onChange={(event) => setInput(event.target.value)}
+                  placeholder="Ask a technical or career question..."
+                  className="flex-1 rounded-xl border border-cyan-500/20 bg-black/60 px-4 py-2.5 text-xs text-white outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
                 />
                 <button
-                  onClick={() => handleSend(input)}
+                  type="submit"
                   disabled={!input.trim() || isLoading}
-                  className="px-4 bg-cyan-400 hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-xl text-xs font-bold transition flex items-center justify-center cursor-pointer"
+                  aria-label="Send message"
+                  className="flex cursor-pointer items-center justify-center rounded-xl bg-cyan-400 px-4 text-xs font-bold text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <Send className="h-4 w-4" />
+                  <Send className="h-4 w-4" aria-hidden="true" />
                 </button>
-              </div>
+              </form>
             </footer>
           </motion.aside>
         )}

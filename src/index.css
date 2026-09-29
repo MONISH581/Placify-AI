@@ -253,3 +253,58 @@ html {
 .ai-core-pulse {
   animation: pulseGlow 4s ease-in-out infinite;
 }
+
+/* Rendered Markdown (AI mentor answers, AI code review). Tailwind preflight resets these, so restore basics. */
+.md-content > * + * {
+  margin-top: 0.5rem;
+}
+.md-content ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.md-content ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.md-content li + li {
+  margin-top: 0.2rem;
+}
+.md-content h1,
+.md-content h2,
+.md-content h3,
+.md-content h4 {
+  font-weight: 700;
+  color: #ffffff;
+}
+.md-content strong {
+  font-weight: 700;
+  color: #e0f2fe;
+}
+.md-content a {
+  color: #67e8f9;
+  text-decoration: underline;
+}
+.md-content code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: rgba(2, 6, 23, 0.8);
+  border-radius: 0.25rem;
+  padding: 0.05rem 0.3rem;
+  color: #a5f3fc;
+}
+.md-content pre {
+  overflow-x: auto;
+  background: rgba(2, 6, 23, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+}
+.md-content pre code {
+  background: transparent;
+  padding: 0;
+}
+.md-content blockquote {
+  border-left: 2px solid rgba(6, 182, 212, 0.4);
+  padding-left: 0.6rem;
+  color: #cbd5e1;
+}
