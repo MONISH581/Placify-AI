@@ -88,7 +88,7 @@ Create a complete study module for the topic "${topicName}" (${topicSummary}).
 Include: a detailed theory explanation (markdown allowed), an ASCII diagram, 2-4 code examples, 5-10 practice questions,
 2-3 coding challenges (beginner to advanced) with starter code, exactly 5 multiple-choice quiz questions (4 options each, answerIndex is 0-based),
 and 4-6 frequently asked interview questions with answers. Set "name" to "${topicName}".`;
-  const raw = await generateJson<unknown>("learning topic", prompt, TOPIC_SCHEMA, 20_000);
+  const raw = await generateJson<unknown>("learning topic", prompt, TOPIC_SCHEMA, 45_000);
   if (!raw) return null;
   const parsed = TopicPayloadSchema.safeParse(raw);
   if (!parsed.success) {

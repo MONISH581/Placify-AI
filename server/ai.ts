@@ -31,6 +31,8 @@ async function generate(
       contents: prompt,
       config: {
         abortSignal: controller.signal,
+        // Flash models spend most of the latency budget on hidden reasoning that these content tasks do not need.
+        ...(/gemini-2\.5-flash/.test(config.geminiModel) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
         ...(jsonSchema ? { responseMimeType: "application/json", responseSchema: jsonSchema } : {}),
       },
     })

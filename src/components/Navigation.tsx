@@ -16,7 +16,6 @@ import {
   Sparkles,
   Target,
   Trophy,
-  UserRound,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useAppData } from '../context/AppDataContext';
@@ -37,7 +36,6 @@ export const navItems: Array<{
   { path: '/contests', label: 'Contests', icon: Trophy },
   { path: '/community', label: 'Community', icon: BriefcaseBusiness },
   { path: '/career', label: 'Career Roadmap', icon: Target },
-  { path: '/profile', label: 'Profile', icon: UserRound },
   { path: '/admin', label: 'Admin Studio', icon: Settings, adminOnly: true },
 ];
 
@@ -120,7 +118,7 @@ export function Navigation() {
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex shrink-0 cursor-pointer items-center gap-2 border-b-2 px-3.5 py-2.5 text-xs font-bold transition ${
+                  `flex shrink-0 cursor-pointer items-center gap-1.5 border-b-2 px-2.5 py-2.5 text-xs font-bold transition ${
                     isActive
                       ? 'border-cyan-400 bg-cyan-400/10 font-black text-cyan-300'
                       : 'border-transparent text-zinc-400 hover:border-white/20 hover:text-white'
