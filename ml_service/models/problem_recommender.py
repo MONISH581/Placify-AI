@@ -1,139 +1,125 @@
 """
 problem_recommender.py
-Content-based + collaborative filtering problem recommender.
-Uses TF-IDF embeddings of problem text + user solved history to recommend next problems.
+Content-based problem recommender over the problem bank (SQLite, see
+core/problem_bank.py).
+
+- Each problem is represented by an L2-normalised TF-IDF vector of its title,
+  tags and description (sparse CSR matrix, the only large object in the bundle).
+- A user's profile is the mean vector of the problems they solved; unsolved
+  problems are ranked by cosine similarity to it using sparse matrix-vector
+  products (the problem matrix is never densified).
+- Cold start (no solved problems, or none of the solved ids exist in the bank):
+  easiest problems first.
 """
 
+import logging
 import os
-import joblib
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+if __package__ in (None, ""):
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import numpy as np
-import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from scipy.sparse import csr_matrix
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-MODELS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "saved_models")
-os.makedirs(MODELS_DIR, exist_ok=True)
+from core import config
+from core.bundle import RECOMMENDER_FILE, save_bundle
+from core.problem_bank import fingerprint, load_problems
+
+logger = logging.getLogger("placify.recommender")
+
+MODEL_NAME = "TF-IDF content-based recommender"
+DIFFICULTY_RANK = {"Easy": 0, "Medium": 1, "Hard": 2}
+COLD_START_SCORE = {"Easy": 0.9, "Medium": 0.6, "Hard": 0.3}
 
 
-def train():
-    # Load problem metadata
-    prob_path = os.path.join(DATA_DIR, "problem_metadata.csv")
-    inter_path = os.path.join(DATA_DIR, "recommendation_interactions.csv")
+def _problem_text(problem: Dict[str, Any]) -> str:
+    tags = " ".join(problem.get("tags") or [])
+    # Tags are repeated so topic overlap weighs more than incidental description words.
+    return f"{problem.get('title', '')} {tags} {tags} {problem.get('description', '')}".strip()
 
-    if not os.path.exists(prob_path):
-        raise FileNotFoundError(f"Problem metadata not found: {prob_path}")
 
-    prob_df = pd.read_csv(prob_path).fillna("")
-    print(f"[Recommender] Loaded {len(prob_df)} problems")
+def train(problems: Optional[List[Dict[str, Any]]] = None,
+          models_dir: Optional[Path] = None) -> Dict[str, Any]:
+    problems = problems if problems is not None else load_problems()
+    if not problems:
+        raise ValueError("No problems to train the recommender on")
 
-    # ── Content-Based: TF-IDF over problem text ──────────────────────────────
-    tfidf = TfidfVectorizer(
-        max_features=5000,
-        ngram_range=(1, 2),
-        sublinear_tf=True,
-        min_df=1,
-        stop_words="english"
+    vectorizer = TfidfVectorizer(
+        max_features=5000, ngram_range=(1, 2), sublinear_tf=True, min_df=1, stop_words="english",
     )
-    tfidf_matrix = tfidf.fit_transform(prob_df["text"])
-    content_sim = cosine_similarity(tfidf_matrix)
+    matrix = vectorizer.fit_transform([_problem_text(p) for p in problems]).tocsr().astype(np.float32)
 
-    print(f"[Recommender] TF-IDF matrix: {tfidf_matrix.shape}, Content sim matrix: {content_sim.shape}")
-
-    # ── Collaborative Filtering: User-Item Matrix ─────────────────────────────
-    user_item = None
-    user_ids = []
-    if os.path.exists(inter_path):
-        inter_df = pd.read_csv(inter_path)
-        prob_ids = prob_df["problem_id"].tolist()
-        user_ids = inter_df["user_id"].unique().tolist()
-
-        prob_idx = {pid: i for i, pid in enumerate(prob_ids)}
-        user_idx = {uid: i for i, uid in enumerate(user_ids)}
-
-        rows, cols, data = [], [], []
-        for _, row in inter_df.iterrows():
-            uid = row["user_id"]
-            pid = row["problem_id"]
-            if uid in user_idx and pid in prob_idx:
-                rows.append(user_idx[uid])
-                cols.append(prob_idx[pid])
-                data.append(1.0)
-
-        user_item = csr_matrix(
-            (data, (rows, cols)),
-            shape=(len(user_ids), len(prob_ids))
-        )
-        print(f"[Recommender] User-Item matrix: {user_item.shape}")
-
-    model_data = {
-        "tfidf": tfidf,
-        "tfidf_matrix": tfidf_matrix,
-        "content_sim": content_sim,
-        "user_item": user_item,
-        "user_ids": user_ids,
-        "prob_ids": prob_df["problem_id"].tolist(),
-        "prob_df": prob_df
-    }
-
-    model_path = os.path.join(MODELS_DIR, "recommender_model.pkl")
-    joblib.dump(model_data, model_path)
-    print(f"[Recommender] Model saved → {model_path}")
-    return model_data
-
-
-def recommend(model_data: dict, solved_ids: list, top_n: int = 10, difficulty_filter: str = None) -> list:
-    """
-    Recommend top_n problems based on solved history.
-    Uses content-based similarity: averages TF-IDF vectors of solved problems,
-    then ranks all unsolved problems by cosine similarity.
-
-    Returns list of dicts: [{"problem_id": ..., "title": ..., "difficulty": ..., "score": ...}]
-    """
-    prob_df = model_data["prob_df"]
-    tfidf_matrix = model_data["tfidf_matrix"]
-    prob_ids = model_data["prob_ids"]
-
-    solved_set = set(solved_ids)
-    unsolved_mask = [pid not in solved_set for pid in prob_ids]
-
-    if not any(unsolved_mask):
-        return []
-
-    # Average TF-IDF vector of solved problems as user preference profile
-    solved_indices = [i for i, pid in enumerate(prob_ids) if pid in solved_set]
-
-    if solved_indices:
-        user_profile = np.asarray(tfidf_matrix[solved_indices].mean(axis=0))
-        all_vecs = np.asarray(tfidf_matrix.todense())
-        sims = cosine_similarity(user_profile, all_vecs)[0]
-    else:
-        # Cold start: rank by difficulty order (Easy first)
-        diff_order = {"Easy": 0.9, "Medium": 0.6, "Hard": 0.3}
-        sims = np.array([diff_order.get(prob_df.iloc[i]["difficulty"], 0.5) for i in range(len(prob_ids))])
-
-    # Filter unsolved
-    candidates = [
+    items = [
         {
-            "problem_id": prob_ids[i],
-            "title": prob_df.iloc[i]["title"],
-            "difficulty": prob_df.iloc[i]["difficulty"],
-            "tags": prob_df.iloc[i]["tags"],
-            "score": round(float(sims[i]), 4)
+            "problem_id": p["id"],
+            "title": p["title"],
+            "difficulty": p["difficulty"],
+            "tags": list(p.get("tags") or []),
         }
-        for i in range(len(prob_ids))
-        if unsolved_mask[i]
+        for p in problems
     ]
+    index = {item["problem_id"]: i for i, item in enumerate(items)}
 
-    # Optional difficulty filter
-    if difficulty_filter and difficulty_filter in ("Easy", "Medium", "Hard"):
-        candidates = [c for c in candidates if c["difficulty"] == difficulty_filter]
+    out = Path(models_dir or config.models_dir()) / RECOMMENDER_FILE
+    payload = {"matrix": matrix, "items": items, "index": index,
+               "problem_fingerprint": fingerprint(problems)}
+    save_bundle(out, payload, model_name=MODEL_NAME)
+    logger.info("Recommender: %d problems, vocabulary %d terms, saved to %s",
+                len(items), len(vectorizer.vocabulary_), out)
+    return {"model_name": MODEL_NAME, "problems": len(items), "vocabulary": len(vectorizer.vocabulary_)}
 
-    # Sort by similarity score descending
-    candidates.sort(key=lambda x: x["score"], reverse=True)
-    return candidates[:top_n]
+
+def recommend(bundle: Dict[str, Any], solved_ids: List[str], top_n: int = 10,
+              difficulty_filter: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Returns {"recommendations": [{problem_id, title, difficulty, tags, score}],
+             "strategy": "content" | "cold-start", "model": str}
+    Solved problems are always excluded; unknown solved ids are ignored.
+    """
+    items = bundle["items"]
+    matrix = bundle["matrix"]
+    index = bundle["index"]
+
+    solved = {str(s).strip() for s in (solved_ids or []) if str(s).strip()}
+    known_rows = sorted(index[s] for s in solved if s in index)
+
+    scores = None
+    if known_rows:
+        profile = np.asarray(matrix[known_rows].mean(axis=0)).ravel()  # 1 x vocab, small
+        norm = float(np.linalg.norm(profile))
+        if norm > 0:
+            scores = np.asarray(matrix.dot(profile)).ravel() / norm  # rows are unit-norm -> cosine
+    strategy = "content" if scores is not None else "cold-start"
+    if scores is None:
+        scores = np.array([COLD_START_SCORE.get(item["difficulty"], 0.5) for item in items])
+
+    candidates = [
+        i for i, item in enumerate(items)
+        if item["problem_id"] not in solved
+        and (not difficulty_filter or item["difficulty"] == difficulty_filter)
+    ]
+    candidates.sort(key=lambda i: (
+        -float(scores[i]),
+        DIFFICULTY_RANK.get(items[i]["difficulty"], 1),
+        items[i]["problem_id"],
+    ))
+
+    recommendations = [
+        {
+            "problem_id": items[i]["problem_id"],
+            "title": items[i]["title"],
+            "difficulty": items[i]["difficulty"],
+            "tags": list(items[i]["tags"]),
+            "score": round(float(scores[i]), 4),
+        }
+        for i in candidates[:max(0, int(top_n))]
+    ]
+    return {"recommendations": recommendations, "strategy": strategy, "model": bundle["model_name"]}
 
 
 if __name__ == "__main__":
+    config.setup_logging()
     train()

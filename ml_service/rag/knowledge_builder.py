@@ -1,22 +1,39 @@
 """
 knowledge_builder.py
-Reads Placify's learning track content, problem data, and Q&A to build
-a text corpus for the RAG pipeline's FAISS vector index.
+Builds the text corpus for the AI-mentor RAG index:
+  1. the hand-written learning-track notes below (tracked source content), and
+  2. every problem in the problem bank (SQLite, see core/problem_bank.py):
+     title, difficulty, tags, description, hints and editorial.
+
+Community discussions are deliberately NOT indexed: they are unmoderated
+user-generated text and would flow straight into mentor answers.
+
+The generated chunk list is written to the gitignored generated-data directory
+(data/generated/knowledge_chunks.json) for inspection; the index itself stores
+its own copy next to the FAISS file.
 """
 
+import logging
 import os
-import json
-import re
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DB_FILE = os.path.join(BASE_DIR, "server-db.json")
-RAG_DIR = os.path.dirname(os.path.abspath(__file__))
-OUT_FILE = os.path.join(RAG_DIR, "knowledge_chunks.json")
+if __package__ in (None, ""):
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from core import config
+from core.bundle import write_json_atomic
+from core.problem_bank import load_problems
+
+logger = logging.getLogger("placify.knowledge")
+
+CHUNKS_FILE = "knowledge_chunks.json"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Learning Track Content — inlined from learningTracks.ts
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
+# Learning-track content (hand-written; mirrors the learning tracks in the app)
+# -----------------------------------------------------------------------------
 LEARNING_TRACK_CONTENT = [
     # Python
     {"id": "py-intro", "source": "Python Track", "topic": "Introduction to Python & Setup", "content": "Python is a high-level, interpreted programming language known for readability and simplicity. Setting up requires installing Python from python.org. Use virtual environments (venv) to isolate project dependencies. Python uses indentation for code blocks."},
@@ -58,7 +75,7 @@ LEARNING_TRACK_CONTENT = [
     # Interview Tips
     {"id": "interview-coding", "source": "Interview Tips", "topic": "Coding Interview Strategy", "content": "Clarify the problem before coding. Discuss edge cases. Start with brute force, then optimize. Think aloud. Analyze time and space complexity. Write clean code with meaningful variable names. Test with examples. Practice on LeetCode, HackerRank, Codeforces. Common patterns: two pointers, sliding window, BFS/DFS, DP."},
     {"id": "interview-hr", "source": "Interview Tips", "topic": "HR Interview Preparation", "content": "Tell me about yourself: structure as background + achievements + future goals. STAR method: Situation, Task, Action, Result for behavioral questions. Research the company and role. Prepare questions to ask the interviewer. Common: Why this company? Tell me about a challenge. Describe a conflict and how you resolved it."},
-    {"id": "interview-system-design", "source": "Interview Tips", "topic": "System Design Interview", "content": "Framework: Clarify requirements → Estimate scale → API design → Data model → High-level design → Deep dive → Discuss trade-offs. Know CAP theorem. Common designs: URL shortener, chat system, Twitter, Netflix, Uber, rate limiter. Study Grokking the System Design Interview."},
+    {"id": "interview-system-design", "source": "Interview Tips", "topic": "System Design Interview", "content": "Framework: Clarify requirements -> Estimate scale -> API design -> Data model -> High-level design -> Deep dive -> Discuss trade-offs. Know CAP theorem. Common designs: URL shortener, chat system, Twitter, Netflix, Uber, rate limiter. Study Grokking the System Design Interview."},
     {"id": "interview-resume", "source": "Interview Tips", "topic": "Resume & ATS Optimization", "content": "Use action verbs: built, designed, optimized, reduced, implemented. Quantify impact: 'Reduced load time by 40%'. Include links to GitHub and projects. ATS-friendly: use standard section names, avoid tables/graphics. Tailor resume keywords to job description. Keep to 1 page for freshers."},
 
     # Company-Specific
@@ -71,72 +88,61 @@ LEARNING_TRACK_CONTENT = [
 ]
 
 
-def build_knowledge_chunks() -> list:
-    """
-    Combine built-in learning content with DB problems/discussions.
-    Returns list of {"id": ..., "text": ..., "source": ..., "topic": ...}
-    """
-    chunks = []
+def _truncate(text: str, limit: int) -> str:
+    text = " ".join((text or "").split())
+    return text if len(text) <= limit else text[:limit].rsplit(" ", 1)[0] + " ..."
 
-    # Built-in learning track content
-    for item in LEARNING_TRACK_CONTENT:
-        chunks.append({
+
+def problem_chunk(problem: Dict[str, Any]) -> Dict[str, str]:
+    title = problem.get("title", "")
+    difficulty = problem.get("difficulty", "")
+    tags = ", ".join(problem.get("tags") or [])
+    parts = [f"[Problem: {title} ({difficulty})]"]
+    if tags:
+        parts.append(f"Tags: {tags}.")
+    parts.append(_truncate(problem.get("description", ""), 400))
+    hints = " | ".join(problem.get("hints") or [])
+    if hints:
+        parts.append(f"Hints: {_truncate(hints, 300)}")
+    if problem.get("editorial"):
+        parts.append(f"Editorial: {_truncate(problem['editorial'], 800)}")
+    return {
+        "id": f"problem-{problem['id']}",
+        "text": " ".join(p for p in parts if p).strip(),
+        "source": "Problem Bank",
+        "topic": f"{title} ({difficulty})",
+    }
+
+
+def build_knowledge_chunks(problems: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, str]]:
+    """
+    Returns [{"id", "text", "source", "topic"}]. Reads the problem bank unless
+    `problems` is given; raises ProblemBankError (with a setup hint) if the
+    database is missing or empty.
+    """
+    chunks = [
+        {
             "id": item["id"],
             "text": f"[{item['source']}] {item['topic']}: {item['content']}",
             "source": item["source"],
-            "topic": item["topic"]
-        })
-
-    # DB problems: editorials + hints
-    if os.path.exists(DB_FILE):
-        with open(DB_FILE, "r", encoding="utf-8") as f:
-            db = json.load(f)
-
-        # Problem hints and editorials
-        for prob in db.get("problems", [])[:150]:  # Limit to first 150 for index size
-            pid = prob.get("id", "unknown")
-            title = prob.get("title", "")
-            desc = prob.get("description", "")
-            tags = " ".join(prob.get("tags", []))
-            hints = " | ".join(prob.get("hints", []))
-            editorial = prob.get("editorial", "")
-            diff = prob.get("difficulty", "")
-
-            if editorial or hints:
-                text = f"[Problem: {title} ({diff})] Tags: {tags}. {desc[:200]} Hints: {hints}. Editorial: {editorial}"
-                chunks.append({
-                    "id": f"prob-{pid}",
-                    "text": text.strip(),
-                    "source": "Problem Bank",
-                    "topic": f"{title} ({diff})"
-                })
-
-        # Discussions
-        for disc in db.get("discussions", []):
-            did = disc.get("id", "unknown")
-            title = disc.get("title", "")
-            content = disc.get("content", "")
-            if title and content:
-                chunks.append({
-                    "id": f"disc-{did}",
-                    "text": f"[Discussion: {title}] {content}",
-                    "source": "Community Discussion",
-                    "topic": title
-                })
-    else:
-        print(f"[KnowledgeBuilder] server-db.json not found, using only built-in content.")
-
-    print(f"[KnowledgeBuilder] Total knowledge chunks: {len(chunks)}")
+            "topic": item["topic"],
+        }
+        for item in LEARNING_TRACK_CONTENT
+    ]
+    problems = problems if problems is not None else load_problems()
+    chunks.extend(problem_chunk(p) for p in problems)
+    logger.info("Knowledge base: %d chunks (%d learning notes, %d problems)",
+                len(chunks), len(LEARNING_TRACK_CONTENT), len(problems))
     return chunks
 
 
-def save_chunks(chunks: list) -> str:
-    with open(OUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(chunks, f, indent=2, ensure_ascii=False)
-    print(f"[KnowledgeBuilder] Saved {len(chunks)} chunks → {OUT_FILE}")
-    return OUT_FILE
+def save_chunks(chunks: List[Dict[str, str]], out_dir: Optional[Path] = None) -> Path:
+    out = Path(out_dir or config.generated_data_dir()) / CHUNKS_FILE
+    write_json_atomic(out, chunks)
+    logger.info("Saved %d knowledge chunks to %s", len(chunks), out)
+    return out
 
 
 if __name__ == "__main__":
-    chunks = build_knowledge_chunks()
-    save_chunks(chunks)
+    config.setup_logging()
+    save_chunks(build_knowledge_chunks())

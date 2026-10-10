@@ -1,0 +1,9 @@
+# Placify ML microservice - test dependencies (runtime deps + pytest, fully pinned).
+# Install with: .venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+# Run with:     .venv\Scripts\python.exe -m pytest tests -q
+-r requirements.txt
+
+pytest==8.3.4
+iniconfig==2.3.0
+pluggy==1.6.0
+tomli==2.4.1 ; python_version < "3.11"
