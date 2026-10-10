@@ -3,6 +3,7 @@ import { authenticate, optionalAuth, type AuthenticatedRequest } from "../auth";
 import { prisma } from "../db";
 import { formatContest } from "../format";
 import { asyncHandler, HttpError, validateId } from "../http";
+import { awardEarnedBadges } from "../users";
 
 export const contestsRouter = Router();
 
@@ -40,6 +41,7 @@ contestsRouter.post(
       update: {},
       create: { contestId, userId },
     });
+    await awardEarnedBadges(prisma, userId);
     const updated = await prisma.contest.findUniqueOrThrow({
       where: { id: contestId },
       include: { _count: { select: { registrations: true } } },

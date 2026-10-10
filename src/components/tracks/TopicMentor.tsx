@@ -45,7 +45,7 @@ export function TopicMentor({ trackName, topicName }: { trackName: string; topic
   };
 
   return (
-    <section className="space-y-4 overflow-hidden rounded-xl border border-slate-800 bg-[#161D2F] p-5" id="topic-mentor-widget">
+    <section className="space-y-4 overflow-hidden rounded-lg border border-slate-800 bg-card p-5" id="topic-mentor-widget">
       <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
         <MessageSquare className="h-5 w-5 text-cyan-400" aria-hidden="true" />
         <div>
@@ -111,7 +111,7 @@ export function TopicMentor({ trackName, topicName }: { trackName: string; topic
           type="submit"
           disabled={loading || !input.trim()}
           aria-label="Send question"
-          className="flex cursor-pointer items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex cursor-pointer items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-black transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Send className="h-3.5 w-3.5" aria-hidden="true" />}
         </button>

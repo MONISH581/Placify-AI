@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import { CheckCircle2, Lock, Search } from 'lucide-react';
-import { groupProblemsByCompany } from '../../data/companies';
+import { CheckCircle2, Search } from 'lucide-react';
+import { companyForTag, groupProblemsByCompany } from '../../data/companies';
 import { ErrorAlert } from '../StatusMessages';
 import type { Difficulty, Problem } from '../../types';
-import { difficultyBadgeClass } from './difficulty';
+import { difficultyTextClass } from './difficulty';
 
 /** XP-gated topic regions (client-side gamification only; all problems remain reachable via search). */
 const TOPIC_WORLDS = [
@@ -18,7 +18,6 @@ const DIFFICULTY_FILTERS: Array<'All' | Difficulty> = ['All', 'Easy', 'Medium', 
 
 interface ProblemListProps {
   problems: Problem[];
-  selectedId: string | null;
   solvedIds: string[];
   userXp: number;
   loading: boolean;
@@ -27,7 +26,11 @@ interface ProblemListProps {
   onSelect: (problemId: string) => void;
 }
 
-export function ProblemList({ problems, selectedId, solvedIds, userXp, loading, error, onRetry, onSelect }: ProblemListProps) {
+const controlClass =
+  'h-9 rounded-md bg-slate-900 px-3 text-sm text-white outline-none placeholder:text-slate-500 focus:ring-1 focus:ring-cyan-400';
+
+/** Full-width problem table with all filters in one row. Clicking a row opens the solve screen. */
+export function ProblemList({ problems, solvedIds, userXp, loading, error, onRetry, onSelect }: ProblemListProps) {
   const [search, setSearch] = useState('');
   const [worldId, setWorldId] = useState<string>('all');
   const [company, setCompany] = useState('All');
@@ -55,161 +58,143 @@ export function ProblemList({ problems, selectedId, solvedIds, userXp, loading, 
   }, [problems, search, worldId, company, difficulty]);
 
   return (
-    <div
-      className="flex h-[750px] flex-col gap-4 overflow-hidden rounded-2xl border border-white/5 bg-[#0a0f1e]/95 p-4 shadow-xl xl:col-span-3"
-      id="problems-sidebar-list"
-    >
-      <div>
-        <h2 className="mb-1 font-mono text-xs font-bold uppercase tracking-wider text-white">Problem bank</h2>
-        <p className="text-[11px] text-zinc-400">Search, filter by company or difficulty, or explore topic regions.</p>
-      </div>
+    <section aria-labelledby="problem-bank-heading" id="problems-sidebar-list">
+      <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-slate-500">All problems</p>
+      <h2 id="problem-bank-heading" className="mb-4 mt-1 font-heading text-xl font-bold text-white">
+        Problem bank
+      </h2>
 
-      <div className="relative">
-        <label htmlFor="arena-problem-search" className="sr-only">
-          Search problems
+      <div className="mb-4 flex flex-wrap items-center gap-2" id="arena-filters">
+        <div className="relative min-w-[14rem] flex-1">
+          <label htmlFor="arena-problem-search" className="sr-only">
+            Search problems
+          </label>
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+          <input
+            id="arena-problem-search"
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search by title or tag..."
+            className={`${controlClass} w-full pl-9`}
+          />
+        </div>
+
+        <div className="flex gap-1" role="group" aria-label="Difficulty" id="sidebar-diff-filters">
+          {DIFFICULTY_FILTERS.map((diff) => (
+            <button
+              type="button"
+              key={diff}
+              aria-pressed={difficulty === diff}
+              onClick={() => setDifficulty(diff)}
+              className={`h-9 cursor-pointer rounded-md px-3 text-sm font-semibold transition-colors ${
+                difficulty === diff ? 'bg-cyan-400 text-black' : 'bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              {diff}
+            </button>
+          ))}
+        </div>
+
+        <label htmlFor="arena-topic-filter" className="sr-only">
+          Topic
         </label>
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" aria-hidden="true" />
-        <input
-          id="arena-problem-search"
-          type="search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search by title or tag..."
-          className="w-full rounded-lg border border-white/5 bg-black/45 py-1.5 pl-8 pr-2.5 text-xs text-white outline-none transition focus:border-cyan-400"
-        />
-      </div>
-
-      <div className="border-b border-white/5 pb-3">
-        <span className="mb-2 block font-mono text-[11px] font-bold uppercase tracking-widest text-zinc-400">Topic regions</span>
-        <div className="grid grid-cols-2 gap-1.5">
-          <button
-            type="button"
-            aria-pressed={worldId === 'all'}
-            onClick={() => setWorldId('all')}
-            className={`cursor-pointer rounded-xl border p-2 text-center font-mono text-[11px] font-bold transition ${
-              worldId === 'all' ? 'border-cyan-400 bg-cyan-400/10 text-cyan-300' : 'border-white/5 bg-black/20 text-zinc-400 hover:text-white'
-            }`}
-          >
-            All regions
-          </button>
+        <select id="arena-topic-filter" value={worldId} onChange={(event) => setWorldId(event.target.value)} className={controlClass}>
+          <option value="all">All topics</option>
           {TOPIC_WORLDS.map((world) => {
             const locked = userXp < world.requiredXp;
-            const active = worldId === world.id;
             return (
-              <button
-                type="button"
-                key={world.id}
-                disabled={locked}
-                aria-pressed={active}
-                onClick={() => setWorldId(world.id)}
-                title={locked ? `Requires ${world.requiredXp} XP (you have ${userXp} XP)` : world.name}
-                className={`relative flex items-center justify-center gap-1 overflow-hidden rounded-xl border p-2 font-mono text-[11px] font-bold transition ${
-                  locked
-                    ? 'cursor-not-allowed border-white/5 bg-black/40 text-zinc-400 opacity-50'
-                    : active
-                      ? 'cursor-pointer border-cyan-400 bg-cyan-400/10 text-cyan-300'
-                      : 'cursor-pointer border-white/5 bg-black/20 text-zinc-400 hover:border-white/10 hover:text-white'
-                }`}
-              >
-                <span className="truncate">{world.name}</span>
-                {locked && <Lock className="h-2.5 w-2.5 shrink-0" aria-label="Locked" />}
-              </button>
+              <option key={world.id} value={world.id} disabled={locked}>
+                {world.name}
+                {locked ? ` (needs ${world.requiredXp} XP)` : ''}
+              </option>
             );
           })}
-        </div>
+        </select>
+
+        <label htmlFor="sidebar-company-filter" className="sr-only">
+          Company
+        </label>
+        <select id="sidebar-company-filter" value={company} onChange={(event) => setCompany(event.target.value)} className={controlClass}>
+          <option value="All">All companies</option>
+          {companies.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
       </div>
 
-      <div className="space-y-3 border-b border-white/5 pb-3" id="arena-filters">
-        <div className="space-y-1">
-          <label htmlFor="sidebar-company-filter" className="block font-mono text-[11px] font-bold uppercase tracking-widest text-zinc-400">
-            Company
-          </label>
-          <select
-            id="sidebar-company-filter"
-            value={company}
-            onChange={(event) => setCompany(event.target.value)}
-            className="w-full rounded-lg border border-white/5 bg-black/45 px-2.5 py-1.5 text-xs text-white outline-none transition focus:border-cyan-400"
-          >
-            <option value="All">All companies</option>
-            {companies.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </div>
+      {error && <ErrorAlert message={error} onRetry={onRetry} />}
 
-        <fieldset className="space-y-1">
-          <legend className="block font-mono text-[11px] font-bold uppercase tracking-widest text-zinc-400">Difficulty</legend>
-          <div className="grid grid-cols-4 gap-1" id="sidebar-diff-filters">
-            {DIFFICULTY_FILTERS.map((diff) => (
-              <button
-                type="button"
-                key={diff}
-                aria-pressed={difficulty === diff}
-                onClick={() => setDifficulty(diff)}
-                className={`cursor-pointer rounded border py-1 font-mono text-[11px] font-bold transition ${
-                  difficulty === diff ? 'border-transparent bg-cyan-400 text-black' : 'border-white/5 bg-black/25 text-zinc-400 hover:text-white'
-                }`}
-              >
-                {diff}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-      </div>
-
-      <div className="flex items-center justify-between px-1 font-mono text-[11px] text-zinc-400">
-        <span>{filtered.length} shown</span>
-        <span>{problems.length} total</span>
-      </div>
-
-      <div className="flex-1 space-y-1.5 overflow-y-auto pr-1 font-sans" id="prob-items-list">
-        {error && <ErrorAlert message={error} onRetry={onRetry} />}
-        {loading && problems.length === 0 ? (
-          <p className="py-10 text-center font-mono text-[11px] text-zinc-400">Loading problems...</p>
-        ) : filtered.length > 0 ? (
-          <ul className="space-y-1.5">
-            {filtered.map((problem) => {
-              const solved = solvedIds.includes(problem.id);
-              return (
-                <li key={problem.id}>
-                  <button
-                    type="button"
-                    onClick={() => onSelect(problem.id)}
+      {loading && problems.length === 0 ? (
+        <p className="py-10 text-center text-sm text-slate-400">Loading problems...</p>
+      ) : filtered.length > 0 ? (
+        <div className="overflow-hidden rounded-md bg-slate-900" id="prob-items-list">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b-2 border-cyan-400 bg-slate-800 font-mono text-xs uppercase tracking-widest text-white">
+                <th scope="col" className="w-12 px-4 py-3.5 font-bold">
+                  <span className="sr-only">Status</span>
+                </th>
+                <th scope="col" className="px-2 py-3.5 font-bold">
+                  Title
+                </th>
+                <th scope="col" className="hidden px-2 py-3.5 font-bold md:table-cell">
+                  Topics
+                </th>
+                <th scope="col" className="w-28 px-4 py-3.5 text-right font-bold">
+                  Difficulty
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((problem) => {
+                const solved = solvedIds.includes(problem.id);
+                const topics = (problem.tags ?? []).filter((tag) => !companyForTag(tag)).slice(0, 3);
+                return (
+                  <tr
+                    key={problem.id}
                     id={`problem-row-${problem.id}`}
-                    aria-current={selectedId === problem.id ? 'true' : undefined}
-                    className={`flex w-full cursor-pointer flex-col gap-2 rounded-xl border p-3.5 text-left transition ${
-                      selectedId === problem.id
-                        ? 'border-cyan-400 bg-cyan-400/5 text-white shadow-lg'
-                        : 'border-white/5 bg-black/25 text-zinc-300 hover:border-white/10'
-                    }`}
+                    onClick={() => onSelect(problem.id)}
+                    className="cursor-pointer border-t border-slate-800 transition-colors hover:bg-slate-800"
                   >
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="flex min-w-0 items-center gap-1.5">
-                        {solved && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-cyan-400" aria-label="Solved" />}
-                        <span className="truncate text-xs font-semibold leading-normal">{problem.title}</span>
-                      </span>
-                      <span className={`shrink-0 rounded-md border px-2 py-0.5 font-mono text-[11px] ${difficultyBadgeClass(problem.difficulty)}`}>
-                        {problem.difficulty}
-                      </span>
-                    </span>
-                    <span className="flex flex-wrap gap-1">
-                      {(problem.tags ?? []).slice(0, 3).map((tag) => (
-                        <span key={tag} className="rounded border border-white/5 bg-white/5 px-1.5 py-0.5 font-mono text-[11px] text-zinc-400">
-                          {tag}
-                        </span>
-                      ))}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="py-10 text-center font-mono text-[11px] text-zinc-400">No matching problems.</p>
-        )}
-      </div>
-    </div>
+                    <td className="px-4 py-3">
+                      {solved ? <CheckCircle2 className="h-4 w-4 text-emerald-400" aria-label="Solved" /> : <span className="block h-4 w-4" />}
+                    </td>
+                    <td className="px-2 py-3">
+                      <a
+                        href={`/arena/${encodeURIComponent(problem.id)}`}
+                        onClick={(event) => {
+                          // Plain clicks navigate in-app (the row handler runs); modified clicks open a new tab untouched.
+                          if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) {
+                            event.stopPropagation();
+                            return;
+                          }
+                          event.preventDefault();
+                        }}
+                        className="font-semibold text-white outline-none focus-visible:underline"
+                      >
+                        {problem.title}
+                      </a>
+                    </td>
+                    <td className="hidden max-w-xs truncate px-2 py-3 font-mono text-[11px] text-slate-400 md:table-cell">{topics.join(' · ')}</td>
+                    <td className={`px-4 py-3 text-right font-mono text-xs font-semibold ${difficultyTextClass(problem.difficulty)}`}>
+                      {problem.difficulty}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="py-10 text-center text-sm text-slate-400">No matching problems.</p>
+      )}
+
+      <p className="mt-3 font-mono text-[11px] text-slate-500">
+        {filtered.length} shown · {problems.length} total
+      </p>
+    </section>
   );
 }

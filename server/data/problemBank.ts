@@ -17,6 +17,8 @@ import {
 import { ALGORITHM_SPECS } from "./problems/algorithms";
 import { ADVANCED_SPECS } from "./problems/advanced";
 import { STRUCTURE_SPECS } from "./problems/structures";
+import { EXTRA_SPECS } from "./problems/extra";
+import { COMPANY_OVERRIDES } from "./problems/companies";
 
 export type { Difficulty, SeedProblem, SeedTestCase } from "./problemHelpers";
 
@@ -24,6 +26,7 @@ export const COMPANIES = [
   "Google", "Microsoft", "Amazon", "Meta", "Netflix", "Apple", "Uber", "Lyft",
   "Airbnb", "Adobe", "Twitter", "Salesforce", "Bloomberg", "Atlassian", "ByteDance",
   "Oracle", "Intel", "Cisco", "Stripe", "Square", "PayPal", "Goldman Sachs",
+  "TCS", "Infosys", "Wipro", "Accenture", "Flipkart", "Zoho",
 ];
 
 export const CATEGORY_NAMES: Record<string, string> = {
@@ -79,9 +82,10 @@ function mulberry32(seed: number) {
   };
 }
 
+/** Fallback tagging for problems without curated companies (the original 22 tech companies, so tags stay stable). */
 export function companyTagsFor(problemId: string): string[] {
   const rand = mulberry32(fnv1a(problemId));
-  const pool = [...COMPANIES];
+  const pool = COMPANIES.slice(0, 22);
   const count = 1 + Math.floor(rand() * 3);
   const picked: string[] = [];
   for (let i = 0; i < count; i++) {
@@ -1355,9 +1359,16 @@ const specs: Record<string, ProblemSpec[]> = {
   ],
 };
 
-const allSpecs: Record<string, ProblemSpec[]> = { ...specs, ...STRUCTURE_SPECS, ...ALGORITHM_SPECS, ...ADVANCED_SPECS };
+const baseSpecs: Record<string, ProblemSpec[]> = { ...specs, ...STRUCTURE_SPECS, ...ALGORITHM_SPECS, ...ADVANCED_SPECS };
 
-export const PROBLEM_BANK: SeedProblem[] = Object.entries(allSpecs).flatMap(([categoryKey, list]) =>
+/** Appends the extra problems to the matching categories. */
+const allSpecs: Record<string, ProblemSpec[]> = Object.fromEntries(
+  Object.keys({ ...baseSpecs, ...EXTRA_SPECS }).map((key) => [key, [...(baseSpecs[key] ?? []), ...(EXTRA_SPECS[key] ?? [])]])
+);
+
+/** Turns category -> spec lists into seed problems (ids, category names and tags). */
+export const buildBank = (source: Record<string, ProblemSpec[]>): SeedProblem[] =>
+  Object.entries(source).flatMap(([categoryKey, list]) =>
   list.map((spec) => {
     const id = `prob-${categoryKey}-${slugify(spec.title)}`;
     const category = CATEGORY_NAMES[categoryKey];
@@ -1365,7 +1376,7 @@ export const PROBLEM_BANK: SeedProblem[] = Object.entries(allSpecs).flatMap(([ca
       ...spec,
       id,
       category,
-      tags: [category, ...companyTagsFor(id)],
+      tags: [category, ...(spec.companies ?? COMPANY_OVERRIDES[id] ?? companyTagsFor(id))],
       hints: spec.hints.map((hint, i) => `Level ${i + 1}: ${hint}`),
       solutions: {
         javascript: spec.solutions.javascript,
@@ -1377,3 +1388,5 @@ export const PROBLEM_BANK: SeedProblem[] = Object.entries(allSpecs).flatMap(([ca
     };
   })
 );
+
+export const PROBLEM_BANK: SeedProblem[] = buildBank(allSpecs);

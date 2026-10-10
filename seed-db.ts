@@ -29,6 +29,10 @@ function daysAgo(days: number): Date {
   return d;
 }
 
+function hoursFromNow(hours: number): Date {
+  return new Date(Date.now() + hours * 3_600_000);
+}
+
 async function seedProblems() {
   // Legacy placeholder problems ("Sample Easy ARRAYS", ...) from older seeds are removed; submissions cascade.
   const removed = await prisma.problem.deleteMany({ where: { title: { startsWith: "Sample " }, id: { startsWith: "prob-" } } });
@@ -132,7 +136,7 @@ async function seedDemoData() {
       id: "contest-1",
       title: "Placify Weekly Challenge #1",
       description: "A 90-minute contest covering arrays, hashing and stacks. Solve as many problems as you can.",
-      startTime: daysAgo(-3).toISOString(),
+      startTime: hoursFromNow(72).toISOString(), // upcoming sample
       durationMinutes: 90,
       problems: ["prob-arrays-two-sum", "prob-hashing-longest-consecutive-sequence", "prob-stacks-largest-rectangle-in-histogram"],
     },
@@ -140,16 +144,24 @@ async function seedDemoData() {
       id: "contest-2",
       title: "Placify Trees & Queues Sprint",
       description: "Three tree and queue problems in 60 minutes - great practice for on-campus coding rounds.",
-      startTime: daysAgo(-10).toISOString(),
+      startTime: hoursFromNow(-240).toISOString(), // ended sample
       durationMinutes: 60,
       problems: ["prob-trees-invert-binary-tree", "prob-queues-design-circular-queue", "prob-trees-binary-tree-level-order-traversal"],
+    },
+    {
+      id: "contest-3",
+      title: "Placify Hashing Blitz",
+      description: "A 3-hour open contest on hashing and arrays. It is running now, so jump in any time before it closes.",
+      startTime: hoursFromNow(-1).toISOString(), // live sample
+      durationMinutes: 180,
+      problems: ["prob-arrays-two-sum", "prob-hashing-longest-consecutive-sequence", "prob-stacks-largest-rectangle-in-histogram"],
     },
   ];
   for (const c of contests) {
     const missing = c.problems.filter((id) => !byId.has(id));
     if (missing.length) throw new Error(`Contest ${c.id} references unknown problems: ${missing.join(", ")}`);
     const data = { title: c.title, description: c.description, durationMinutes: c.durationMinutes, problems: JSON.stringify(c.problems) };
-    await prisma.contest.upsert({ where: { id: c.id }, update: data, create: { id: c.id, startTime: c.startTime, ...data } });
+    await prisma.contest.upsert({ where: { id: c.id }, update: { ...data, startTime: c.startTime }, create: { id: c.id, startTime: c.startTime, ...data } });
   }
 
   const threads = [

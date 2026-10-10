@@ -171,7 +171,7 @@ export function TopicQuizPanel({ trackId, topicId, quizzes, alreadyCompleted, on
               type="button"
               onClick={handleSubmit}
               disabled={!allAnswered}
-              className="cursor-pointer rounded-lg bg-indigo-600 px-6 py-2 font-mono text-xs font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+              className="cursor-pointer rounded-lg bg-indigo-600 px-6 py-2 font-mono text-xs font-bold text-black   transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {allAnswered ? 'Submit quiz' : `Answer all ${total} questions`}
             </button>

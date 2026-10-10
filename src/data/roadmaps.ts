@@ -17,6 +17,7 @@ export interface CareerPath {
   id: string;
   title: string;
   role: string;
+  /** Lucide icon name, resolved by the UI. */
   icon: string;
   description: string;
   targetCompanies: string[];
@@ -30,7 +31,7 @@ export const careerPaths: CareerPath[] = [
     id: "faang-sde",
     title: "FAANG SDE Path",
     role: "Computer Scientist & Algorithm Specialist",
-    icon: "🎯",
+    icon: "Target",
     description: "Master rigorous algorithms, deep graph traversals, dynamic programming bounds, and scalable system components for high-concurrency top tier technical loops.",
     targetCompanies: ["Google", "Amazon", "Meta", "Microsoft", "Netflix", "Apple"],
     skills: ["Data Structures", "Complex Algorithms", "Graphs DFS/BFS", "Dynamic Programming", "Big-O Analysis"],
@@ -78,7 +79,7 @@ export const careerPaths: CareerPath[] = [
     id: "frontend-specialist",
     title: "Frontend Architect",
     role: "UI Engineer & Client Orchestrator",
-    icon: "✨",
+    icon: "Palette",
     description: "Focus on React performance, asynchronous microtask loop, dynamic layouts, bundlers, and web asset standard optimizations.",
     targetCompanies: ["Vercel", "Stripe", "Airbnb", "Coinbase", "Figma"],
     skills: ["React JS", "Event Loop", "Tailwind CSS", "DOM Engines", "Web Vitals"],
@@ -117,7 +118,7 @@ export const careerPaths: CareerPath[] = [
     id: "fullstack-enterprise",
     title: "Fullstack SaaS Lead",
     role: "Fullstack Architect & API Generalist",
-    icon: "⚡",
+    icon: "Layers",
     description: "Orchestrate end-to-end applications from Node.js Express controllers to robust relational schemas, security policies, and cache caches.",
     targetCompanies: ["Salesforce", "Uber", "Atlassian", "Oracle", "Shopify"],
     skills: ["Express.js", "SQL Databases", "REST APIs", "CORS", "WebSockets"],
@@ -156,7 +157,7 @@ export const careerPaths: CareerPath[] = [
     id: "data-analytics",
     title: "Data Engineer",
     role: "Data Pipelines & Query Optimizer",
-    icon: "💎",
+    icon: "Database",
     description: "Write highly optimized database multi-joins, build pipeline aggregates, utilize index mappings, and design structured warehouses.",
     targetCompanies: ["Snowflake", "Databricks", "Palantir", "JP Morgan", "Capital One"],
     skills: ["Advanced SQL", "Indexing", "Pandas", "Warehousing", "MapReduce"],
@@ -195,7 +196,7 @@ export const careerPaths: CareerPath[] = [
     id: "systems",
     title: "Systems Engineer",
     role: "Low Level & OS Core Developer",
-    icon: "⚙️",
+    icon: "Cpu",
     description: "Dive into operating system virtualization, memory page segments, multi-thread semaphores, process synchronizations, and hardware levels.",
     targetCompanies: ["NVIDIA", "Intel", "Tesla", "Cloudflare", "Apple"],
     skills: ["Virtual Memory", "Multithreading", "Scheduling", "C++", "Semaphores"],

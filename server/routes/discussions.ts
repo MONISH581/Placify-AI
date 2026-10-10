@@ -4,6 +4,7 @@ import { authenticate, type AuthenticatedRequest } from "../auth";
 import { prisma } from "../db";
 import { formatThread } from "../format";
 import { asyncHandler, HttpError, resourceLocks, safeJsonParse, validate, validateId } from "../http";
+import { awardEarnedBadges } from "../users";
 
 export const DISCUSSION_CATEGORIES = ["General", "DSA", "Interview Experience", "Contests", "Doubts"] as const;
 
@@ -55,6 +56,7 @@ discussionsRouter.post(
       },
       include: { replies: true },
     });
+    await awardEarnedBadges(prisma, req.user!.id);
     res.status(201).json(formatThread(created));
   })
 );
@@ -69,6 +71,7 @@ discussionsRouter.post(
     await prisma.reply.create({
       data: { threadId: id, content, username: req.user!.username, userId: req.user!.id, createdAt: new Date().toISOString() },
     });
+    await awardEarnedBadges(prisma, req.user!.id);
     res.json(formatThread(await loadThread(id)));
   })
 );
