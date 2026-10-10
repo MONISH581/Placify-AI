@@ -113,7 +113,7 @@ export function TopicQuizPanel({ trackId, topicId, quizzes, alreadyCompleted, on
                     onClick={() => setAnswers((prev) => ({ ...prev, [qIndex]: oIndex }))}
                     className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-left text-[13px] transition disabled:cursor-default ${style}`}
                   >
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-slate-800 bg-slate-950/80 text-[10px] font-bold">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-slate-800 bg-slate-950/95 text-[11px] font-bold">
                       {String.fromCharCode(65 + oIndex)}
                     </span>
                     <span>{option}</span>
@@ -123,7 +123,7 @@ export function TopicQuizPanel({ trackId, topicId, quizzes, alreadyCompleted, on
             </div>
 
             {submitted && quiz.explanation && (
-              <div className="flex items-start gap-2 rounded-lg border border-slate-900 bg-slate-950/80 p-3 text-[12px] leading-normal text-slate-200">
+              <div className="flex items-start gap-2 rounded-lg border border-slate-900 bg-slate-950/95 p-3 text-[12px] leading-normal text-slate-200">
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" aria-hidden="true" />
                 <p>{renderInline(quiz.explanation)}</p>
               </div>

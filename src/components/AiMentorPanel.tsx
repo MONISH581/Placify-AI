@@ -180,7 +180,7 @@ export function AiMentorPanel() {
                 </div>
                 <div>
                   <h3 className="font-heading text-base font-bold tracking-tight">Placify AI Mentor</h3>
-                  <span className="font-mono text-[9px] uppercase tracking-wider text-cyan-300">Context: {pageLabel}</span>
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-cyan-300">Context: {pageLabel}</span>
                 </div>
               </div>
               <button
@@ -206,7 +206,7 @@ export function AiMentorPanel() {
                     <div
                       className={`max-w-[82%] rounded-2xl p-3.5 text-xs leading-relaxed ${
                         isAssistant
-                          ? `rounded-tl-sm border bg-[#0a101f]/80 text-zinc-100 ${message.isError ? 'border-rose-500/30' : 'border-cyan-500/15'}`
+                          ? `rounded-tl-sm border bg-[#0a101f]/95 text-zinc-100 ${message.isError ? 'border-rose-500/30' : 'border-cyan-500/15'}`
                           : 'rounded-tr-sm border border-cyan-500/25 bg-gradient-to-r from-cyan-500/10 to-blue-600/15 text-cyan-100'
                       }`}
                     >
@@ -216,12 +216,12 @@ export function AiMentorPanel() {
                         <p className="whitespace-pre-wrap">{message.content}</p>
                       )}
                       {message.fallback && (
-                        <p className="mt-2 font-mono text-[9px] text-amber-300/80">
+                        <p className="mt-2 font-mono text-[11px] text-amber-300/80">
                           Offline fallback answer (AI mentor service unavailable)
                         </p>
                       )}
                       {message.sources && <MentorSources sources={message.sources} />}
-                      <span className="mt-1.5 block text-right font-mono text-[8px] text-zinc-500">
+                      <span className="mt-1.5 block text-right font-mono text-[11px] text-zinc-400">
                         {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -238,7 +238,7 @@ export function AiMentorPanel() {
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-cyan-500/20 bg-zinc-950 text-cyan-300">
                     <Bot className="h-4 w-4" aria-hidden="true" />
                   </div>
-                  <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm border border-cyan-500/15 bg-[#0a101f]/80 p-3.5 text-xs text-zinc-400">
+                  <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm border border-cyan-500/15 bg-[#0a101f]/95 p-3.5 text-xs text-zinc-400">
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-400" aria-hidden="true" />
                     Thinking...
                   </div>
@@ -248,7 +248,7 @@ export function AiMentorPanel() {
             </div>
 
             <footer className="space-y-3 border-t border-cyan-500/15 bg-black/30 p-4">
-              <div className="flex items-center gap-1.5 font-mono text-[10px] text-zinc-400">
+              <div className="flex items-center gap-1.5 font-mono text-[11px] text-zinc-400">
                 <HelpCircle className="h-3.5 w-3.5 text-cyan-400" aria-hidden="true" />
                 <span>Suggestions for {pageLabel}:</span>
               </div>
@@ -259,7 +259,7 @@ export function AiMentorPanel() {
                     key={prompt}
                     onClick={() => void handleSend(prompt)}
                     disabled={isLoading}
-                    className="cursor-pointer rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-left text-[10px] text-zinc-300 transition hover:border-cyan-500/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    className="cursor-pointer rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-left text-[11px] text-zinc-300 transition hover:border-cyan-500/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {prompt}
                   </button>

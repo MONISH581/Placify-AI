@@ -50,7 +50,7 @@ export function TopicMentor({ trackName, topicName }: { trackName: string; topic
         <MessageSquare className="h-5 w-5 text-cyan-400" aria-hidden="true" />
         <div>
           <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-white">Topic mentor</h4>
-          <span className="font-mono text-[9px] text-cyan-300">Ask about "{topicName}"</span>
+          <span className="font-mono text-[11px] text-cyan-300">Ask about "{topicName}"</span>
         </div>
       </div>
 

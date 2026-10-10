@@ -35,7 +35,7 @@ function resolveRedirect(state: unknown): string {
 
 const inputClass =
   'h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-xs text-white outline-none transition focus:border-cyan-400';
-const labelClass = 'mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-500';
+const labelClass = 'mb-1.5 block font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-400';
 
 export default function LoginPage() {
   const { user, completeLogin } = useAuth();
@@ -141,7 +141,7 @@ export default function LoginPage() {
       <section className="relative z-10 px-6 pb-20 pt-12 md:px-12 lg:pt-16">
         <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 lg:grid-cols-12">
           <div className="space-y-6 lg:col-span-7">
-            <div className="glow-cyan inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-950/40 px-3.5 py-1.5 font-mono text-xs font-semibold text-cyan-300 backdrop-blur-md">
+            <div className="glow-cyan inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-950/40 px-3.5 py-1.5 font-mono text-xs font-semibold text-cyan-300">
               <Sparkles className="h-3.5 w-3.5 animate-pulse text-cyan-400" aria-hidden="true" />
               <span>PLACEMENT PREPARATION PLATFORM</span>
             </div>
@@ -169,11 +169,11 @@ export default function LoginPage() {
 
             <div className="grid max-w-lg grid-cols-3 gap-4 pt-6">
               {stats.map((stat) => (
-                <div key={stat.label} className="rounded-2xl border border-white/5 bg-[#0a101f]/40 p-4 backdrop-blur-md">
+                <div key={stat.label} className="rounded-2xl border border-white/5 bg-[#0a101f]/95 p-4">
                   <p className="font-mono text-2xl font-black text-white">
                     <CountUp end={stat.value} />
                   </p>
-                  <p className="mt-1 font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-500">{stat.label}</p>
+                  <p className="mt-1 font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-400">{stat.label}</p>
                 </div>
               ))}
             </div>
@@ -181,7 +181,7 @@ export default function LoginPage() {
 
           <div className="relative flex w-full items-center justify-center lg:col-span-5">
             <div
-              className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-950/60 p-8 shadow-2xl backdrop-blur-xl"
+              className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-950/95 p-8 shadow-2xl"
               id="login"
             >
               <div className="mb-6 flex rounded-xl border border-white/5 bg-white/5 p-1" role="tablist" aria-label="Authentication mode">
@@ -264,13 +264,13 @@ export default function LoginPage() {
               </form>
 
               <div className="mt-6 border-t border-white/5 pt-5">
-                <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-zinc-500">Demo accounts</p>
+                <p className="mb-2 font-mono text-[11px] uppercase tracking-wider text-zinc-400">Demo accounts</p>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     disabled={loading}
                     onClick={() => loginAsDemo('student')}
-                    className="cursor-pointer rounded-xl border border-white/5 bg-white/5 px-3 py-2.5 text-[10px] font-bold text-zinc-400 transition hover:border-cyan-400/30 hover:text-white disabled:opacity-60"
+                    className="cursor-pointer rounded-xl border border-white/5 bg-white/5 px-3 py-2.5 text-[11px] font-bold text-zinc-400 transition hover:border-cyan-400/30 hover:text-white disabled:opacity-60"
                   >
                     Student demo
                   </button>
@@ -278,7 +278,7 @@ export default function LoginPage() {
                     type="button"
                     disabled={loading}
                     onClick={() => loginAsDemo('admin')}
-                    className="cursor-pointer rounded-xl border border-white/5 bg-white/5 px-3 py-2.5 text-[10px] font-bold text-zinc-400 transition hover:border-cyan-400/30 hover:text-white disabled:opacity-60"
+                    className="cursor-pointer rounded-xl border border-white/5 bg-white/5 px-3 py-2.5 text-[11px] font-bold text-zinc-400 transition hover:border-cyan-400/30 hover:text-white disabled:opacity-60"
                   >
                     Admin demo
                   </button>

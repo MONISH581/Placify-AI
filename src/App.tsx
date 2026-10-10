@@ -62,7 +62,7 @@ function SessionUnavailable() {
   const { sessionError, retrySession, logout } = useAuth();
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#070C16] p-6 text-white">
-      <div className="w-full max-w-md space-y-4 rounded-2xl border border-amber-500/20 bg-slate-950/80 p-6 text-center shadow-2xl">
+      <div className="w-full max-w-md space-y-4 rounded-2xl border border-amber-500/20 bg-slate-950/95 p-6 text-center shadow-2xl">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-400">
           <WifiOff className="h-6 w-6" aria-hidden="true" />
         </div>
@@ -71,7 +71,7 @@ function SessionUnavailable() {
           Your session is saved, but we could not verify it right now. Check that the server is running and try again.
         </p>
         {sessionError && (
-          <p className="rounded-lg border border-white/5 bg-black/40 p-3 font-mono text-[10px] text-amber-200">{sessionError}</p>
+          <p className="rounded-lg border border-white/5 bg-black/40 p-3 font-mono text-[11px] text-amber-200">{sessionError}</p>
         )}
         <div className="flex flex-wrap justify-center gap-3">
           <button

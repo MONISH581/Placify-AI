@@ -43,7 +43,7 @@ export default function ProfilePage() {
             </span>
           )}
         </div>
-        {user.lastActiveDate && <p className="mt-4 font-mono text-[10px] text-zinc-500">Last active: {user.lastActiveDate}</p>}
+        {user.lastActiveDate && <p className="mt-4 font-mono text-[11px] text-zinc-400">Last active: {user.lastActiveDate}</p>}
       </section>
 
       <section className="rounded-xl border border-slate-800 bg-[#161D2F] p-6 shadow-sm xl:col-span-2">
@@ -51,7 +51,7 @@ export default function ProfilePage() {
         <dl className="grid grid-cols-2 gap-4 md:grid-cols-3">
           {metrics.map((metric) => (
             <div key={metric.label} className="rounded-lg border border-slate-800 bg-slate-950 p-4">
-              <dt className="font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-500">{metric.label}</dt>
+              <dt className="font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-400">{metric.label}</dt>
               <dd className={`mt-1 font-mono text-2xl font-black ${metric.accent ? 'text-cyan-400' : 'text-white'}`}>{metric.value}</dd>
             </div>
           ))}
@@ -63,7 +63,7 @@ export default function ProfilePage() {
         {badges.length > 0 ? (
           <ul className="flex flex-wrap gap-2">
             {badges.map((badge) => (
-              <li key={badge} className="rounded border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-300">
+              <li key={badge} className="rounded border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 font-mono text-[11px] font-bold text-cyan-300">
                 {badge}
               </li>
             ))}

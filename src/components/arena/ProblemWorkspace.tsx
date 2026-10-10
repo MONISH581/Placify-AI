@@ -156,7 +156,7 @@ export function ProblemWorkspace({
             >
               <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
-            {copied && <span className="font-mono text-[9px] text-cyan-300">Copied</span>}
+            {copied && <span className="font-mono text-[11px] text-cyan-300">Copied</span>}
           </div>
         </div>
 
@@ -203,27 +203,27 @@ export function ProblemWorkspace({
           {execution && <ExecutionResult execution={execution} />}
 
           <div className="space-y-1.5 border-t border-white/5 pt-2" id="past-submissions">
-            <span className="font-mono text-[8px] font-bold uppercase tracking-wider text-zinc-500">Your submissions for this problem</span>
+            <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-400">Your submissions for this problem</span>
             {submissionsError ? (
-              <p className="flex items-center justify-between gap-2 font-mono text-[10px] text-rose-300">
+              <p className="flex items-center justify-between gap-2 font-mono text-[11px] text-rose-300">
                 <span>Could not load submissions: {submissionsError}</span>
                 <button type="button" onClick={onRetrySubmissions} className="cursor-pointer underline">
                   Retry
                 </button>
               </p>
             ) : submissionsLoading && problemSubmissions.length === 0 ? (
-              <p className="font-mono text-[10px] text-zinc-500">Loading...</p>
+              <p className="font-mono text-[11px] text-zinc-400">Loading...</p>
             ) : problemSubmissions.length === 0 ? (
-              <p className="font-mono text-[10px] text-zinc-500">No submissions yet.</p>
+              <p className="font-mono text-[11px] text-zinc-400">No submissions yet.</p>
             ) : (
               <ul className="no-scrollbar max-h-[100px] space-y-1.5 overflow-y-auto pr-1">
                 {problemSubmissions.map((submission) => (
                   <li
                     key={submission.id}
-                    className="flex items-center justify-between rounded-lg border border-white/5 bg-black/30 px-3 py-1.5 text-[10px]"
+                    className="flex items-center justify-between rounded-lg border border-white/5 bg-black/30 px-3 py-1.5 text-[11px]"
                   >
-                    <span className="font-mono text-[9px] text-zinc-500">{new Date(submission.submittedAt).toLocaleString()}</span>
-                    <span className="font-mono text-[9px] uppercase text-zinc-300">{submission.language}</span>
+                    <span className="font-mono text-[11px] text-zinc-400">{new Date(submission.submittedAt).toLocaleString()}</span>
+                    <span className="font-mono text-[11px] uppercase text-zinc-300">{submission.language}</span>
                     <span className={`font-mono font-bold ${statusTextClass(submission.status)}`}>{submission.status}</span>
                   </li>
                 ))}

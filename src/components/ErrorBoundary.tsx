@@ -57,7 +57,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         role="alert"
         className={`flex items-center justify-center p-6 text-white ${fullscreen ? 'min-h-screen bg-[#070C16]' : 'min-h-[400px]'}`}
       >
-        <div className="w-full max-w-md space-y-4 rounded-2xl border border-rose-500/20 bg-slate-950/80 p-6 text-center shadow-2xl backdrop-blur-xl">
+        <div className="w-full max-w-md space-y-4 rounded-2xl border border-rose-500/20 bg-slate-950/95 p-6 text-center shadow-2xl">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-400">
             <AlertTriangle className="h-6 w-6" aria-hidden="true" />
           </div>
@@ -65,7 +65,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <p className="text-xs leading-relaxed text-zinc-400">
             An unexpected interface error occurred. You can try again or head back to your dashboard.
           </p>
-          <div className="overflow-x-auto rounded-lg border border-white/5 bg-black/40 p-3 text-left font-mono text-[10px] text-rose-300">
+          <div className="overflow-x-auto rounded-lg border border-white/5 bg-black/40 p-3 text-left font-mono text-[11px] text-rose-300">
             {error.message || 'Unknown error'}
           </div>
           <div className="flex flex-wrap justify-center gap-3">

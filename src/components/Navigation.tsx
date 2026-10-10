@@ -60,7 +60,7 @@ export function Navigation() {
             <span className="font-heading text-lg font-black tracking-tight text-white">
               Placify<span className="text-cyan-400">.AI</span>
             </span>
-            <span className="ml-2 hidden rounded-full border border-cyan-500/30 bg-cyan-950/40 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest text-cyan-300 sm:inline-block">
+            <span className="ml-2 hidden rounded-full border border-cyan-500/30 bg-cyan-950/40 px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-widest text-cyan-300 sm:inline-block">
               {user.isAdmin ? 'ADMIN CONSOLE' : 'PLACEMENT ENGINE'}
             </span>
           </div>

@@ -271,10 +271,10 @@ export default function LearningTracksPage() {
                                 className={`flex w-full cursor-pointer items-center justify-between rounded-lg border p-2.5 text-left transition ${
                                   isActive
                                     ? 'border-cyan-500/50 bg-cyan-950/45 font-semibold text-cyan-300'
-                                    : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700 hover:text-white'
+                                    : 'border-slate-800 bg-slate-950/95 text-slate-400 hover:border-slate-700 hover:text-white'
                                 }`}
                               >
-                                <span className="max-w-[85%] truncate text-[10px]">{label}</span>
+                                <span className="max-w-[85%] truncate text-[11px]">{label}</span>
                                 {done ? (
                                   <CheckCircle className="h-3 w-3 shrink-0 text-emerald-400" aria-label="Completed" />
                                 ) : (
@@ -345,7 +345,7 @@ export default function LearningTracksPage() {
                         <h3 className="font-mono text-sm font-bold uppercase tracking-wider text-white">Code examples</h3>
                         {topicDetails.codeExamples.length === 0 && <p className="text-xs italic text-slate-400">No examples for this topic.</p>}
                         {topicDetails.codeExamples.map((example, index) => (
-                          <div key={index} className="space-y-2 rounded-lg border border-slate-800 bg-slate-950/40 p-4">
+                          <div key={index} className="space-y-2 rounded-lg border border-slate-800 bg-slate-950/95 p-4">
                             <span className="block text-xs font-bold text-cyan-400">{example.title}</span>
                             <div className="relative">
                               <pre className="overflow-x-auto whitespace-pre-wrap rounded border border-slate-800 bg-slate-950 p-3 font-mono text-[11px] text-cyan-300">
@@ -355,7 +355,7 @@ export default function LearningTracksPage() {
                                 type="button"
                                 onClick={() => void navigator.clipboard?.writeText(example.code).catch(() => undefined)}
                                 aria-label={`Copy ${example.title}`}
-                                className="absolute right-2 top-2 flex cursor-pointer items-center gap-1 rounded border border-slate-700 bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300 hover:bg-slate-700"
+                                className="absolute right-2 top-2 flex cursor-pointer items-center gap-1 rounded border border-slate-700 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-300 hover:bg-slate-700"
                               >
                                 <Copy className="h-3 w-3" aria-hidden="true" /> Copy
                               </button>
@@ -390,7 +390,7 @@ export default function LearningTracksPage() {
                             <p className="whitespace-pre-wrap text-slate-300">{challenge.description}</p>
                             {challenge.starterCode && (
                               <div className="space-y-1.5">
-                                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-slate-500">Starter template</span>
+                                <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-slate-400">Starter template</span>
                                 <pre className="overflow-x-auto whitespace-pre-wrap rounded border border-slate-900 bg-slate-950 p-3.5 font-mono text-[11px] text-indigo-400">
                                   {challenge.starterCode}
                                 </pre>
@@ -420,7 +420,7 @@ export default function LearningTracksPage() {
                           <p className="text-xs italic text-slate-400">No interview questions for this topic.</p>
                         )}
                         {topicDetails.interviewQuestions.map((qna, index) => (
-                          <div key={index} className="space-y-2 rounded-lg border border-slate-800 bg-slate-950/40 p-4">
+                          <div key={index} className="space-y-2 rounded-lg border border-slate-800 bg-slate-950/95 p-4">
                             <p className="flex items-start gap-1.5 font-mono text-xs font-bold text-white">
                               <span className="font-bold text-cyan-400">Q:</span> {qna.question}
                             </p>
@@ -447,7 +447,7 @@ export default function LearningTracksPage() {
               </div>
             ) : (
               <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-slate-800 bg-[#161D2F] p-20">
-                <BookOpen className="mb-4 h-12 w-12 text-slate-600" aria-hidden="true" />
+                <BookOpen className="mb-4 h-12 w-12 text-slate-500" aria-hidden="true" />
                 <h3 className="mb-1 text-sm font-bold text-white">Select a topic from the curriculum</h3>
                 <p className="text-center text-xs text-slate-400">Work through the topics in order and pass each checkpoint quiz.</p>
               </div>

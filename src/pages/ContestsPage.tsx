@@ -98,15 +98,15 @@ export default function ContestsPage() {
               </div>
               <dl className="mt-5 grid grid-cols-3 gap-3">
                 <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 text-center">
-                  <dt className="font-mono text-[10px] font-bold uppercase text-zinc-500">Problems</dt>
+                  <dt className="font-mono text-[11px] font-bold uppercase text-zinc-400">Problems</dt>
                   <dd className="font-mono text-lg font-black text-white">{contest.problems?.length ?? 0}</dd>
                 </div>
                 <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 text-center">
-                  <dt className="font-mono text-[10px] font-bold uppercase text-zinc-500">Registrants</dt>
+                  <dt className="font-mono text-[11px] font-bold uppercase text-zinc-400">Registrants</dt>
                   <dd className="font-mono text-lg font-black text-white">{contest.registrantsCount ?? 0}</dd>
                 </div>
                 <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 text-center">
-                  <dt className="font-mono text-[10px] font-bold uppercase text-zinc-500">Starts</dt>
+                  <dt className="font-mono text-[11px] font-bold uppercase text-zinc-400">Starts</dt>
                   <dd className="mt-1 font-mono text-xs font-black text-white">{startLabel}</dd>
                 </div>
               </dl>

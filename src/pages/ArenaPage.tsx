@@ -129,7 +129,7 @@ export default function ArenaPage() {
     const notFound = Boolean(problemId) && !problemsLoading;
     workspace = (
       <div
-        className="flex min-h-[450px] flex-col items-center justify-center rounded-2xl border border-white/5 bg-[#0a101f]/60 p-12 backdrop-blur-md xl:col-span-9"
+        className="flex min-h-[450px] flex-col items-center justify-center rounded-2xl border border-white/5 bg-[#0a101f]/95 p-12 xl:col-span-9"
         id="empty-state-arena"
       >
         <div className="glow-cyan mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-400">

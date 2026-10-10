@@ -51,7 +51,7 @@ export function ProblemDetails({ problem, solved }: ProblemDetailsProps) {
           <div className="space-y-4 font-sans" id="details-view">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-bold tracking-tight text-white">{problem.title}</h2>
-              <span className={`shrink-0 rounded border px-2 py-0.5 font-mono text-[9px] ${difficultyBadgeClass(problem.difficulty)}`}>
+              <span className={`shrink-0 rounded border px-2 py-0.5 font-mono text-[11px] ${difficultyBadgeClass(problem.difficulty)}`}>
                 {problem.difficulty}
               </span>
             </div>
@@ -60,7 +60,7 @@ export function ProblemDetails({ problem, solved }: ProblemDetailsProps) {
 
             {problem.constraints && (
               <div className="space-y-2 border-t border-white/5 pt-3">
-                <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400">Constraints</h3>
+                <h3 className="font-mono text-[11px] font-bold uppercase tracking-widest text-zinc-400">Constraints</h3>
                 <pre className="whitespace-pre-wrap rounded-lg border border-white/5 bg-black/40 p-2.5 font-mono text-xs text-cyan-300">
                   {problem.constraints}
                 </pre>
@@ -70,7 +70,7 @@ export function ProblemDetails({ problem, solved }: ProblemDetailsProps) {
             <div className="space-y-2">
               {problem.inputFormat && (
                 <>
-                  <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400">Input format</h3>
+                  <h3 className="font-mono text-[11px] font-bold uppercase tracking-widest text-zinc-400">Input format</h3>
                   <p className="whitespace-pre-wrap rounded-lg border border-white/5 bg-black/20 p-2 text-xs leading-normal text-zinc-300">
                     {problem.inputFormat}
                   </p>
@@ -78,7 +78,7 @@ export function ProblemDetails({ problem, solved }: ProblemDetailsProps) {
               )}
               {problem.outputFormat && (
                 <>
-                  <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400">Output format</h3>
+                  <h3 className="font-mono text-[11px] font-bold uppercase tracking-widest text-zinc-400">Output format</h3>
                   <p className="whitespace-pre-wrap rounded-lg border border-white/5 bg-black/20 p-2 text-xs leading-normal text-zinc-300">
                     {problem.outputFormat}
                   </p>
@@ -88,14 +88,14 @@ export function ProblemDetails({ problem, solved }: ProblemDetailsProps) {
 
             {(problem.examples ?? []).map((example, index) => (
               <div key={index} className="space-y-2.5 rounded-xl border border-white/5 bg-black/10 p-3.5">
-                <span className="font-mono text-[9px] font-bold uppercase text-cyan-400">Example {index + 1}</span>
+                <span className="font-mono text-[11px] font-bold uppercase text-cyan-400">Example {index + 1}</span>
                 <div className="grid grid-cols-1 gap-4 font-mono text-xs sm:grid-cols-2">
                   <div>
-                    <p className="mb-1.5 text-zinc-500">Input:</p>
+                    <p className="mb-1.5 text-zinc-400">Input:</p>
                     <pre className="overflow-x-auto rounded-lg border border-white/5 bg-slate-950 p-2.5 text-zinc-300">{example.input}</pre>
                   </div>
                   <div>
-                    <p className="mb-1.5 text-zinc-500">Expected output:</p>
+                    <p className="mb-1.5 text-zinc-400">Expected output:</p>
                     <pre className="overflow-x-auto rounded-lg border border-white/5 bg-slate-950 p-2.5 text-zinc-300">{example.output}</pre>
                   </div>
                 </div>
@@ -122,7 +122,7 @@ export function ProblemDetails({ problem, solved }: ProblemDetailsProps) {
 
               <div className="space-y-3 border-t border-white/5 pt-4" id="editorial-solutions-block">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h4 className="font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400">Reference solutions</h4>
+                  <h4 className="font-mono text-[11px] font-bold uppercase tracking-widest text-zinc-400">Reference solutions</h4>
                   <div className="flex flex-wrap gap-1.5" id="solution-lang-tabs">
                     {LANGUAGES.map((language) => (
                       <button
@@ -130,7 +130,7 @@ export function ProblemDetails({ problem, solved }: ProblemDetailsProps) {
                         key={language.id}
                         aria-pressed={solutionLang === language.id}
                         onClick={() => setSolutionLang(language.id)}
-                        className={`cursor-pointer rounded border px-2 py-0.5 font-mono text-[10px] font-bold transition ${
+                        className={`cursor-pointer rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition ${
                           solutionLang === language.id
                             ? 'border-cyan-500/20 bg-cyan-950/40 text-cyan-300'
                             : 'border-white/5 bg-black/20 text-zinc-400 hover:text-white'
@@ -151,19 +151,19 @@ export function ProblemDetails({ problem, solved }: ProblemDetailsProps) {
                       type="button"
                       onClick={() => void navigator.clipboard?.writeText(solutionCode).catch(() => undefined)}
                       aria-label="Copy solution"
-                      className="absolute right-2.5 top-2.5 flex cursor-pointer items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[9px] text-zinc-300 transition hover:text-white"
+                      className="absolute right-2.5 top-2.5 flex cursor-pointer items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-zinc-300 transition hover:text-white"
                     >
                       <Copy className="h-3 w-3" aria-hidden="true" /> Copy
                     </button>
                   </div>
                 ) : (
-                  <p className="text-xs italic text-zinc-500">No reference solution for this language.</p>
+                  <p className="text-xs italic text-zinc-400">No reference solution for this language.</p>
                 )}
               </div>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3 py-10 text-center" id="editorial-locked">
-              <Lock className="h-8 w-8 text-zinc-500" aria-hidden="true" />
+              <Lock className="h-8 w-8 text-zinc-400" aria-hidden="true" />
               <p className="max-w-xs text-xs text-zinc-300">
                 The editorial and reference solutions unlock after you get an <strong>Accepted</strong> submission.
               </p>
@@ -186,7 +186,7 @@ export function ProblemDetails({ problem, solved }: ProblemDetailsProps) {
             <p className="text-xs leading-normal text-zinc-400">Unlock hints one at a time to avoid spoilers.</p>
 
             {hints.length === 0 ? (
-              <p className="italic text-zinc-500">No hints are available for this problem.</p>
+              <p className="italic text-zinc-400">No hints are available for this problem.</p>
             ) : (
               <ol className="space-y-3">
                 {hints.map((hint, index) => {
@@ -205,14 +205,14 @@ export function ProblemDetails({ problem, solved }: ProblemDetailsProps) {
                             type="button"
                             disabled={!isNext}
                             onClick={() => setUnlockedHints(level)}
-                            className="cursor-pointer rounded-lg bg-cyan-400 px-3 py-1 text-[9px] font-black text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-40"
+                            className="cursor-pointer rounded-lg bg-cyan-400 px-3 py-1 text-[11px] font-black text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             Unlock
                           </button>
                         )}
                       </div>
                       {isUnlocked && (
-                        <p className="mt-2.5 whitespace-pre-wrap rounded-lg border border-white/5 bg-slate-950/60 p-2.5 font-mono text-[11px] leading-relaxed text-zinc-300">
+                        <p className="mt-2.5 whitespace-pre-wrap rounded-lg border border-white/5 bg-slate-950/95 p-2.5 font-mono text-[11px] leading-relaxed text-zinc-300">
                           {hint}
                         </p>
                       )}

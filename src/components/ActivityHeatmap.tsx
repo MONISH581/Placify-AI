@@ -23,18 +23,18 @@ export function ActivityHeatmap({ activity }: { activity: ActivityDay[] }) {
   const activeDays = activity.filter((day) => day.count > 0).length;
 
   return (
-    <div className="flex flex-col gap-2.5 rounded-2xl border border-white/5 bg-[#0a101f]/60 p-5 shadow-xl backdrop-blur-md">
+    <div className="flex flex-col gap-2.5 rounded-2xl border border-white/5 bg-[#0a101f]/95 p-5 shadow-xl">
       <div className="mb-1 flex items-center justify-between text-xs">
-        <h3 className="flex items-center gap-1 font-mono text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+        <h3 className="flex items-center gap-1 font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-400">
           <Activity className="h-3.5 w-3.5 text-cyan-400" aria-hidden="true" /> Submission activity
         </h3>
-        <span className="rounded border border-cyan-800/20 bg-cyan-950/40 px-2 py-0.5 font-mono text-[9px] font-bold uppercase text-cyan-300">
+        <span className="rounded border border-cyan-800/20 bg-cyan-950/40 px-2 py-0.5 font-mono text-[11px] font-bold uppercase text-cyan-300">
           {total} in {activity.length} days
         </span>
       </div>
 
       {activity.length === 0 ? (
-        <p className="font-mono text-[10px] text-zinc-500">No activity recorded yet.</p>
+        <p className="font-mono text-[11px] text-zinc-400">No activity recorded yet.</p>
       ) : (
         <div
           className="no-scrollbar grid grid-flow-col grid-rows-7 gap-1 overflow-x-auto py-1"
@@ -51,7 +51,7 @@ export function ActivityHeatmap({ activity }: { activity: ActivityDay[] }) {
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-1 font-mono text-[8px] text-zinc-500">
+      <div className="flex items-center justify-between pt-1 font-mono text-[11px] text-zinc-400">
         <span>{activity[0]?.date ?? ''}</span>
         <div className="flex items-center gap-1.5" aria-hidden="true">
           <span>Less</span>

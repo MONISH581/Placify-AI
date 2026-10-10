@@ -56,19 +56,19 @@ export function ProblemList({ problems, selectedId, solvedIds, userXp, loading, 
 
   return (
     <div
-      className="flex h-[750px] flex-col gap-4 overflow-hidden rounded-2xl border border-white/5 bg-[#0a0f1e]/80 p-4 shadow-xl backdrop-blur-md xl:col-span-3"
+      className="flex h-[750px] flex-col gap-4 overflow-hidden rounded-2xl border border-white/5 bg-[#0a0f1e]/95 p-4 shadow-xl xl:col-span-3"
       id="problems-sidebar-list"
     >
       <div>
         <h2 className="mb-1 font-mono text-xs font-bold uppercase tracking-wider text-white">Problem bank</h2>
-        <p className="text-[10px] text-zinc-400">Search, filter by company or difficulty, or explore topic regions.</p>
+        <p className="text-[11px] text-zinc-400">Search, filter by company or difficulty, or explore topic regions.</p>
       </div>
 
       <div className="relative">
         <label htmlFor="arena-problem-search" className="sr-only">
           Search problems
         </label>
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" aria-hidden="true" />
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" aria-hidden="true" />
         <input
           id="arena-problem-search"
           type="search"
@@ -80,13 +80,13 @@ export function ProblemList({ problems, selectedId, solvedIds, userXp, loading, 
       </div>
 
       <div className="border-b border-white/5 pb-3">
-        <span className="mb-2 block font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500">Topic regions</span>
+        <span className="mb-2 block font-mono text-[11px] font-bold uppercase tracking-widest text-zinc-400">Topic regions</span>
         <div className="grid grid-cols-2 gap-1.5">
           <button
             type="button"
             aria-pressed={worldId === 'all'}
             onClick={() => setWorldId('all')}
-            className={`cursor-pointer rounded-xl border p-2 text-center font-mono text-[9px] font-bold transition ${
+            className={`cursor-pointer rounded-xl border p-2 text-center font-mono text-[11px] font-bold transition ${
               worldId === 'all' ? 'border-cyan-400 bg-cyan-400/10 text-cyan-300' : 'border-white/5 bg-black/20 text-zinc-400 hover:text-white'
             }`}
           >
@@ -103,9 +103,9 @@ export function ProblemList({ problems, selectedId, solvedIds, userXp, loading, 
                 aria-pressed={active}
                 onClick={() => setWorldId(world.id)}
                 title={locked ? `Requires ${world.requiredXp} XP (you have ${userXp} XP)` : world.name}
-                className={`relative flex items-center justify-center gap-1 overflow-hidden rounded-xl border p-2 font-mono text-[9px] font-bold transition ${
+                className={`relative flex items-center justify-center gap-1 overflow-hidden rounded-xl border p-2 font-mono text-[11px] font-bold transition ${
                   locked
-                    ? 'cursor-not-allowed border-white/5 bg-black/40 text-zinc-500 opacity-50'
+                    ? 'cursor-not-allowed border-white/5 bg-black/40 text-zinc-400 opacity-50'
                     : active
                       ? 'cursor-pointer border-cyan-400 bg-cyan-400/10 text-cyan-300'
                       : 'cursor-pointer border-white/5 bg-black/20 text-zinc-400 hover:border-white/10 hover:text-white'
@@ -121,7 +121,7 @@ export function ProblemList({ problems, selectedId, solvedIds, userXp, loading, 
 
       <div className="space-y-3 border-b border-white/5 pb-3" id="arena-filters">
         <div className="space-y-1">
-          <label htmlFor="sidebar-company-filter" className="block font-mono text-[8px] font-bold uppercase tracking-widest text-zinc-500">
+          <label htmlFor="sidebar-company-filter" className="block font-mono text-[11px] font-bold uppercase tracking-widest text-zinc-400">
             Company
           </label>
           <select
@@ -140,7 +140,7 @@ export function ProblemList({ problems, selectedId, solvedIds, userXp, loading, 
         </div>
 
         <fieldset className="space-y-1">
-          <legend className="block font-mono text-[8px] font-bold uppercase tracking-widest text-zinc-500">Difficulty</legend>
+          <legend className="block font-mono text-[11px] font-bold uppercase tracking-widest text-zinc-400">Difficulty</legend>
           <div className="grid grid-cols-4 gap-1" id="sidebar-diff-filters">
             {DIFFICULTY_FILTERS.map((diff) => (
               <button
@@ -148,7 +148,7 @@ export function ProblemList({ problems, selectedId, solvedIds, userXp, loading, 
                 key={diff}
                 aria-pressed={difficulty === diff}
                 onClick={() => setDifficulty(diff)}
-                className={`cursor-pointer rounded border py-1 font-mono text-[9px] font-bold transition ${
+                className={`cursor-pointer rounded border py-1 font-mono text-[11px] font-bold transition ${
                   difficulty === diff ? 'border-transparent bg-cyan-400 text-black' : 'border-white/5 bg-black/25 text-zinc-400 hover:text-white'
                 }`}
               >
@@ -159,7 +159,7 @@ export function ProblemList({ problems, selectedId, solvedIds, userXp, loading, 
         </fieldset>
       </div>
 
-      <div className="flex items-center justify-between px-1 font-mono text-[10px] text-zinc-500">
+      <div className="flex items-center justify-between px-1 font-mono text-[11px] text-zinc-400">
         <span>{filtered.length} shown</span>
         <span>{problems.length} total</span>
       </div>
@@ -167,7 +167,7 @@ export function ProblemList({ problems, selectedId, solvedIds, userXp, loading, 
       <div className="flex-1 space-y-1.5 overflow-y-auto pr-1 font-sans" id="prob-items-list">
         {error && <ErrorAlert message={error} onRetry={onRetry} />}
         {loading && problems.length === 0 ? (
-          <p className="py-10 text-center font-mono text-[10px] text-zinc-500">Loading problems...</p>
+          <p className="py-10 text-center font-mono text-[11px] text-zinc-400">Loading problems...</p>
         ) : filtered.length > 0 ? (
           <ul className="space-y-1.5">
             {filtered.map((problem) => {
@@ -190,13 +190,13 @@ export function ProblemList({ problems, selectedId, solvedIds, userXp, loading, 
                         {solved && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-cyan-400" aria-label="Solved" />}
                         <span className="truncate text-xs font-semibold leading-normal">{problem.title}</span>
                       </span>
-                      <span className={`shrink-0 rounded-md border px-2 py-0.5 font-mono text-[8px] ${difficultyBadgeClass(problem.difficulty)}`}>
+                      <span className={`shrink-0 rounded-md border px-2 py-0.5 font-mono text-[11px] ${difficultyBadgeClass(problem.difficulty)}`}>
                         {problem.difficulty}
                       </span>
                     </span>
                     <span className="flex flex-wrap gap-1">
                       {(problem.tags ?? []).slice(0, 3).map((tag) => (
-                        <span key={tag} className="rounded border border-white/5 bg-white/5 px-1.5 py-0.5 font-mono text-[8px] text-zinc-400">
+                        <span key={tag} className="rounded border border-white/5 bg-white/5 px-1.5 py-0.5 font-mono text-[11px] text-zinc-400">
                           {tag}
                         </span>
                       ))}
@@ -207,7 +207,7 @@ export function ProblemList({ problems, selectedId, solvedIds, userXp, loading, 
             })}
           </ul>
         ) : (
-          <p className="py-10 text-center font-mono text-[10px] text-zinc-500">No matching problems.</p>
+          <p className="py-10 text-center font-mono text-[11px] text-zinc-400">No matching problems.</p>
         )}
       </div>
     </div>

@@ -119,8 +119,8 @@ interface ProblemFormProps {
   onCancel: () => void;
 }
 
-const inputClass = 'w-full rounded-lg border border-slate-800 bg-slate-950/40 px-3 text-xs text-white outline-none focus:border-cyan-500';
-const labelClass = 'mb-1 block font-mono text-[10px] font-bold uppercase tracking-wide text-zinc-400';
+const inputClass = 'w-full rounded-lg border border-slate-800 bg-slate-950/95 px-3 text-xs text-white outline-none focus:border-cyan-500';
+const labelClass = 'mb-1 block font-mono text-[11px] font-bold uppercase tracking-wide text-zinc-400';
 
 export function ProblemForm({ problem, saving, serverError, onSubmit, onCancel }: ProblemFormProps) {
   const isEdit = problem !== null;

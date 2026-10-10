@@ -105,7 +105,7 @@ function HealthPanel() {
           <dl className="grid grid-cols-2 gap-3 md:grid-cols-3">
             {rows.map((row) => (
               <div key={row.label} className="rounded-lg border border-slate-800 bg-slate-950 p-3">
-                <dt className="font-mono text-[10px] font-bold uppercase text-zinc-500">{row.label}</dt>
+                <dt className="font-mono text-[11px] font-bold uppercase text-zinc-400">{row.label}</dt>
                 <dd className={`mt-1 inline-block rounded border px-2 py-0.5 font-mono text-xs font-bold ${toneFor(row.value)}`}>
                   {row.value === undefined ? 'unknown' : String(row.value)}
                 </dd>
@@ -114,7 +114,7 @@ function HealthPanel() {
           </dl>
           {data.mlModels && (
             <div>
-              <h3 className="mb-2 font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-500">ML models loaded</h3>
+              <h3 className="mb-2 font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-400">ML models loaded</h3>
               <ul className="flex flex-wrap gap-2">
                 {Object.entries(data.mlModels).map(([name, loaded]) => (
                   <li key={name} className={`rounded border px-2 py-0.5 font-mono text-[11px] ${toneFor(loaded)}`}>
@@ -134,7 +134,7 @@ function HealthPanel() {
       )}
 
       {checkedAt && health.state !== 'loading' && (
-        <p className="mt-3 font-mono text-[10px] text-zinc-500">Last checked {checkedAt.toLocaleTimeString()}</p>
+        <p className="mt-3 font-mono text-[11px] text-zinc-400">Last checked {checkedAt.toLocaleTimeString()}</p>
       )}
     </section>
   );
@@ -245,14 +245,14 @@ export default function AdminStudioPage() {
             <label htmlFor="admin-problem-search" className="sr-only">
               Search problems
             </label>
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" aria-hidden="true" />
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" aria-hidden="true" />
             <input
               id="admin-problem-search"
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search by title, id or tag..."
-              className="h-9 w-full rounded-lg border border-slate-800 bg-slate-950/40 pl-8 pr-3 text-xs text-white outline-none focus:border-cyan-500"
+              className="h-9 w-full rounded-lg border border-slate-800 bg-slate-950/95 pl-8 pr-3 text-xs text-white outline-none focus:border-cyan-500"
             />
           </div>
         </div>
@@ -264,7 +264,7 @@ export default function AdminStudioPage() {
         {filtered.length > 0 && (
           <div className="max-h-[520px] overflow-auto rounded-lg border border-slate-800">
             <table className="w-full text-left text-xs">
-              <thead className="sticky top-0 bg-slate-900 font-mono text-[10px] uppercase text-zinc-400">
+              <thead className="sticky top-0 bg-slate-900 font-mono text-[11px] uppercase text-zinc-400">
                 <tr>
                   <th scope="col" className="px-3 py-2">Title</th>
                   <th scope="col" className="px-3 py-2">Difficulty</th>
@@ -277,12 +277,12 @@ export default function AdminStudioPage() {
                   <tr key={problem.id} className={`border-t border-slate-800 ${editing?.id === problem.id ? 'bg-cyan-500/5' : ''}`}>
                     <td className="px-3 py-2">
                       <span className="block font-bold text-white">{problem.title}</span>
-                      <span className="block font-mono text-[9px] text-zinc-500">{problem.id}</span>
+                      <span className="block font-mono text-[11px] text-zinc-400">{problem.id}</span>
                     </td>
                     <td className="px-3 py-2">
-                      <span className={`rounded border px-2 py-0.5 font-mono text-[9px] ${difficultyBadgeClass(problem.difficulty)}`}>{problem.difficulty}</span>
+                      <span className={`rounded border px-2 py-0.5 font-mono text-[11px] ${difficultyBadgeClass(problem.difficulty)}`}>{problem.difficulty}</span>
                     </td>
-                    <td className="hidden px-3 py-2 font-mono text-[10px] text-zinc-400 md:table-cell">{(problem.tags ?? []).join(', ')}</td>
+                    <td className="hidden px-3 py-2 font-mono text-[11px] text-zinc-400 md:table-cell">{(problem.tags ?? []).join(', ')}</td>
                     <td className="px-3 py-2">
                       <div className="flex justify-end gap-1.5">
                         <button
@@ -315,7 +315,7 @@ export default function AdminStudioPage() {
         )}
       </section>
 
-      <p className="text-[11px] text-zinc-500">
+      <p className="text-[11px] text-zinc-400">
         Admin actions are authorized by the server; this page only hides controls from non-admin accounts.
       </p>
     </div>

@@ -33,7 +33,7 @@ Skills
 JavaScript, TypeScript, Python, Java, React, Node.js, Express, SQL, Git, Docker`;
 
 function KeywordList({ items, tone }: { items: string[]; tone: 'good' | 'bad' }) {
-  if (items.length === 0) return <p className="text-[11px] italic text-slate-500">None</p>;
+  if (items.length === 0) return <p className="text-[11px] italic text-slate-400">None</p>;
   const cls =
     tone === 'good' ? 'border-emerald-500/15 bg-emerald-950/25 text-emerald-300' : 'border-red-500/15 bg-red-950/25 text-red-400';
   return (
@@ -111,7 +111,7 @@ export default function ResumeAnalyzerPage() {
               <button
                 type="button"
                 onClick={() => setResumeText(SAMPLE_RESUME)}
-                className="cursor-pointer rounded-lg bg-slate-800 px-2 py-1 text-[10px] font-semibold text-slate-300 hover:bg-slate-700"
+                className="cursor-pointer rounded-lg bg-slate-800 px-2 py-1 text-[11px] font-semibold text-slate-300 hover:bg-slate-700"
               >
                 Insert sample resume
               </button>
@@ -122,7 +122,7 @@ export default function ResumeAnalyzerPage() {
               keywords are present or missing.
             </p>
 
-            <label htmlFor="resume-target-role" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <label htmlFor="resume-target-role" className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
               Target role (optional)
             </label>
             <input
@@ -135,10 +135,10 @@ export default function ResumeAnalyzerPage() {
             />
 
             <div className="mb-1 flex items-center justify-between">
-              <label htmlFor="resume-textarea" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <label htmlFor="resume-textarea" className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 Resume text
               </label>
-              <span className={`font-mono text-[10px] ${overLimit ? 'font-bold text-rose-400' : 'text-slate-500'}`}>
+              <span className={`font-mono text-[11px] ${overLimit ? 'font-bold text-rose-400' : 'text-slate-400'}`}>
                 {resumeText.length.toLocaleString()}/{MAX_RESUME_CHARS.toLocaleString()}
               </span>
             </div>
@@ -174,14 +174,14 @@ export default function ResumeAnalyzerPage() {
           {analysis ? (
             <section className="space-y-5 rounded-xl border border-slate-800 bg-[#161D2F] p-5" id="analysis-report-box">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h2 className="font-mono text-[10px] font-bold uppercase tracking-widest text-indigo-300">Report</h2>
+                <h2 className="font-mono text-[11px] font-bold uppercase tracking-widest text-indigo-300">Report</h2>
                 <span className="rounded border border-cyan-500/20 bg-cyan-950/40 px-2.5 py-0.5 font-mono text-xs text-cyan-400">
                   {analysis.source === 'ai' ? 'AI analysis' : 'Heuristic analysis'}
                 </span>
               </div>
 
               <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-center">
-                <p className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">ATS score (estimate)</p>
+                <p className="mb-0.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">ATS score (estimate)</p>
                 <div className="mb-1 font-mono text-3xl font-bold text-white">{analysis.atsScore}%</div>
                 <div
                   className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800"
@@ -212,7 +212,7 @@ export default function ResumeAnalyzerPage() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-[11px] italic text-slate-500">None identified</p>
+                  <p className="text-[11px] italic text-slate-400">None identified</p>
                 )}
               </div>
 
@@ -232,7 +232,7 @@ export default function ResumeAnalyzerPage() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-[11px] italic text-slate-500">No suggestions</p>
+                  <p className="text-[11px] italic text-slate-400">No suggestions</p>
                 )}
               </div>
 

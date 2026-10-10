@@ -176,8 +176,8 @@ export default function CommunityPage() {
     }
   };
 
-  const fieldClass = 'w-full rounded-lg border border-slate-800 bg-slate-950/40 text-xs text-white outline-none focus:border-cyan-500';
-  const labelClass = 'mb-1 block font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-400';
+  const fieldClass = 'w-full rounded-lg border border-slate-800 bg-slate-950/95 text-xs text-white outline-none focus:border-cyan-500';
+  const labelClass = 'mb-1 block font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-400';
 
   return (
     <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
@@ -219,7 +219,7 @@ export default function CommunityPage() {
               <label htmlFor="thread-content" className={labelClass}>
                 Details
               </label>
-              <span className="font-mono text-[10px] text-zinc-500">
+              <span className="font-mono text-[11px] text-zinc-400">
                 {content.length}/{CONTENT_MAX}
               </span>
             </div>
@@ -262,12 +262,12 @@ export default function CommunityPage() {
             <article key={thread.id} className="rounded-xl border border-slate-800 bg-[#161D2F] p-5 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-wide text-cyan-400">{thread.category}</p>
+                  <p className="font-mono text-[11px] font-bold uppercase tracking-wide text-cyan-400">{thread.category}</p>
                   <h2 className="mt-1 font-heading text-lg font-bold text-white">{thread.title}</h2>
                 </div>
               </div>
               <p className="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-slate-300">{thread.content}</p>
-              <p className="mt-3 font-mono text-[10px] text-zinc-500">
+              <p className="mt-3 font-mono text-[11px] text-zinc-400">
                 Posted by {thread.username}
                 {formatDate(thread.createdAt) && ` · ${formatDate(thread.createdAt)}`}
               </p>
@@ -306,7 +306,7 @@ export default function CommunityPage() {
                       {thread.replies.map((reply) => (
                         <li key={reply.id} className="rounded-lg border border-slate-800 bg-slate-950/50 p-3">
                           <p className="whitespace-pre-wrap text-xs text-slate-300">{reply.content}</p>
-                          <p className="mt-1 font-mono text-[9px] text-zinc-500">
+                          <p className="mt-1 font-mono text-[11px] text-zinc-400">
                             {reply.username}
                             {formatDate(reply.createdAt) && ` · ${formatDate(reply.createdAt)}`}
                           </p>

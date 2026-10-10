@@ -39,14 +39,14 @@ export default function CompanyPrepPage() {
           <label htmlFor="company-search" className="sr-only">
             Search companies
           </label>
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" aria-hidden="true" />
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" aria-hidden="true" />
           <input
             id="company-search"
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search companies..."
-            className="h-10 w-full rounded-lg border border-slate-800 bg-slate-950/40 pl-8 pr-3 text-xs text-white outline-none focus:border-cyan-500"
+            className="h-10 w-full rounded-lg border border-slate-800 bg-slate-950/95 pl-8 pr-3 text-xs text-white outline-none focus:border-cyan-500"
           />
         </div>
       </section>
@@ -68,14 +68,14 @@ export default function CompanyPrepPage() {
           return (
             <article
               key={group.company}
-              className="flex flex-col justify-between rounded-2xl border border-white/5 bg-[#0a101f]/60 p-6 shadow-xl backdrop-blur-md"
+              className="flex flex-col justify-between rounded-2xl border border-white/5 bg-[#0a101f]/95 p-6 shadow-xl"
             >
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div className="flex items-center gap-2">
                   <Building2 className="h-5 w-5 text-cyan-400" aria-hidden="true" />
                   <h2 className="font-heading text-lg font-bold leading-normal text-white">{group.company}</h2>
                 </div>
-                <span className="rounded-xl border border-cyan-500/30 bg-cyan-950/30 px-3 py-1 font-mono text-[9px] font-black text-cyan-300">
+                <span className="rounded-xl border border-cyan-500/30 bg-cyan-950/30 px-3 py-1 font-mono text-[11px] font-black text-cyan-300">
                   {solvedInGroup}/{group.problems.length} SOLVED
                 </span>
               </div>
@@ -96,9 +96,9 @@ export default function CompanyPrepPage() {
                             {solved && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-cyan-400" aria-label="Solved" />}
                             <span className="truncate">{problem.title}</span>
                           </span>
-                          {topics.length > 0 && <span className="mt-0.5 block font-mono text-[9px] text-zinc-400">{topics.join(' · ')}</span>}
+                          {topics.length > 0 && <span className="mt-0.5 block font-mono text-[11px] text-zinc-400">{topics.join(' · ')}</span>}
                         </span>
-                        <span className={`shrink-0 rounded-md border px-2 py-0.5 font-mono text-[8px] font-bold ${difficultyBadgeClass(problem.difficulty)}`}>
+                        <span className={`shrink-0 rounded-md border px-2 py-0.5 font-mono text-[11px] font-bold ${difficultyBadgeClass(problem.difficulty)}`}>
                           {problem.difficulty}
                         </span>
                       </button>
@@ -112,7 +112,7 @@ export default function CompanyPrepPage() {
                   type="button"
                   aria-expanded={isExpanded}
                   onClick={() => setExpanded((prev) => ({ ...prev, [group.company]: !prev[group.company] }))}
-                  className="mt-3 cursor-pointer self-start font-mono text-[10px] font-bold text-cyan-300 hover:underline"
+                  className="mt-3 cursor-pointer self-start font-mono text-[11px] font-bold text-cyan-300 hover:underline"
                 >
                   {isExpanded ? 'Show fewer' : `Show all ${group.problems.length} problems`}
                 </button>

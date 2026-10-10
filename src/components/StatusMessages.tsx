@@ -24,7 +24,7 @@ export function ErrorAlert({
         <button
           type="button"
           onClick={onRetry}
-          className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-rose-400/30 px-2 py-1 text-[10px] font-bold text-rose-200 transition hover:bg-rose-500/20"
+          className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-rose-400/30 px-2 py-1 text-[11px] font-bold text-rose-200 transition hover:bg-rose-500/20"
         >
           <RefreshCw className="h-3 w-3" aria-hidden="true" />
           {retryLabel}

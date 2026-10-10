@@ -149,7 +149,7 @@ export default function MockInterviewPage() {
                   >
                     <Icon className="mx-auto mb-1 h-5 w-5" aria-hidden="true" />
                     <span className="block text-xs">{type.id}</span>
-                    <span className="mt-1 block text-[10px] font-normal text-slate-500">{type.description}</span>
+                    <span className="mt-1 block text-[11px] font-normal text-slate-400">{type.description}</span>
                   </button>
                 );
               })}
@@ -186,10 +186,10 @@ export default function MockInterviewPage() {
           {session.status === 'In Progress' && !staleSession ? (
             <section className="space-y-4 rounded-xl border border-slate-800 bg-[#161D2F] p-5" id="active-session-block">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <span className="rounded border border-indigo-500/20 bg-indigo-950/65 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-indigo-300">
+                <span className="rounded border border-indigo-500/20 bg-indigo-950/65 px-2 py-0.5 font-mono text-[11px] font-bold uppercase text-indigo-300">
                   {session.type} interview
                 </span>
-                <span className="font-mono text-[10px] text-slate-400">
+                <span className="font-mono text-[11px] text-slate-400">
                   Question {questionIndex + 1} of {session.questions.length}
                 </span>
               </div>
@@ -202,7 +202,7 @@ export default function MockInterviewPage() {
               )}
 
               <div className="my-2 rounded-xl border border-slate-900 bg-slate-950 p-4">
-                <p className="mb-1 font-sans text-[10px] font-bold uppercase italic tracking-wider text-indigo-400">Interviewer question</p>
+                <p className="mb-1 font-sans text-[11px] font-bold uppercase italic tracking-wider text-indigo-400">Interviewer question</p>
                 <p className="text-sm font-semibold leading-relaxed text-white">{session.questions[questionIndex]}</p>
               </div>
 
@@ -211,7 +211,7 @@ export default function MockInterviewPage() {
                   <label htmlFor="interview-textarea" className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Your answer
                   </label>
-                  <span className={`font-mono text-[10px] ${currentAnswer.length > MAX_ANSWER_CHARS ? 'text-rose-400' : 'text-slate-500'}`}>
+                  <span className={`font-mono text-[11px] ${currentAnswer.length > MAX_ANSWER_CHARS ? 'text-rose-400' : 'text-slate-400'}`}>
                     {currentAnswer.length}/{MAX_ANSWER_CHARS}
                   </span>
                 </div>
@@ -269,7 +269,7 @@ export default function MockInterviewPage() {
 
               <div className="grid grid-cols-1 gap-4 border-y border-slate-800 py-4 md:grid-cols-2">
                 <div className="rounded-xl bg-slate-900 p-4 text-center">
-                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-slate-500">Overall score</p>
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-slate-400">Overall score</p>
                   <div className="mb-2 font-mono text-5xl font-bold text-white">{overallScore !== null ? `${overallScore}%` : '--'}</div>
                   {overallScore !== null && (
                     <span
@@ -327,7 +327,7 @@ export default function MockInterviewPage() {
 
         <aside className="space-y-4">
           <div className="space-y-3 rounded-xl border border-slate-800 bg-[#161D2F] p-4 text-xs" id="interviewer-insiders">
-            <span className="block text-[10px] font-bold uppercase text-indigo-400">Answering tips</span>
+            <span className="block text-[11px] font-bold uppercase text-indigo-400">Answering tips</span>
             <p className="text-[11px] leading-relaxed text-slate-300">
               Structure behavioral answers with the <strong>STAR</strong> method:
             </p>

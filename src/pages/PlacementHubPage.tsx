@@ -25,7 +25,7 @@ function SubjectIcon({ name }: { name: string }) {
 /** Empty-state text: admins get a pointer to the admin page, students just see that nothing is available. */
 function EmptyContent({ what, isAdmin }: { what: string; isAdmin: boolean }) {
   return (
-    <p className="text-xs italic text-zinc-500">
+    <p className="text-xs italic text-zinc-400">
       No {what} in this subject yet.
       {isAdmin && (
         <>
@@ -70,7 +70,7 @@ function SubjectStudy({ subject, isAdmin }: { subject: SubjectModule; isAdmin: b
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <section className="flex min-h-[220px] flex-col justify-between rounded-xl border border-slate-800 bg-[#161D2F] p-5" id="flash-card-pane">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <h3 className="text-[10px] uppercase tracking-widest text-slate-400">
+              <h3 className="text-[11px] uppercase tracking-widest text-slate-400">
                 Flashcards ({cards.length > 0 ? `${cardIndex + 1}/${cards.length}` : '0/0'})
               </h3>
             </div>
@@ -95,7 +95,7 @@ function SubjectStudy({ subject, isAdmin }: { subject: SubjectModule; isAdmin: b
             )}
 
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-500">{cards.length > 0 ? 'Click the card to flip it' : ''}</span>
+              <span className="text-[11px] text-slate-400">{cards.length > 0 ? 'Click the card to flip it' : ''}</span>
               <button
                 type="button"
                 id="flashcard-next-btn"
@@ -119,7 +119,7 @@ function SubjectStudy({ subject, isAdmin }: { subject: SubjectModule; isAdmin: b
                 const isChecked = Boolean(checked[qIndex]);
                 return (
                   <fieldset key={qIndex} className="flex flex-col justify-between space-y-4">
-                    <legend className="mb-2 w-full border-b border-slate-800 pb-2 text-[10px] uppercase tracking-widest text-slate-400">
+                    <legend className="mb-2 w-full border-b border-slate-800 pb-2 text-[11px] uppercase tracking-widest text-slate-400">
                       Practice MCQ {mcqs.length > 1 ? `${qIndex + 1}/${mcqs.length}` : ''}
                     </legend>
                     <p className="text-xs font-bold leading-normal text-white">{mcq.question}</p>
@@ -144,7 +144,7 @@ function SubjectStudy({ subject, isAdmin }: { subject: SubjectModule; isAdmin: b
                             onClick={() => setAnswers((prev) => ({ ...prev, [qIndex]: oIndex }))}
                             className={`flex w-full cursor-pointer items-center gap-2 rounded-lg border p-2.5 text-left text-xs transition disabled:cursor-default ${style}`}
                           >
-                            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-slate-800 bg-slate-950 text-[10px] font-bold text-slate-400">
+                            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-slate-800 bg-slate-950 text-[11px] font-bold text-slate-400">
                               {oIndex + 1}
                             </span>
                             <span>{option}</span>
