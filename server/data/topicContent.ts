@@ -20,6 +20,9 @@ export function getDynamicTopicPayload(trackId: string, _topicId: string, topicN
   const isCpp = trackId === 'cpp';
   const isC = trackId === 'c';
   const isJs = trackId === 'javascript';
+  const isSql = trackId === 'sql';
+  const isDsa = trackId === 'dsa';
+  const isCore = trackId === 'cs-core';
 
   const nameLower = topicName.toLowerCase();
   
@@ -38,7 +41,7 @@ export function getDynamicTopicPayload(trackId: string, _topicId: string, topicN
     conceptType = 'advanced';
   }
 
-  const langLabel = isPython ? 'Python' : isJava ? 'Java' : isCpp ? 'C++' : isC ? 'C' : 'JavaScript';
+  const langLabel = isSql ? 'SQL' : isDsa ? 'Data Structures & Algorithms' : isCore ? 'Computer Science' : isPython ? 'Python' : isJava ? 'Java' : isCpp ? 'C++' : isC ? 'C' : 'JavaScript';
 
   let theory = `In this module, we explore the core principles of **${topicName}** within the context of **${langLabel}** development. Understanding how this concept affects runtime behaviors, memory structures, and architectural styles is vital for engineering high-performance systems. We discuss the syntax, execution lifecycles, common traps, and corporate SDE requirements.`;
   if (conceptType === 'pointers_memory') {
@@ -73,7 +76,22 @@ export function getDynamicTopicPayload(trackId: string, _topicId: string, topicN
     { title: "Example 2: Advanced Concept Pattern", code: `// Advanced ${topicName}` }
   ];
 
-  if (isPython) {
+  if (isSql) {
+    codeExamples = [
+      { title: "Example 1: Basic query", code: `-- ${topicName}\nSELECT id, name, salary\nFROM employees\nWHERE salary > 50000\nORDER BY salary DESC;` },
+      { title: "Example 2: Grouped summary", code: `SELECT department, COUNT(*) AS headcount, AVG(salary) AS avg_salary\nFROM employees\nGROUP BY department\nHAVING COUNT(*) > 3;` }
+    ];
+  } else if (isDsa) {
+    codeExamples = [
+      { title: "Example 1: Core idea in Python", code: `# ${topicName}\ndef solve(nums):\n    seen = {}\n    for i, n in enumerate(nums):\n        if n in seen:\n            return [seen[n], i]\n        seen[n] = i\n    return []` },
+      { title: "Example 2: Binary search template", code: `def search(nums, target):\n    lo, hi = 0, len(nums) - 1\n    while lo <= hi:\n        mid = (lo + hi) // 2\n        if nums[mid] == target:\n            return mid\n        if nums[mid] < target:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return -1` }
+    ];
+  } else if (isCore) {
+    codeExamples = [
+      { title: "Example 1: Illustration in C", code: `// ${topicName}\n#include <stdio.h>\n#include <unistd.h>\n\nint main(void) {\n    printf("PID: %d\\n", getpid());\n    return 0;\n}` },
+      { title: "Example 2: Pseudocode", code: `acquire(lock)\n  // critical section for ${topicName}\nrelease(lock)` }
+    ];
+  } else if (isPython) {
     if (conceptType === 'pointers_memory') {
       codeExamples = [
         { title: "Example 1: Object References and ID tracking", code: `# Python manages objects by reference\nx = [1, 2, 3]\ny = x\nprint(f"Are references identical? {x is y}") # True\nprint(f"Memory address of x: {id(x)}")` },
@@ -150,7 +168,9 @@ export function getDynamicTopicPayload(trackId: string, _topicId: string, topicN
     {
       title: `Challenge: ${topicName} validation`,
       description: `Write a modular program that accepts standard compiler values and handles ${topicName} checks. Ensure your time complexity does not exceed O(N) and uses minimal auxiliary heap memory.`,
-      starterCode: isPython ? `def solve(input_str):\n    # Write Python logic here\n    return True`
+      starterCode: isSql ? `-- Write your query here\nSELECT 1;`
+                 : isDsa ? `def solve(nums):\n    # Write Python logic here\n    return nums`
+                 : isPython ? `def solve(input_str):\n    # Write Python logic here\n    return True`
                  : isJs ? `function solve(input) {\n    // Write JavaScript logic here\n    return true;\n}`
                  : `// Implement solver below\nchar* solve(char* input) {\n    return "true";\n}`
     }

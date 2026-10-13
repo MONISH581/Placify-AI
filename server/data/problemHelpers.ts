@@ -28,6 +28,8 @@ export interface SeedProblem {
 }
 
 export type ProblemSpec = Omit<SeedProblem, "id" | "category" | "tags" | "solutions"> & {
+  /** Companies known to ask this problem (must come from COMPANIES in problemBank.ts). Overrides the fallback tagging. */
+  companies?: string[];
   solutions: { javascript: string; python: string; java?: string; cpp?: string; c?: string };
 };
 

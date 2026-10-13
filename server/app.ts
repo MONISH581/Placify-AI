@@ -7,6 +7,7 @@ import express, { type NextFunction, type Request, type Response } from "express
 import { config } from "./config";
 import { HttpError } from "./http";
 import { authLimiter } from "./rateLimits";
+import { adminRouter } from "./routes/admin";
 import { authRouter } from "./routes/auth";
 import { contestsRouter } from "./routes/contests";
 import { dashboardRouter } from "./routes/dashboard";
@@ -32,7 +33,7 @@ function cors(req: Request, res: Response, next: NextFunction) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
     res.setHeader("Access-Control-Max-Age", "600");
     if (req.method === "OPTIONS") {
       res.status(204).end();
@@ -64,6 +65,7 @@ export function createApp() {
   api.use("/contests", contestsRouter);
   api.use("/discussions", discussionsRouter);
   api.use("/mock-interview", interviewsRouter);
+  api.use("/admin", adminRouter);
 
   // Unknown API routes must never fall through to the SPA's index.html.
   api.use((req, res) => {

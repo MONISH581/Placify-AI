@@ -13,7 +13,10 @@ export interface LanguageTrack {
   id: string;
   name: string;
   color: string;
+  /** Lucide icon name rendered by the UI, or short text such as "W3" when no icon exists. */
   logo: string;
+  /** Topics are named "Group: Item" and the UI lists them under one collapsible heading per group. */
+  grouped?: boolean;
   topics: TrackTopic[];
 }
 
@@ -22,7 +25,7 @@ export const languageTracks: LanguageTrack[] = [
     id: "python",
     name: "Python Masterclass (A-Z)",
     color: "from-blue-500 to-yellow-500",
-    logo: "🐍",
+    logo: "FileCode",
     topics: [
       { id: "py-intro", name: "1. Introduction to Python & Setup", content: "Introduction to Python programming language, features, and setting up the environment." },
       { id: "py-variables", name: "2. Variables and Scope", content: "Understanding variable declarations, naming rules, local, global, and nonlocal scopes." },
@@ -70,7 +73,7 @@ export const languageTracks: LanguageTrack[] = [
     id: "java",
     name: "Enterprise Java (A-Z)",
     color: "from-red-500 to-orange-600",
-    logo: "☕",
+    logo: "Coffee",
     topics: [
       { id: "java-intro", name: "1. Java Fundamentals & Compilation", content: "Introduction to Java language, write once run anywhere, JDK/JRE, and compiling bytecode." },
       { id: "java-jvm", name: "2. JVM Architecture & JIT", content: "Deep dive into ClassLoader, JVM Memory Areas (Stack, Heap, Metaspace), and JIT compiler." },
@@ -111,7 +114,7 @@ export const languageTracks: LanguageTrack[] = [
     id: "c",
     name: "Systems C (A-Z)",
     color: "from-blue-600 to-indigo-500",
-    logo: "💾",
+    logo: "HardDrive",
     topics: [
       { id: "c-intro", name: "1. Basics & Compilation Stages", content: "Introduction to C, compilation workflow: preprocessor -> compiler -> assembler -> linker." },
       { id: "c-variables", name: "2. Variables & Constants", content: "Variable definitions, storage classes, declaration, and memory scope." },
@@ -146,7 +149,7 @@ export const languageTracks: LanguageTrack[] = [
     id: "cpp",
     name: "C++ Programming (A-Z)",
     color: "from-indigo-600 to-sky-500",
-    logo: "⚡",
+    logo: "Zap",
     topics: [
       { id: "cpp-intro", name: "1. Fundamentals & I/O Streams", content: "Differences from C, namespaces, std::cin, std::cout, and standard compiler stages." },
       { id: "cpp-oop-classes", name: "2. OOP: Classes & Access Specifiers", content: "Class declarations, private, public, protected segments, encapsulation, and this keyword." },
@@ -174,7 +177,7 @@ export const languageTracks: LanguageTrack[] = [
     id: "javascript",
     name: "JavaScript & ES6 (A-Z)",
     color: "from-yellow-400 to-yellow-600",
-    logo: "🌐",
+    logo: "Globe",
     topics: [
       { id: "js-context", name: "1. Execution Context & Call Stack", content: "JavaScript engine, global vs functional execution context, hoisting, and scopes." },
       { id: "js-variables", name: "2. Var, Let & Const scopes", content: "Block scope vs function scope, temporal dead zone, and variable declarations." },
@@ -301,3 +304,164 @@ languageTracks.unshift({
     }))
   )
 });
+
+interface TopicGroup {
+  prefix: string;
+  title: string;
+  summary: string;
+  items: string[];
+}
+
+function groupedTopics(groups: TopicGroup[]): TrackTopic[] {
+  return groups.flatMap((group) =>
+    group.items.map((item) => ({
+      id: `${group.prefix}-${item.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`,
+      name: `${group.title}: ${item}`,
+      content: `${group.summary} Topic: ${item}. Cover the definition, how it works, examples, common mistakes, complexity or trade-offs, and how it is asked in placement interviews.`
+    }))
+  );
+}
+
+languageTracks.push(
+  {
+    id: "dsa",
+    name: "DSA Full Syllabus (A-Z)",
+    color: "from-fuchsia-500 to-pink-600",
+    logo: "GitBranch",
+    grouped: true,
+    topics: groupedTopics([
+      {
+        prefix: "foundations",
+        title: "Foundations",
+        summary: "Core analysis tools for data structures and algorithms.",
+        items: ["Big-O Notation", "Time and Space Complexity", "Amortized Analysis", "Recursion", "Backtracking Basics", "Bit Manipulation", "Math for DSA"]
+      },
+      {
+        prefix: "linear",
+        title: "Arrays and Strings",
+        summary: "Array and string techniques for coding rounds.",
+        items: ["Arrays Basics", "Two Pointers", "Sliding Window", "Prefix Sums", "Kadane's Algorithm", "Matrix Traversal", "String Manipulation", "Pattern Matching (KMP)", "Anagrams and Palindromes"]
+      },
+      {
+        prefix: "lists",
+        title: "Linked Lists, Stacks and Queues",
+        summary: "Pointer-based and linear data structures.",
+        items: ["Singly Linked List", "Doubly Linked List", "Fast and Slow Pointers", "Reverse a Linked List", "Stack", "Monotonic Stack", "Queue and Deque", "Circular Queue"]
+      },
+      {
+        prefix: "hashing",
+        title: "Hashing and Searching",
+        summary: "Hash-based lookups and searching strategies.",
+        items: ["Hash Tables", "Hash Sets and Maps", "Collision Handling", "Linear Search", "Binary Search", "Binary Search on Answer"]
+      },
+      {
+        prefix: "sorting",
+        title: "Sorting",
+        summary: "Comparison and non-comparison sorting algorithms.",
+        items: ["Bubble, Selection and Insertion Sort", "Merge Sort", "Quick Sort", "Heap Sort", "Counting and Radix Sort", "Custom Comparators"]
+      },
+      {
+        prefix: "trees",
+        title: "Trees and Heaps",
+        summary: "Hierarchical data structures.",
+        items: ["Binary Tree", "Tree Traversals", "Binary Search Tree", "AVL and Balanced Trees", "Lowest Common Ancestor", "Heaps and Priority Queues", "Trie", "Segment Tree", "Fenwick Tree"]
+      },
+      {
+        prefix: "graphs",
+        title: "Graphs",
+        summary: "Graph representation and algorithms.",
+        items: ["Graph Representation", "BFS", "DFS", "Cycle Detection", "Topological Sort", "Dijkstra's Algorithm", "Bellman-Ford", "Floyd-Warshall", "Union-Find (DSU)", "Minimum Spanning Tree"]
+      },
+      {
+        prefix: "paradigms",
+        title: "Algorithmic Paradigms",
+        summary: "Problem-solving paradigms for interviews.",
+        items: ["Greedy Algorithms", "Divide and Conquer", "Dynamic Programming Basics", "Knapsack Problems", "Longest Common Subsequence", "DP on Grids", "DP on Trees", "Interval Problems"]
+      }
+    ])
+  },
+  {
+    id: "sql",
+    name: "SQL Mastery (A-Z)",
+    color: "from-sky-500 to-blue-700",
+    logo: "Database",
+    grouped: true,
+    topics: groupedTopics([
+      {
+        prefix: "basics",
+        title: "Query Basics",
+        summary: "Reading data with SQL.",
+        items: ["SELECT and FROM", "WHERE Filtering", "ORDER BY and LIMIT", "DISTINCT", "Operators and Expressions", "NULL Handling", "String Functions", "Date Functions"]
+      },
+      {
+        prefix: "agg",
+        title: "Aggregation",
+        summary: "Summarising rows.",
+        items: ["COUNT, SUM, AVG", "GROUP BY", "HAVING vs WHERE", "Conditional Aggregation", "ROLLUP and Grouping Sets"]
+      },
+      {
+        prefix: "joins",
+        title: "Joins and Sets",
+        summary: "Combining tables and result sets.",
+        items: ["INNER JOIN", "LEFT and RIGHT JOIN", "FULL OUTER JOIN", "CROSS JOIN", "Self Join", "UNION and UNION ALL", "INTERSECT and EXCEPT", "Anti-Joins"]
+      },
+      {
+        prefix: "advanced",
+        title: "Advanced Queries",
+        summary: "Interview-level SQL.",
+        items: ["Subqueries", "Correlated Subqueries", "EXISTS and IN", "CTEs", "Recursive CTEs", "Window Functions", "RANK, DENSE_RANK, ROW_NUMBER", "LAG and LEAD", "Running Totals", "Nth Highest Salary", "Pivot and Unpivot"]
+      },
+      {
+        prefix: "ddl",
+        title: "Schema and Data Changes",
+        summary: "Defining and changing data.",
+        items: ["CREATE TABLE", "Data Types", "Constraints", "Primary and Foreign Keys", "ALTER and DROP", "INSERT, UPDATE, DELETE", "MERGE and Upsert", "Views"]
+      },
+      {
+        prefix: "design",
+        title: "Database Design",
+        summary: "Designing reliable schemas.",
+        items: ["ER Modelling", "Normalization (1NF to BCNF)", "Denormalization", "Keys and Functional Dependencies", "Indexes", "B-Tree vs Hash Indexes", "Query Execution Plans", "Query Optimization"]
+      },
+      {
+        prefix: "txn",
+        title: "Transactions",
+        summary: "Concurrency and consistency.",
+        items: ["ACID Properties", "Transactions and COMMIT", "Isolation Levels", "Locks and Deadlocks", "Stored Procedures", "Triggers", "SQL Injection"]
+      }
+    ])
+  },
+  {
+    id: "cs-core",
+    name: "CS Core: OS, Networks & OOP",
+    color: "from-emerald-500 to-teal-700",
+    logo: "Monitor",
+    grouped: true,
+    topics: groupedTopics([
+      {
+        prefix: "os",
+        title: "Operating Systems",
+        summary: "Core operating-system concepts asked in placements.",
+        items: ["OS Overview and Kernel", "Processes and Threads", "Process States and PCB", "CPU Scheduling", "Synchronization and Semaphores", "Mutex vs Semaphore", "Deadlocks", "Memory Management", "Paging and Segmentation", "Virtual Memory and Page Replacement", "File Systems", "Disk Scheduling"]
+      },
+      {
+        prefix: "cn",
+        title: "Computer Networks",
+        summary: "Networking concepts asked in placements.",
+        items: ["OSI and TCP/IP Models", "IP Addressing and Subnetting", "TCP vs UDP", "TCP Handshake and Flow Control", "DNS", "HTTP and HTTPS", "REST and Status Codes", "Routing Algorithms", "ARP, DHCP and NAT", "TLS and Network Security", "Load Balancers"]
+      },
+      {
+        prefix: "oop",
+        title: "OOP and Design",
+        summary: "Object-oriented design principles.",
+        items: ["Four Pillars of OOP", "Abstraction vs Encapsulation", "Overloading vs Overriding", "Abstract Class vs Interface", "SOLID Principles", "Singleton and Factory Patterns", "Observer and Strategy Patterns", "UML Basics"]
+      },
+      {
+        prefix: "sysdesign",
+        title: "System Design",
+        summary: "Introductory system design for freshers.",
+        items: ["Scalability Basics", "Caching", "Load Balancing", "Database Sharding and Replication", "CAP Theorem", "Message Queues", "Designing a URL Shortener", "Rate Limiter"]
+      }
+    ])
+  }
+);

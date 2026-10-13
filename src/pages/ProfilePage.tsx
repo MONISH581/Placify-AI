@@ -6,6 +6,13 @@
 import { Award, ShieldCheck } from 'lucide-react';
 import { useAppData } from '../context/AppDataContext';
 import { useRequiredUser } from '../context/AuthContext';
+import { Sparkles as HeroSparkles, Flame as HeroFlame, CheckSquare as HeroCheckSquare, Target as HeroTarget } from 'lucide-react';
+import { PageHero } from '../components/PageHero';
+import { BadgeShelf } from '../components/illustrations/Badges';
+
+function SectionLabel({ children }: { children: string }) {
+  return <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-slate-500">{children}</p>;
+}
 
 export default function ProfilePage() {
   const user = useRequiredUser();
@@ -24,53 +31,62 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-      <section className="rounded-xl border border-slate-800 bg-[#161D2F] p-6 shadow-sm">
-        <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-400/20 font-mono text-xl font-black text-cyan-300">
-          {user.username.slice(0, 2).toUpperCase()}
-        </div>
-        <h1 className="mt-4 font-heading text-2xl font-bold text-white">{user.username}</h1>
-        <p className="font-mono text-xs text-slate-400">{user.email}</p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {user.verified && (
-            <span className="inline-flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-1 font-mono text-xs font-bold text-cyan-400">
-              <ShieldCheck className="h-4 w-4" aria-hidden="true" /> Verified
-            </span>
-          )}
-          {user.isAdmin && (
-            <span className="inline-flex items-center gap-2 rounded-lg border border-violet-500/30 bg-violet-950/30 px-3 py-1 font-mono text-xs font-bold text-violet-300">
-              Admin
-            </span>
-          )}
-        </div>
-        {user.lastActiveDate && <p className="mt-4 font-mono text-[11px] text-zinc-400">Last active: {user.lastActiveDate}</p>}
-      </section>
+    <div className="space-y-10">
+      <PageHero
+        titleId="profile-heading"
+        eyebrow="Account"
+        title={user.username}
+        byline={user.email}
+        tags={[user.isAdmin ? 'Admin' : 'Student', ...(user.verified ? ['Verified'] : [])]}
+        stats={[
+          { icon: HeroSparkles, value: `${user.xp}`, label: `XP · level ${user.level}` },
+          { icon: HeroCheckSquare, value: `${solvedCount}`, label: 'problems solved' },
+          { icon: HeroTarget, value: `${user.accuracy}%`, label: 'accuracy' },
+          { icon: HeroFlame, value: `${user.streak}`, label: user.streak === 1 ? 'day streak' : 'days streak' },
+        ]}
+      />
 
-      <section className="rounded-xl border border-slate-800 bg-[#161D2F] p-6 shadow-sm xl:col-span-2">
-        <h2 className="mb-4 font-heading text-lg font-bold text-white">Placement metrics</h2>
-        <dl className="grid grid-cols-2 gap-4 md:grid-cols-3">
+      <section>
+        <SectionLabel>Progress</SectionLabel>
+        <h2 className="mb-4 mt-1 font-heading text-xl font-bold text-white">Placement metrics</h2>
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-6 md:grid-cols-3">
           {metrics.map((metric) => (
-            <div key={metric.label} className="rounded-lg border border-slate-800 bg-slate-950 p-4">
-              <dt className="font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-400">{metric.label}</dt>
-              <dd className={`mt-1 font-mono text-2xl font-black ${metric.accent ? 'text-cyan-400' : 'text-white'}`}>{metric.value}</dd>
+            <div key={metric.label}>
+              <dt className="font-mono text-[11px] font-semibold uppercase tracking-widest text-slate-500">{metric.label}</dt>
+              <dd className={`mt-1 font-heading text-2xl font-bold ${metric.accent ? 'text-cyan-400' : 'text-white'}`}>{metric.value}</dd>
             </div>
           ))}
         </dl>
+      </section>
 
-        <h2 className="mb-3 mt-6 flex items-center gap-2 font-heading text-sm font-bold text-white">
-          <Award className="h-4 w-4 text-cyan-400" aria-hidden="true" /> Badges
+      <section>
+        <SectionLabel>Achievements</SectionLabel>
+        <h2 className="mb-3 mt-1 flex items-center gap-2 font-heading text-xl font-bold text-white">
+          <Award className="h-5 w-5 text-cyan-400" aria-hidden="true" /> Badges
         </h2>
-        {badges.length > 0 ? (
-          <ul className="flex flex-wrap gap-2">
-            {badges.map((badge) => (
-              <li key={badge} className="rounded border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 font-mono text-[11px] font-bold text-cyan-300">
-                {badge}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-xs text-slate-400">No badges earned yet.</p>
-        )}
+        <BadgeShelf owned={badges} />
+      </section>
+
+      <section>
+        <SectionLabel>Account</SectionLabel>
+        <h2 className="mb-3 mt-1 font-heading text-xl font-bold text-white">Details</h2>
+        <dl className="grid max-w-xl grid-cols-[6.5rem_minmax(0,1fr)] sm:grid-cols-[8rem_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm">
+          <dt className="text-slate-400">Email</dt>
+          <dd className="break-all text-white">{user.email}</dd>
+          <dt className="text-slate-400">Status</dt>
+          <dd className={user.verified ? 'inline-flex items-center gap-2 text-emerald-400' : 'text-slate-300'}>
+            {user.verified && <ShieldCheck className="h-4 w-4" aria-hidden="true" />}
+            {user.verified ? 'Verified' : 'Not verified'}
+          </dd>
+          <dt className="text-slate-400">Role</dt>
+          <dd className="text-white">{user.isAdmin ? 'Admin' : 'Student'}</dd>
+          {user.lastActiveDate && (
+            <>
+              <dt className="text-slate-400">Last active</dt>
+              <dd className="text-white">{user.lastActiveDate}</dd>
+            </>
+          )}
+        </dl>
       </section>
     </div>
   );

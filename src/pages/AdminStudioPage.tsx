@@ -5,13 +5,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, Loader2, Pencil, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { Activity, Code2, LayoutDashboard, Loader2, MessageSquare, Pencil, RefreshCw, Search, Trash2, Trophy, Users } from 'lucide-react';
 import { ProblemForm } from '../components/admin/ProblemForm';
-import { difficultyBadgeClass } from '../components/arena/difficulty';
+import { difficultyTextClass } from '../components/arena/difficulty';
 import { ErrorAlert } from '../components/StatusMessages';
 import { useAppData } from '../context/AppDataContext';
 import { api, describeApiError } from '../services/api';
 import type { HealthStatus, Problem, ProblemInput } from '../types';
+import { Settings as HeroSettings } from 'lucide-react';
+import { PageHero } from '../components/PageHero';
+import { ContestsAdmin } from '../components/admin/ContestsAdmin';
+import { DiscussionsAdmin } from '../components/admin/DiscussionsAdmin';
+import { OverviewStats } from '../components/admin/OverviewStats';
+import { UsersAdmin } from '../components/admin/UsersAdmin';
 
 type HealthState =
   | { state: 'loading' }
@@ -22,13 +28,20 @@ function isHealthStatus(value: unknown): value is HealthStatus {
   return typeof value === 'object' && value !== null && typeof (value as { status?: unknown }).status === 'string';
 }
 
-function toneFor(value: string | boolean | undefined): string {
-  if (value === true) return 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10';
-  if (value === false || value === undefined) return 'text-rose-300 border-rose-500/30 bg-rose-500/10';
+function SectionLabel({ children }: { children: string }) {
+  return <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-slate-500">{children}</p>;
+}
+
+function toneFor(value: string | boolean | undefined): { text: string; dot: string } {
+  const up = { text: 'text-emerald-400', dot: 'bg-emerald-400' };
+  const warn = { text: 'text-amber-400', dot: 'bg-amber-400' };
+  const down = { text: 'text-rose-400', dot: 'bg-rose-400' };
+  if (value === true) return up;
+  if (value === false || value === undefined) return down;
   const normalized = value.toLowerCase();
-  if (['ok', 'up', 'healthy', 'connected', 'online', 'ready', 'judge0', 'local', 'gemini'].includes(normalized)) return 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10';
-  if (['degraded', 'partial', 'disabled', 'not configured'].includes(normalized)) return 'text-amber-300 border-amber-500/30 bg-amber-500/10';
-  return 'text-rose-300 border-rose-500/30 bg-rose-500/10';
+  if (['ok', 'up', 'healthy', 'connected', 'online', 'ready', 'configured', 'gemini'].includes(normalized)) return up;
+  if (['degraded', 'partial', 'disabled', 'not configured'].includes(normalized)) return warn;
+  return down;
 }
 
 function HealthPanel() {
@@ -58,20 +71,29 @@ function HealthPanel() {
   }, [check]);
 
   const data = health.state === 'loading' ? null : health.data;
-  const rows: Array<{ label: string; value: string | boolean | undefined }> = data
+  const rows: Array<{ label: string; value: string | boolean | undefined; status?: string | boolean }> = data
     ? [
         { label: 'Overall', value: data.status },
         { label: 'Node API', value: data.node ?? (health.state === 'ready' ? 'ok' : undefined) },
         { label: 'Database', value: data.database },
         { label: 'ML service', value: data.mlService },
-        ...(data.codeRunner !== undefined ? [{ label: 'Code runner', value: data.codeRunner }] : []),
+        ...(data.codeRunner !== undefined
+          ? [
+              {
+                label: 'Code runner',
+                value: data.codeRunnerStatus ? `${data.codeRunner}: ${data.codeRunnerStatus}` : data.codeRunner,
+                status: data.codeRunnerStatus ?? data.codeRunner,
+              },
+            ]
+          : []),
         ...(data.aiProvider !== undefined ? [{ label: 'AI provider', value: data.aiProvider }] : []),
       ]
     : [];
 
   return (
-    <section className="rounded-xl border border-slate-800 bg-[#161D2F] p-6" aria-labelledby="health-heading">
-      <div className="mb-4 flex items-center justify-between gap-3">
+    <section aria-labelledby="health-heading">
+      <SectionLabel>Platform</SectionLabel>
+      <div className="mb-3 mt-1 flex items-center justify-between gap-3">
         <h2 id="health-heading" className="flex items-center gap-2 font-heading text-xl font-bold text-white">
           <Activity className="h-5 w-5 text-cyan-400" aria-hidden="true" /> Service health
         </h2>
@@ -79,7 +101,7 @@ function HealthPanel() {
           type="button"
           onClick={() => void check()}
           disabled={health.state === 'loading'}
-          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/10 disabled:opacity-60"
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:opacity-60"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${health.state === 'loading' ? 'animate-spin' : ''}`} aria-hidden="true" />
           Refresh
@@ -87,7 +109,7 @@ function HealthPanel() {
       </div>
 
       {health.state === 'loading' && (
-        <p className="flex items-center gap-2 font-mono text-xs text-zinc-400" role="status">
+        <p className="flex items-center gap-2 font-mono text-xs text-slate-400" role="status">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Checking services...
         </p>
       )}
@@ -101,32 +123,38 @@ function HealthPanel() {
       )}
 
       {data && (
-        <div className="space-y-4">
-          <dl className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            {rows.map((row) => (
-              <div key={row.label} className="rounded-lg border border-slate-800 bg-slate-950 p-3">
-                <dt className="font-mono text-[11px] font-bold uppercase text-zinc-400">{row.label}</dt>
-                <dd className={`mt-1 inline-block rounded border px-2 py-0.5 font-mono text-xs font-bold ${toneFor(row.value)}`}>
-                  {row.value === undefined ? 'unknown' : String(row.value)}
-                </dd>
-              </div>
-            ))}
+        <div className="space-y-4 rounded-md bg-slate-900 p-4">
+          <dl className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+            {rows.map((row) => {
+              const tone = toneFor(row.status ?? row.value);
+              return (
+                <div key={row.label} className="flex items-center gap-3 rounded-md bg-slate-800 px-3 py-2">
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${tone.dot}`} aria-hidden="true" />
+                  <dt className="text-sm text-white">{row.label}</dt>
+                  <dd className={`ml-auto font-mono text-xs ${tone.text}`}>{row.value === undefined ? 'unknown' : String(row.value)}</dd>
+                </div>
+              );
+            })}
           </dl>
+          {data.codeRunnerDetail && data.codeRunnerStatus === 'unavailable' && (
+            <p className="rounded-md bg-slate-800 px-3 py-2 font-mono text-xs text-amber-400">Code runner: {data.codeRunnerDetail}</p>
+          )}
           {data.mlModels && (
             <div>
-              <h3 className="mb-2 font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-400">ML models loaded</h3>
+              <h3 className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-widest text-slate-500">ML models loaded</h3>
               <ul className="flex flex-wrap gap-2">
                 {Object.entries(data.mlModels).map(([name, loaded]) => (
-                  <li key={name} className={`rounded border px-2 py-0.5 font-mono text-[11px] ${toneFor(loaded)}`}>
+                  <li key={name} className="flex items-center gap-2 rounded-md bg-slate-800 px-2.5 py-1 font-mono text-[11px] text-slate-300">
+                    <span className={`h-1.5 w-1.5 rounded-full ${toneFor(loaded).dot}`} aria-hidden="true" />
                     {name}: {loaded ? 'loaded' : 'missing'}
                   </li>
                 ))}
               </ul>
             </div>
           )}
-          <details className="text-xs text-zinc-400">
+          <details className="text-xs text-slate-400">
             <summary className="cursor-pointer font-mono">Raw response</summary>
-            <pre className="mt-2 overflow-x-auto rounded-xl border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-cyan-300">
+            <pre className="mt-2 overflow-x-auto rounded-md bg-slate-950 p-4 font-mono text-xs text-slate-300">
               {JSON.stringify(data, null, 2)}
             </pre>
           </details>
@@ -134,13 +162,13 @@ function HealthPanel() {
       )}
 
       {checkedAt && health.state !== 'loading' && (
-        <p className="mt-3 font-mono text-[11px] text-zinc-400">Last checked {checkedAt.toLocaleTimeString()}</p>
+        <p className="mt-3 font-mono text-[11px] text-slate-400">Last checked {checkedAt.toLocaleTimeString()}</p>
       )}
     </section>
   );
 }
 
-export default function AdminStudioPage() {
+function ProblemsTab() {
   const { problems, problemsLoading, problemsError, reloadProblems } = useAppData();
   const [editing, setEditing] = useState<Problem | null>(null);
   const [saving, setSaving] = useState(false);
@@ -161,7 +189,7 @@ export default function AdminStudioPage() {
     setEditing(problem);
     setSaveError(null);
     setNotice(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('problem-form-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const cancelEdit = () => {
@@ -213,11 +241,10 @@ export default function AdminStudioPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <HealthPanel />
+    <div className="space-y-8">
 
       {notice && (
-        <p role="status" className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2.5 text-xs text-emerald-300">
+        <p role="status" className="rounded-md bg-slate-900 px-4 py-3 text-sm text-emerald-400">
           {notice.text}{' '}
           {notice.problemId && (
             <Link to={`/arena/${encodeURIComponent(notice.problemId)}`} className="font-bold underline">
@@ -227,97 +254,150 @@ export default function AdminStudioPage() {
         </p>
       )}
 
-      <ProblemForm
-        key={editing ? `edit-${editing.id}` : `new-${formKey}`}
-        problem={editing}
-        saving={saving}
-        serverError={saveError}
-        onSubmit={(payload) => void saveProblem(payload)}
-        onCancel={cancelEdit}
-      />
+      <div id="problem-form-anchor" className="scroll-mt-16 lg:scroll-mt-4">
+        <ProblemForm
+          key={editing ? `edit-${editing.id}` : `new-${formKey}`}
+          problem={editing}
+          saving={saving}
+          serverError={saveError}
+          onSubmit={(payload) => void saveProblem(payload)}
+          onCancel={cancelEdit}
+        />
+      </div>
 
-      <section className="rounded-xl border border-slate-800 bg-[#161D2F] p-6" aria-labelledby="problem-bank-heading">
-        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <h2 id="problem-bank-heading" className="font-heading text-lg font-bold text-white">
+      <section aria-labelledby="problem-bank-heading">
+        <SectionLabel>Content</SectionLabel>
+        <div className="mb-3 mt-1 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <h2 id="problem-bank-heading" className="font-heading text-xl font-bold text-white">
             Problem bank ({problems.length})
           </h2>
           <div className="relative w-full md:w-72">
             <label htmlFor="admin-problem-search" className="sr-only">
               Search problems
             </label>
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" aria-hidden="true" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
             <input
               id="admin-problem-search"
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search by title, id or tag..."
-              className="h-9 w-full rounded-lg border border-slate-800 bg-slate-950/95 pl-8 pr-3 text-xs text-white outline-none focus:border-cyan-500"
+              className="w-full rounded-md border-0 bg-slate-900 py-2 pl-9 pr-3 text-sm text-white outline-none placeholder:text-slate-500 focus:ring-1 focus:ring-cyan-400"
             />
           </div>
         </div>
 
         {problemsError && <ErrorAlert message={`Could not load problems: ${problemsError}`} onRetry={() => void reloadProblems()} className="mb-3" />}
         {deleteError && <ErrorAlert message={deleteError} className="mb-3" />}
-        {problemsLoading && problems.length === 0 && <p className="font-mono text-xs text-zinc-400">Loading problems...</p>}
+        {problemsLoading && problems.length === 0 && <p className="font-mono text-xs text-slate-400">Loading problems...</p>}
 
         {filtered.length > 0 && (
-          <div className="max-h-[520px] overflow-auto rounded-lg border border-slate-800">
-            <table className="w-full text-left text-xs">
-              <thead className="sticky top-0 bg-slate-900 font-mono text-[11px] uppercase text-zinc-400">
-                <tr>
-                  <th scope="col" className="px-3 py-2">Title</th>
-                  <th scope="col" className="px-3 py-2">Difficulty</th>
-                  <th scope="col" className="hidden px-3 py-2 md:table-cell">Tags</th>
-                  <th scope="col" className="px-3 py-2 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((problem) => (
-                  <tr key={problem.id} className={`border-t border-slate-800 ${editing?.id === problem.id ? 'bg-cyan-500/5' : ''}`}>
-                    <td className="px-3 py-2">
-                      <span className="block font-bold text-white">{problem.title}</span>
-                      <span className="block font-mono text-[11px] text-zinc-400">{problem.id}</span>
-                    </td>
-                    <td className="px-3 py-2">
-                      <span className={`rounded border px-2 py-0.5 font-mono text-[11px] ${difficultyBadgeClass(problem.difficulty)}`}>{problem.difficulty}</span>
-                    </td>
-                    <td className="hidden px-3 py-2 font-mono text-[11px] text-zinc-400 md:table-cell">{(problem.tags ?? []).join(', ')}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => startEdit(problem)}
-                          aria-label={`Edit ${problem.title}`}
-                          className="cursor-pointer rounded-lg border border-white/10 p-1.5 text-zinc-300 hover:bg-white/10"
-                        >
-                          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void deleteProblem(problem)}
-                          disabled={deleting !== null}
-                          aria-label={`Delete ${problem.title}`}
-                          className="cursor-pointer rounded-lg border border-rose-500/20 p-1.5 text-rose-300 hover:bg-rose-500/10 disabled:opacity-50"
-                        >
-                          {deleting === problem.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="max-h-[520px] space-y-2 overflow-auto">
+            {filtered.map((problem) => (
+              <li
+                key={problem.id}
+                className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md px-4 py-3 hover:bg-slate-800 ${editing?.id === problem.id ? 'bg-slate-800' : 'bg-slate-900'}`}
+              >
+                <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
+                  <span className="block truncate text-sm font-semibold text-white">{problem.title}</span>
+                  <span className="block truncate font-mono text-[11px] text-slate-400">
+                    {problem.id}
+                    {(problem.tags ?? []).length > 0 && ` · ${(problem.tags ?? []).join(', ')}`}
+                  </span>
+                </div>
+                <span className={`font-mono text-xs font-semibold ${difficultyTextClass(problem.difficulty)}`}>{problem.difficulty}</span>
+                <div className="ml-auto flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(problem)}
+                    aria-label={`Edit ${problem.title}`}
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-950"
+                  >
+                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" /> Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void deleteProblem(problem)}
+                    disabled={deleting !== null}
+                    aria-label={`Delete ${problem.title}`}
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-rose-400 hover:bg-slate-950 disabled:opacity-50"
+                  >
+                    {deleting === problem.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />}
+                    Delete
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
         {!problemsLoading && filtered.length === 0 && !problemsError && (
-          <p className="font-mono text-xs text-zinc-400">{problems.length === 0 ? 'No problems yet.' : 'No problems match your search.'}</p>
+          <p className="font-mono text-xs text-slate-400">{problems.length === 0 ? 'No problems yet.' : 'No problems match your search.'}</p>
         )}
       </section>
 
-      <p className="text-[11px] text-zinc-400">
-        Admin actions are authorized by the server; this page only hides controls from non-admin accounts.
-      </p>
+    </div>
+  );
+}
+
+type AdminTab = 'overview' | 'problems' | 'contests' | 'users' | 'discussions';
+
+const ADMIN_TABS: Array<{ id: AdminTab; label: string; icon: React.ElementType }> = [
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'problems', label: 'Problems', icon: Code2 },
+  { id: 'contests', label: 'Contests', icon: Trophy },
+  { id: 'users', label: 'Users', icon: Users },
+  { id: 'discussions', label: 'Discussions', icon: MessageSquare },
+];
+
+export default function AdminStudioPage() {
+  const { problems } = useAppData();
+  const [tab, setTab] = useState<AdminTab>('overview');
+
+  return (
+    <div className="space-y-8">
+      <PageHero
+        titleId="admin-heading"
+        eyebrow="Settings"
+        title="Admin Studio"
+        subtitle="Manage problems, contests, users and discussions, and check the health of the platform services."
+        stats={[{ icon: HeroSettings, value: String(problems.length), label: 'problems in the bank' }]}
+      />
+
+      <div className="no-scrollbar -mt-2 flex gap-1 overflow-x-auto border-b border-slate-800" role="tablist" aria-label="Admin sections">
+        {ADMIN_TABS.map((item) => {
+          const active = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTab(item.id)}
+              className={`-mb-px flex shrink-0 cursor-pointer items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${
+                active ? 'border-cyan-400 text-white' : 'border-transparent text-slate-400 hover:text-white'
+              }`}
+            >
+              <item.icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div role="tabpanel">
+        {tab === 'overview' && (
+          <div className="space-y-10">
+            <OverviewStats />
+            <HealthPanel />
+          </div>
+        )}
+        {tab === 'problems' && <ProblemsTab />}
+        {tab === 'contests' && <ContestsAdmin />}
+        {tab === 'users' && <UsersAdmin />}
+        {tab === 'discussions' && <DiscussionsAdmin />}
+      </div>
+
+      <p className="text-xs text-slate-400">Admin actions are authorized by the server; this page only hides controls from non-admin accounts.</p>
     </div>
   );
 }

@@ -5,9 +5,9 @@
 
 import React, { useMemo, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { ChevronRight, Loader2, Lock, Sparkles } from 'lucide-react';
-import { ParticleCanvas, CountUp } from '../components/HeroEffects';
+import { Loader2 } from 'lucide-react';
 import { ErrorAlert } from '../components/StatusMessages';
+import { LoginArt } from '../components/illustrations/Scenes';
 import { useAuth } from '../context/AuthContext';
 import { useAppData } from '../context/AppDataContext';
 import { groupProblemsByCompany } from '../data/companies';
@@ -34,8 +34,8 @@ function resolveRedirect(state: unknown): string {
 }
 
 const inputClass =
-  'h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-xs text-white outline-none transition focus:border-cyan-400';
-const labelClass = 'mb-1.5 block font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-400';
+  'h-11 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-sm text-white outline-none transition focus:border-cyan-400';
+const labelClass = 'mb-1.5 block text-xs font-semibold text-slate-300';
 
 export default function LoginPage() {
   const { user, completeLogin } = useAuth();
@@ -129,161 +129,140 @@ export default function LoginPage() {
   };
 
   const stats = [
-    { value: problems.length, label: 'PROBLEMS' },
-    { value: companyCount, label: 'COMPANIES' },
-    { value: LANGUAGES.length, label: 'LANGUAGES' },
+    { value: problems.length, label: 'problems' },
+    { value: companyCount, label: 'companies' },
+    { value: LANGUAGES.length, label: 'languages' },
   ];
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#070C16] text-white selection:bg-cyan-400 selection:text-black">
-      <ParticleCanvas />
+    <div className="grid min-h-screen grid-cols-1 bg-paper text-white lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <section className="flex flex-col justify-between border-b border-slate-800 px-6 py-10 md:px-14 lg:border-b-0 lg:border-r lg:py-14">
+        <p className="font-heading text-2xl font-semibold">Placify</p>
 
-      <section className="relative z-10 px-6 pb-20 pt-12 md:px-12 lg:pt-16">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 lg:grid-cols-12">
-          <div className="space-y-6 lg:col-span-7">
-            <div className="glow-cyan inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-950/40 px-3.5 py-1.5 font-mono text-xs font-semibold text-cyan-300">
-              <Sparkles className="h-3.5 w-3.5 animate-pulse text-cyan-400" aria-hidden="true" />
-              <span>PLACEMENT PREPARATION PLATFORM</span>
-            </div>
+        <div className="my-14 max-w-xl lg:my-0">
+          <h1 className="font-heading text-4xl font-semibold leading-[1.1] md:text-5xl">
+            A steady place to prepare for your first software job.
+          </h1>
+          <p className="mt-5 text-base leading-relaxed text-slate-300">
+            Solve problems against a real judge, work through learning tracks, rehearse interviews, check your resume, and see an
+            estimated readiness score move as you practise.
+          </p>
 
-            <h1 className="font-heading text-4xl font-extrabold leading-[1.08] tracking-tight text-white md:text-6xl lg:text-7xl">
-              Prepare for your <br />
-              <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-500 bg-clip-text text-transparent">
-                SDE placement
-              </span>
-            </h1>
+          <LoginArt className="mt-8 hidden w-full max-w-md md:block" />
 
-            <p className="max-w-xl font-sans text-base leading-relaxed text-zinc-400">
-              Practice coding problems with a real judge, study learning tracks, run mock interviews, check your resume, and
-              track an estimated placement-readiness score.
-            </p>
+          <dl className="mt-8 flex gap-10">
+            {stats.map((stat) => (
+              <div key={stat.label}>
+                <dd className="font-heading text-3xl font-semibold">{stat.value}</dd>
+                <dt className="font-mono text-[11px] uppercase tracking-widest text-slate-500">{stat.label}</dt>
+              </div>
+            ))}
+          </dl>
+        </div>
 
-            <div className="flex flex-wrap gap-4 pt-2">
-              <a
-                href="#login"
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-white px-6 py-3 text-xs font-bold text-black shadow-lg transition hover:bg-zinc-200"
+        <p className="hidden text-xs text-slate-500 lg:block">The readiness score is a practice signal, not a hiring prediction.</p>
+      </section>
+
+      <section className="flex items-center justify-center px-6 py-12 md:px-14" id="login">
+        <div className="w-full max-w-sm">
+          <div className="mb-6 flex gap-6 border-b border-slate-800" role="tablist" aria-label="Authentication mode">
+            {(['login', 'register'] as const).map((nextMode) => (
+              <button
+                key={nextMode}
+                type="button"
+                role="tab"
+                aria-selected={mode === nextMode}
+                onClick={() => {
+                  setMode(nextMode);
+                  setError(null);
+                }}
+                className={`-mb-px cursor-pointer border-b-2 pb-2 text-sm font-semibold transition-colors ${
+                  mode === nextMode ? 'border-cyan-400 text-white' : 'border-transparent text-slate-400 hover:text-white'
+                }`}
               >
-                Enter platform <ChevronRight className="h-4 w-4" aria-hidden="true" />
-              </a>
-            </div>
-
-            <div className="grid max-w-lg grid-cols-3 gap-4 pt-6">
-              {stats.map((stat) => (
-                <div key={stat.label} className="rounded-2xl border border-white/5 bg-[#0a101f]/95 p-4">
-                  <p className="font-mono text-2xl font-black text-white">
-                    <CountUp end={stat.value} />
-                  </p>
-                  <p className="mt-1 font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-400">{stat.label}</p>
-                </div>
-              ))}
-            </div>
+                {nextMode === 'login' ? 'Sign in' : 'Create account'}
+              </button>
+            ))}
           </div>
 
-          <div className="relative flex w-full items-center justify-center lg:col-span-5">
-            <div
-              className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-950/95 p-8 shadow-2xl"
-              id="login"
+          <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+            <div>
+              <label htmlFor="auth-identifier" className={labelClass}>
+                {mode === 'register' ? 'Email' : 'Email or username'}
+              </label>
+              <input
+                id="auth-identifier"
+                type={mode === 'register' ? 'email' : 'text'}
+                autoComplete={mode === 'register' ? 'email' : 'username'}
+                value={identifier}
+                onChange={(event) => setIdentifier(event.target.value)}
+                className={inputClass}
+                placeholder={mode === 'register' ? 'you@example.com' : 'you@example.com or username'}
+              />
+            </div>
+
+            {mode === 'register' && (
+              <div>
+                <label htmlFor="auth-username" className={labelClass}>
+                  Username
+                </label>
+                <input
+                  id="auth-username"
+                  autoComplete="nickname"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  className={inputClass}
+                  placeholder="sde_pioneer"
+                />
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="auth-password" className={labelClass}>
+                Password
+              </label>
+              <input
+                id="auth-password"
+                type="password"
+                autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className={inputClass}
+                placeholder={mode === 'register' ? 'At least 6 characters' : '********'}
+              />
+            </div>
+
+            {error && <ErrorAlert message={error} />}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-cyan-400 text-sm font-semibold text-black transition-colors hover:bg-cyan-300 disabled:opacity-60"
             >
-              <div className="mb-6 flex rounded-xl border border-white/5 bg-white/5 p-1" role="tablist" aria-label="Authentication mode">
-                {(['login', 'register'] as const).map((nextMode) => (
-                  <button
-                    key={nextMode}
-                    type="button"
-                    role="tab"
-                    aria-selected={mode === nextMode}
-                    onClick={() => {
-                      setMode(nextMode);
-                      setError(null);
-                    }}
-                    className={`flex-1 cursor-pointer rounded-lg px-3 py-2 text-xs font-bold capitalize transition ${
-                      mode === nextMode ? 'bg-cyan-400 font-black text-black shadow-sm' : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    {nextMode}
-                  </button>
-                ))}
-              </div>
+              {loading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              {mode === 'login' ? 'Sign in' : 'Create account'}
+            </button>
+          </form>
 
-              <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-                <div>
-                  <label htmlFor="auth-identifier" className={labelClass}>
-                    {mode === 'register' ? 'Email' : 'Email / Username'}
-                  </label>
-                  <input
-                    id="auth-identifier"
-                    type={mode === 'register' ? 'email' : 'text'}
-                    autoComplete={mode === 'register' ? 'email' : 'username'}
-                    value={identifier}
-                    onChange={(event) => setIdentifier(event.target.value)}
-                    className={inputClass}
-                    placeholder={mode === 'register' ? 'you@example.com' : 'you@example.com or username'}
-                  />
-                </div>
-
-                {mode === 'register' && (
-                  <div>
-                    <label htmlFor="auth-username" className={labelClass}>
-                      Username
-                    </label>
-                    <input
-                      id="auth-username"
-                      autoComplete="nickname"
-                      value={username}
-                      onChange={(event) => setUsername(event.target.value)}
-                      className={inputClass}
-                      placeholder="sde_pioneer"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label htmlFor="auth-password" className={labelClass}>
-                    Password
-                  </label>
-                  <input
-                    id="auth-password"
-                    type="password"
-                    autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    className={inputClass}
-                    placeholder={mode === 'register' ? 'At least 6 characters' : '********'}
-                  />
-                </div>
-
-                {error && <ErrorAlert message={error} />}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 text-xs font-black text-white shadow-md transition hover:brightness-110 disabled:opacity-60"
-                >
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Lock className="h-4 w-4" aria-hidden="true" />}
-                  {mode === 'login' ? 'Sign in' : 'Create account'}
-                </button>
-              </form>
-
-              <div className="mt-6 border-t border-white/5 pt-5">
-                <p className="mb-2 font-mono text-[11px] uppercase tracking-wider text-zinc-400">Demo accounts</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    disabled={loading}
-                    onClick={() => loginAsDemo('student')}
-                    className="cursor-pointer rounded-xl border border-white/5 bg-white/5 px-3 py-2.5 text-[11px] font-bold text-zinc-400 transition hover:border-cyan-400/30 hover:text-white disabled:opacity-60"
-                  >
-                    Student demo
-                  </button>
-                  <button
-                    type="button"
-                    disabled={loading}
-                    onClick={() => loginAsDemo('admin')}
-                    className="cursor-pointer rounded-xl border border-white/5 bg-white/5 px-3 py-2.5 text-[11px] font-bold text-zinc-400 transition hover:border-cyan-400/30 hover:text-white disabled:opacity-60"
-                  >
-                    Admin demo
-                  </button>
-                </div>
-              </div>
+          <div className="mt-8 border-t border-slate-800 pt-5">
+            <p className="mb-2 font-mono text-[11px] uppercase tracking-widest text-slate-500">Just looking around?</p>
+            <div className="flex gap-4 text-sm">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => loginAsDemo('student')}
+                className="cursor-pointer font-semibold text-cyan-400 underline-offset-2 hover:underline disabled:opacity-60"
+              >
+                Student demo
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => loginAsDemo('admin')}
+                className="cursor-pointer font-semibold text-cyan-400 underline-offset-2 hover:underline disabled:opacity-60"
+              >
+                Admin demo
+              </button>
             </div>
           </div>
         </div>

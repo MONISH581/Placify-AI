@@ -217,6 +217,7 @@ export interface LearningTrack {
   name: string;
   color: string;
   logo: string;
+  grouped?: boolean;
   topics: TrackTopic[];
 }
 
@@ -326,4 +327,43 @@ export interface HealthStatus {
   codeRunnerDetail?: string;
   aiProvider?: string;
   timestamp?: string;
+}
+
+/** GET /api/admin/stats */
+export interface AdminStats {
+  users: number;
+  admins: number;
+  problems: number;
+  submissions: number;
+  acceptedSubmissions: number;
+  acceptanceRate: number;
+  contests: number;
+  threads: number;
+  replies: number;
+  interviews: number;
+  topicsCompleted: number;
+}
+
+/** One row of GET /api/admin/users */
+export interface AdminUser {
+  id: string;
+  email: string;
+  username: string;
+  isAdmin: boolean;
+  xp: number;
+  level: number;
+  streak: number;
+  accuracy: number;
+  lastActiveDate: string;
+  solvedCount: number;
+  submissionCount: number;
+}
+
+/** Body for POST/PUT /api/admin/contests */
+export interface ContestInput {
+  title: string;
+  description: string;
+  startTime: string;
+  durationMinutes: number;
+  problems: string[];
 }

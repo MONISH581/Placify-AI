@@ -55,24 +55,24 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return (
       <div
         role="alert"
-        className={`flex items-center justify-center p-6 text-white ${fullscreen ? 'min-h-screen bg-[#070C16]' : 'min-h-[400px]'}`}
+        className={`flex items-center justify-center p-6 text-white ${fullscreen ? 'min-h-screen bg-paper' : 'min-h-[400px]'}`}
       >
-        <div className="w-full max-w-md space-y-4 rounded-2xl border border-rose-500/20 bg-slate-950/95 p-6 text-center shadow-2xl">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-400">
+        <div className="w-full max-w-md space-y-4 rounded-lg border border-rose-500/20 bg-slate-950/95 p-6 text-center ">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/10 text-rose-400">
             <AlertTriangle className="h-6 w-6" aria-hidden="true" />
           </div>
           <h2 className="font-heading text-xl font-bold">Something went wrong</h2>
           <p className="text-xs leading-relaxed text-zinc-400">
             An unexpected interface error occurred. You can try again or head back to your dashboard.
           </p>
-          <div className="overflow-x-auto rounded-lg border border-white/5 bg-black/40 p-3 text-left font-mono text-[11px] text-rose-300">
+          <div className="overflow-x-auto rounded-lg border border-white/5 bg-slate-900 p-3 text-left font-mono text-[11px] text-rose-300">
             {error.message || 'Unknown error'}
           </div>
           <div className="flex flex-wrap justify-center gap-3">
             <button
               type="button"
               onClick={this.reset}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-5 py-2.5 text-xs font-black text-black transition hover:bg-cyan-300"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-cyan-400 px-5 py-2.5 text-xs font-bold text-black transition hover:bg-cyan-300"
             >
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
               Try again
@@ -80,7 +80,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <button
               type="button"
               onClick={this.goHome}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-white/10"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-white/10"
             >
               <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
               Go to dashboard

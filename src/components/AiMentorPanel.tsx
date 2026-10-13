@@ -146,7 +146,7 @@ export function AiMentorPanel() {
 
   return (
     <>
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-4 right-4 z-50 sm:bottom-6 sm:right-6">
         <motion.button
           type="button"
           onClick={() => setIsOpen((open) => !open)}
@@ -154,10 +154,9 @@ export function AiMentorPanel() {
           whileTap={{ scale: 0.95 }}
           aria-label={isOpen ? 'Close AI mentor' : 'Open AI mentor'}
           aria-expanded={isOpen}
-          className="glow-cyan relative flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 text-white shadow-lg shadow-cyan-500/20"
+          className=" relative flex h-12 w-12 cursor-pointer sm:h-14 sm:w-14 items-center justify-center rounded-full bg-cyan-400 text-black hover:bg-cyan-300  "
           id="ai-mentor-floating-btn"
         >
-          <span className="absolute inset-0 animate-ping rounded-full bg-cyan-400 opacity-25" aria-hidden="true" />
           <MessageSquare className="h-6 w-6" aria-hidden="true" />
         </motion.button>
       </div>
@@ -169,13 +168,13 @@ export function AiMentorPanel() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-            className="glass-panel fixed inset-y-0 right-0 z-50 flex w-full flex-col overflow-hidden text-white shadow-2xl sm:w-[460px]"
+            className="glass-panel fixed inset-y-0 right-0 z-50 flex w-full flex-col overflow-hidden text-white  sm:w-[460px]"
             id="ai-mentor-drawer"
             aria-label="AI mentor chat"
           >
-            <header className="flex items-center justify-between border-b border-cyan-500/15 bg-black/40 p-5">
+            <header className="flex items-center justify-between border-b border-cyan-500/15 bg-slate-900 p-5">
               <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 text-white shadow-inner">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-400 text-black ">
                   <Sparkles className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <div>
@@ -204,10 +203,10 @@ export function AiMentorPanel() {
                       </div>
                     )}
                     <div
-                      className={`max-w-[82%] rounded-2xl p-3.5 text-xs leading-relaxed ${
+                      className={`max-w-[82%] rounded-lg p-3.5 text-xs leading-relaxed ${
                         isAssistant
-                          ? `rounded-tl-sm border bg-[#0a101f]/95 text-zinc-100 ${message.isError ? 'border-rose-500/30' : 'border-cyan-500/15'}`
-                          : 'rounded-tr-sm border border-cyan-500/25 bg-gradient-to-r from-cyan-500/10 to-blue-600/15 text-cyan-100'
+                          ? `rounded-tl-sm border bg-card text-zinc-100 ${message.isError ? 'border-rose-500/30' : 'border-cyan-500/15'}`
+                          : 'rounded-tr-sm border border-cyan-500/25 bg-cyan-950 text-white'
                       }`}
                     >
                       {isAssistant && !message.isError ? (
@@ -238,7 +237,7 @@ export function AiMentorPanel() {
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-cyan-500/20 bg-zinc-950 text-cyan-300">
                     <Bot className="h-4 w-4" aria-hidden="true" />
                   </div>
-                  <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm border border-cyan-500/15 bg-[#0a101f]/95 p-3.5 text-xs text-zinc-400">
+                  <div className="flex items-center gap-2 rounded-lg rounded-tl-sm border border-cyan-500/15 bg-card p-3.5 text-xs text-zinc-400">
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-400" aria-hidden="true" />
                     Thinking...
                   </div>
@@ -247,7 +246,7 @@ export function AiMentorPanel() {
               <div ref={chatEndRef} />
             </div>
 
-            <footer className="space-y-3 border-t border-cyan-500/15 bg-black/30 p-4">
+            <footer className="space-y-3 border-t border-cyan-500/15 bg-slate-900 p-4">
               <div className="flex items-center gap-1.5 font-mono text-[11px] text-zinc-400">
                 <HelpCircle className="h-3.5 w-3.5 text-cyan-400" aria-hidden="true" />
                 <span>Suggestions for {pageLabel}:</span>
@@ -283,13 +282,13 @@ export function AiMentorPanel() {
                   maxLength={2000}
                   onChange={(event) => setInput(event.target.value)}
                   placeholder="Ask a technical or career question..."
-                  className="flex-1 rounded-xl border border-cyan-500/20 bg-black/60 px-4 py-2.5 text-xs text-white outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
+                  className="flex-1 rounded-lg border border-cyan-500/20 bg-slate-900 px-4 py-2.5 text-xs text-white outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/20"
                 />
                 <button
                   type="submit"
                   disabled={!input.trim() || isLoading}
                   aria-label="Send message"
-                  className="flex cursor-pointer items-center justify-center rounded-xl bg-cyan-400 px-4 text-xs font-bold text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex cursor-pointer items-center justify-center rounded-lg bg-cyan-400 px-4 text-xs font-bold text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Send className="h-4 w-4" aria-hidden="true" />
                 </button>

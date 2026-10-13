@@ -14,7 +14,7 @@ export function ErrorAlert({
   return (
     <div
       role="alert"
-      className={`flex items-start justify-between gap-3 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3.5 py-2.5 text-xs text-rose-300 ${className}`}
+      className={`flex items-start justify-between gap-3 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3.5 py-2.5 text-xs text-rose-300 ${className}`}
     >
       <span className="flex items-start gap-2">
         <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -38,7 +38,7 @@ export function LoadingBlock({ label = 'Loading...', className = '' }: { label?:
   return (
     <div
       role="status"
-      className={`flex flex-col items-center justify-center gap-3 rounded-xl border border-slate-800 bg-[#161D2F] p-10 text-cyan-400 ${className}`}
+      className={`flex flex-col items-center justify-center gap-3 rounded-lg border border-slate-800 bg-card p-10 text-cyan-400 ${className}`}
     >
       <Loader2 className="h-7 w-7 animate-spin" aria-hidden="true" />
       <span className="font-mono text-xs text-slate-400">{label}</span>

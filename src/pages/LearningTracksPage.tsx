@@ -4,7 +4,9 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Award, BookOpen, CheckCircle, ChevronRight, Code, Copy, HelpCircle, Trophy } from 'lucide-react';
+import { ArrowRight, Award, BookOpen, Check, CheckCircle, ChevronRight, Code, Copy, HelpCircle, Trophy } from 'lucide-react';
+import { NamedIcon } from '../components/NamedIcon';
+import { PageHero } from '../components/PageHero';
 import { ErrorAlert, LoadingBlock } from '../components/StatusMessages';
 import { TopicMentor } from '../components/tracks/TopicMentor';
 import { TopicQuizPanel } from '../components/tracks/TopicQuizPanel';
@@ -12,6 +14,7 @@ import { useAppData } from '../context/AppDataContext';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { renderInline } from '../utils/inlineMarkdown';
+import { renderRichText } from '../utils/richText';
 import type { LearningTrack, TopicPayload, TrackTopic, User } from '../types';
 
 type ContentTab = 'theory' | 'examples' | 'challenges' | 'quiz' | 'faq';
@@ -31,9 +34,15 @@ const CONTENT_TABS: Array<{ id: ContentTab; label: string; icon: React.ElementTy
   { id: 'faq', label: 'Interview FAQ', icon: Trophy },
 ];
 
+/** Splits "Phase 1: Essentials & Core Syntax" into a small eyebrow and a wrappable title. */
+function splitPhaseName(name: string, id: number): { eyebrow: string; title: string } {
+  const match = /^(Phase\s+\d+)\s*:\s*(.+)$/i.exec(name);
+  return match ? { eyebrow: match[1], title: match[2] } : { eyebrow: `Section ${id + 1}`, title: name };
+}
+
 function buildPhases(track: LearningTrack): TopicPhase[] {
   const topics = track.topics ?? [];
-  if (track.id === 'w3schools') {
+  if (track.id === 'w3schools' || track.grouped) {
     const groups = new Map<string, TrackTopic[]>();
     for (const topic of topics) {
       const groupName = topic.name.includes(':') ? topic.name.split(':')[0] : 'Core Tutorials';
@@ -186,26 +195,18 @@ export default function LearningTracksPage() {
 
   return (
     <div className="animate-fadeIn space-y-5" id="learning-tracks-container">
-      <div className="rounded-lg border border-slate-800 bg-[#161D2F] p-5 shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-xs font-black uppercase tracking-wide text-cyan-400">Tutorial library</p>
-            <h1 className="font-heading text-2xl font-bold text-white">Learning tracks</h1>
-            <p className="mt-1 text-sm text-slate-300">
-              Browse topic indexes, then study theory, examples, practice tasks, a checkpoint quiz and interview FAQs.
-            </p>
-          </div>
-          <div className="rounded-lg bg-slate-950 px-4 py-3 text-white">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Topics in track</p>
-            <p className="text-2xl font-black">{selectedTrack?.topics.length ?? 0}</p>
-          </div>
-        </div>
-      </div>
+      <PageHero
+        titleId="tracks-heading"
+        eyebrow="Tutorial library"
+        title={selectedTrack ? selectedTrack.name : 'Learning tracks'}
+        subtitle="Browse topic indexes, then study theory, examples, practice tasks, a checkpoint quiz and interview FAQs."
+        stats={[{ icon: BookOpen, value: String(selectedTrack?.topics.length ?? 0), label: 'topics in this track' }]}
+      />
 
       {tracksError && <ErrorAlert message={`Could not load learning tracks: ${tracksError}`} onRetry={() => void loadTracks()} />}
       {tracksLoading && tracks.length === 0 && <LoadingBlock label="Loading learning tracks..." />}
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" id="tracks-selector">
+      <div className="flex flex-wrap gap-2.5 p-1" id="tracks-selector" role="group" aria-label="Learning tracks">
         {tracks.map((track) => {
           const isSelected = track.id === selectedTrackId;
           return (
@@ -215,16 +216,19 @@ export default function LearningTracksPage() {
               onClick={() => selectTrack(track.id)}
               aria-pressed={isSelected}
               id={`track-button-${track.id}`}
-              className={`flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border p-3 text-center transition ${
+              className={`flex shrink-0 cursor-pointer items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-4 text-left transition-all ${
                 isSelected
-                  ? 'border-cyan-500/50 bg-slate-950 text-white shadow-md shadow-slate-950/10'
-                  : 'border-slate-800 bg-[#161D2F] text-slate-300 hover:border-cyan-500 hover:text-white'
+                  ? 'bg-cyan-400 text-black shadow-md'
+                  : 'bg-slate-900 text-slate-300 ring-1 ring-inset ring-slate-800 hover:-translate-y-px hover:bg-slate-800 hover:text-white'
               }`}
             >
-              <span className="text-xl font-black" aria-hidden="true">
-                {track.logo}
+              <span
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold leading-none tracking-tight ${isSelected ? 'bg-black/15' : 'bg-cyan-400/15'}`}
+                aria-hidden="true"
+              >
+                <NamedIcon name={track.logo} className={`h-4 w-4 ${isSelected ? 'text-black' : 'text-cyan-400'}`} fallbackText />
               </span>
-              <span className="font-sans text-xs font-bold tracking-tight">{track.name}</span>
+              <span className="whitespace-nowrap text-sm font-semibold">{track.name}</span>
             </button>
           );
         })}
@@ -233,53 +237,144 @@ export default function LearningTracksPage() {
       {selectedTrack && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12" id="track-details-split">
           <nav className="space-y-3 lg:col-span-3" id="track-sidebar" aria-label="Curriculum">
-            <h2 className="px-1 font-mono text-xs font-bold uppercase tracking-widest text-cyan-400">Curriculum</h2>
+            <div className="px-1">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-slate-500">Syllabus</p>
+              <h2 className="mt-1 font-heading text-xl font-bold text-white">Curriculum</h2>
+            </div>
+
+            {(() => {
+              const total = selectedTrack.topics.length;
+              const doneCount = selectedTrack.topics.filter((topic) => completedTopics.has(`${selectedTrack.id}:${topic.id}`)).length;
+              const percent = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+              const nextIndex = selectedTrack.topics.findIndex((topic) => !completedTopics.has(`${selectedTrack.id}:${topic.id}`));
+              const nextTopic = nextIndex >= 0 ? selectedTrack.topics[nextIndex] : null;
+              return (
+                <div className="rounded-md bg-slate-900 p-4 ring-1 ring-slate-800">
+                  <div className="flex items-end justify-between">
+                    <p className="font-heading text-3xl font-extrabold leading-none text-white">
+                      {percent}
+                      <span className="text-lg text-slate-400">%</span>
+                    </p>
+                    <p className="font-mono text-[11px] text-slate-400">
+                      {doneCount}/{total} topics
+                    </p>
+                  </div>
+                  <div
+                    className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-800"
+                    role="progressbar"
+                    aria-label="Track progress"
+                    aria-valuenow={percent}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  >
+                    <div className="h-full rounded-full bg-cyan-400 transition-[width] duration-500" style={{ width: `${percent}%` }} />
+                  </div>
+                  {nextTopic ? (
+                    <button
+                      type="button"
+                      onClick={() => selectTopic(nextIndex)}
+                      className="group mt-3 flex w-full cursor-pointer items-center justify-between gap-2 rounded-md bg-cyan-400 px-3 py-2 text-left text-xs font-semibold text-black transition hover:brightness-110"
+                    >
+                      <span className="min-w-0">
+                        <span className="block font-mono text-[10px] font-bold uppercase tracking-widest opacity-70">
+                          {doneCount === 0 ? 'Start' : 'Continue'}
+                        </span>
+                        <span className="block truncate">{nextTopic.name.replace(/^[^:]+:\s*/, '')}</span>
+                      </span>
+                      <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                    </button>
+                  ) : (
+                    <p className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                      <CheckCircle className="h-4 w-4" aria-hidden="true" /> Track complete
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+
             <div className="max-h-[600px] space-y-3 overflow-y-auto pr-1" id="syllabus-index">
               {phases.map((phase) => {
                 const isExpanded = Boolean(expandedPhases[phase.id]);
+                const { eyebrow, title } = splitPhaseName(phase.name, phase.id);
+                const phaseDone = phase.topics.filter((topic) => completedTopics.has(`${selectedTrack.id}:${topic.id}`)).length;
+                const phasePercent = Math.round((phaseDone / phase.topics.length) * 100);
+                const phaseComplete = phaseDone === phase.topics.length;
                 return (
-                  <div key={phase.id} className="space-y-1.5 overflow-hidden rounded-lg border border-slate-800 bg-[#161D2F] p-2 shadow-sm">
+                  <div key={phase.id} className="overflow-hidden rounded-md bg-slate-900 ring-1 ring-slate-800">
                     <button
                       type="button"
                       aria-expanded={isExpanded}
                       onClick={() => setExpandedPhases((prev) => ({ ...prev, [phase.id]: !prev[phase.id] }))}
-                      className="flex w-full cursor-pointer items-center justify-between px-2 py-1.5 text-left font-mono text-xs font-bold text-slate-200 hover:text-cyan-400"
+                      className="group w-full cursor-pointer px-3.5 pb-3 pt-3 text-left transition-colors hover:bg-slate-800/60"
                     >
-                      <span className="max-w-[90%] truncate">{phase.name}</span>
-                      <ChevronRight
-                        className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-cyan-400' : 'text-slate-400'}`}
-                        aria-hidden="true"
-                      />
+                      <span className="flex items-start justify-between gap-3">
+                        <span className="min-w-0">
+                          <span className="block font-mono text-[10px] font-bold uppercase tracking-widest text-cyan-400">{eyebrow}</span>
+                          <span className="mt-0.5 block text-[13px] font-bold leading-snug text-white">{title}</span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2 pt-0.5">
+                          {phaseComplete ? (
+                            <CheckCircle className="h-4 w-4 text-emerald-400" aria-label="Phase complete" />
+                          ) : (
+                            <span className="font-mono text-[11px] text-slate-400">
+                              {phaseDone}/{phase.topics.length}
+                            </span>
+                          )}
+                          <ChevronRight
+                            className={`h-3.5 w-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-cyan-400' : 'text-slate-400'}`}
+                            aria-hidden="true"
+                          />
+                        </span>
+                      </span>
+                      <span className="mt-2.5 block h-1 overflow-hidden rounded-full bg-slate-800" aria-hidden="true">
+                        <span
+                          className={`block h-full rounded-full transition-[width] duration-500 ${phaseComplete ? 'bg-emerald-400' : 'bg-cyan-400'}`}
+                          style={{ width: `${phasePercent}%` }}
+                        />
+                      </span>
                     </button>
 
                     {isExpanded && (
-                      <ul className="animate-slideDown space-y-1 px-1 pb-1">
+                      <ul className="animate-slideDown border-t border-slate-800 px-1.5 py-2">
                         {phase.topics.map((topic, subIdx) => {
                           const index = phase.startIdx + subIdx;
                           const isActive = index === activeTopicIndex;
                           const done = completedTopics.has(`${selectedTrack.id}:${topic.id}`);
+                          const isFirst = subIdx === 0;
+                          const isLast = subIdx === phase.topics.length - 1;
                           const label =
-                            selectedTrack.id === 'w3schools' && topic.name.includes(':')
+                            (selectedTrack.id === 'w3schools' || selectedTrack.grouped) && topic.name.includes(':')
                               ? topic.name.split(':').slice(1).join(':').trim()
                               : topic.name;
                           return (
-                            <li key={topic.id}>
+                            <li key={topic.id} className="relative">
+                              <span
+                                className={`absolute left-[18px] w-px ${isFirst ? 'top-1/2' : 'top-0'} ${isLast ? 'bottom-1/2' : 'bottom-0'} ${
+                                  done ? 'bg-cyan-400/60' : 'bg-slate-700'
+                                }`}
+                                aria-hidden="true"
+                              />
+                              <span
+                                className={`absolute left-[10px] top-1/2 z-10 flex h-[17px] w-[17px] -translate-y-1/2 items-center justify-center rounded-full transition-all ${
+                                  done
+                                    ? 'bg-cyan-400 text-black'
+                                    : isActive
+                                      ? 'bg-slate-900 ring-2 ring-cyan-400'
+                                      : 'bg-slate-900 ring-2 ring-slate-600'
+                                }`}
+                                aria-hidden="true"
+                              >
+                                {done ? <Check className="h-2.5 w-2.5" strokeWidth={4} /> : isActive ? <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" /> : null}
+                              </span>
                               <button
                                 type="button"
                                 aria-current={isActive ? 'true' : undefined}
                                 onClick={() => selectTopic(index)}
-                                className={`flex w-full cursor-pointer items-center justify-between rounded-lg border p-2.5 text-left transition ${
-                                  isActive
-                                    ? 'border-cyan-500/50 bg-cyan-950/45 font-semibold text-cyan-300'
-                                    : 'border-slate-800 bg-slate-950/95 text-slate-400 hover:border-slate-700 hover:text-white'
+                                className={`flex w-full cursor-pointer items-center rounded-md py-2 pl-9 pr-2.5 text-left transition-colors ${
+                                  isActive ? 'bg-slate-800 font-semibold text-white' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'
                                 }`}
                               >
-                                <span className="max-w-[85%] truncate text-[11px]">{label}</span>
-                                {done ? (
-                                  <CheckCircle className="h-3 w-3 shrink-0 text-emerald-400" aria-label="Completed" />
-                                ) : (
-                                  <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
-                                )}
+                                <span className="text-xs leading-snug">{label}</span>
                               </button>
                             </li>
                           );
@@ -299,35 +394,71 @@ export default function LearningTracksPage() {
               <ErrorAlert message={`Could not load this topic: ${topicError}`} onRetry={() => setTopicReload((n) => n + 1)} />
             ) : topicDetails && selectedTrack && activeTopic ? (
               <div className="space-y-6">
-                <div className="overflow-hidden rounded-xl border border-slate-800 bg-[#161D2F]" id="workspace-core-card">
-                  <div className="flex overflow-x-auto border-b border-slate-800 bg-slate-900/30 font-mono text-xs" id="concept-tabs" role="tablist">
-                    {CONTENT_TABS.map((tab) => {
-                      const Icon = tab.icon;
-                      const isTabActive = activeTab === tab.id;
-                      return (
-                        <button
-                          type="button"
-                          key={tab.id}
-                          role="tab"
-                          aria-selected={isTabActive}
-                          onClick={() => setActiveTab(tab.id)}
-                          className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-b-2 px-2 py-3 text-center font-semibold transition ${
-                            isTabActive ? 'border-cyan-400 bg-slate-800/10 text-cyan-300' : 'border-transparent text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                          <span>{tab.label}</span>
-                        </button>
-                      );
-                    })}
+                <div className="overflow-hidden rounded-md bg-slate-900" id="workspace-core-card">
+                  <div className="border-b border-slate-800 bg-slate-900/30 px-2 py-2 sm:px-6">
+                    <div className="no-scrollbar flex overflow-x-auto px-1 pb-4 pt-5" id="concept-tabs" role="tablist" aria-label="Topic sections">
+                      {CONTENT_TABS.map((tab, index) => {
+                        const Icon = tab.icon;
+                        const activeIndex = CONTENT_TABS.findIndex((t) => t.id === activeTab);
+                        const isTabActive = index === activeIndex;
+                        const isPassed = index < activeIndex;
+                        return (
+                          <button
+                            type="button"
+                            key={tab.id}
+                            role="tab"
+                            aria-selected={isTabActive}
+                            onClick={() => setActiveTab(tab.id)}
+                            className="group relative flex min-w-[5.5rem] flex-1 cursor-pointer flex-col items-center gap-2 text-center"
+                          >
+                            {index > 0 && (
+                              <span
+                                className={`absolute left-0 right-1/2 top-[1.125rem] h-0.5 -translate-y-1/2 transition-colors duration-300 ${
+                                  index <= activeIndex ? 'bg-cyan-400' : 'bg-slate-700'
+                                }`}
+                                aria-hidden="true"
+                              />
+                            )}
+                            {index < CONTENT_TABS.length - 1 && (
+                              <span
+                                className={`absolute left-1/2 right-0 top-[1.125rem] h-0.5 -translate-y-1/2 transition-colors duration-300 ${
+                                  index < activeIndex ? 'bg-cyan-400' : 'bg-slate-700'
+                                }`}
+                                aria-hidden="true"
+                              />
+                            )}
+                            <span
+                              className={`relative z-10 flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300 ${
+                                isTabActive
+                                  ? 'scale-110 bg-cyan-400 text-black shadow-lg ring-4 ring-cyan-400/25'
+                                  : isPassed
+                                    ? 'bg-slate-900 text-cyan-400 ring-2 ring-cyan-400'
+                                    : 'bg-slate-800 text-slate-400 ring-2 ring-slate-700 group-hover:text-white group-hover:ring-slate-500'
+                              }`}
+                            >
+                              <Icon className="h-4 w-4" aria-hidden="true" />
+                            </span>
+                            <span
+                              className={`text-xs font-semibold transition-colors ${
+                                isTabActive ? 'text-white' : 'text-slate-400 group-hover:text-white'
+                              }`}
+                            >
+                              {tab.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
-                  <div className="max-h-[550px] overflow-y-auto p-6 text-[13px] leading-relaxed text-slate-200" id="workspace-tab-contents" role="tabpanel">
+                  <div className="max-h-[550px] overflow-y-auto p-4 text-[13px] sm:p-6 leading-relaxed text-slate-200" id="workspace-tab-contents" role="tabpanel">
                     {activeTab === 'theory' && (
                       <div className="space-y-6" id="theory-tab-view">
                         <div className="space-y-3">
-                          <h2 className="font-mono text-lg font-bold text-white">{topicDetails.name || activeTopic.name}</h2>
-                          <p className="whitespace-pre-wrap leading-relaxed text-slate-200">{renderInline(topicDetails.theory)}</p>
+                          {!/^\s*<h1/i.test(topicDetails.theory ?? '') && (
+                            <h2 className="font-heading text-xl font-bold text-white">{topicDetails.name || activeTopic.name}</h2>
+                          )}
+                          <div className="text-slate-200">{renderRichText(topicDetails.theory)}</div>
                         </div>
                         {topicDetails.visualExplanation && (
                           <div className="space-y-2 border-t border-slate-800 pt-4" id="visual-segment">
@@ -364,7 +495,7 @@ export default function LearningTracksPage() {
                         ))}
 
                         {topicDetails.practiceQuestions.length > 0 && (
-                          <div className="mt-5 space-y-2 rounded-xl border border-cyan-500/15 bg-indigo-950/10 p-4">
+                          <div className="mt-5 space-y-2 rounded-lg border border-cyan-500/15 bg-indigo-950/10 p-4">
                             <span className="block font-mono text-xs font-bold uppercase tracking-wider text-cyan-400">Practice exercises</span>
                             <ul className="list-disc space-y-2 pl-4">
                               {topicDetails.practiceQuestions.map((question, index) => (
@@ -385,9 +516,9 @@ export default function LearningTracksPage() {
                           <p className="text-xs italic text-slate-400">No challenges for this topic.</p>
                         )}
                         {topicDetails.codingChallenges.map((challenge, index) => (
-                          <div key={index} className="space-y-3 rounded-xl border border-slate-800 bg-[#0F172A] p-5">
+                          <div key={index} className="space-y-3 rounded-lg border border-slate-800 bg-card p-5">
                             <span className="text-xs font-bold uppercase tracking-wider text-white">{challenge.title}</span>
-                            <p className="whitespace-pre-wrap text-slate-300">{challenge.description}</p>
+                            <div className="text-slate-300">{renderRichText(challenge.description)}</div>
                             {challenge.starterCode && (
                               <div className="space-y-1.5">
                                 <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-slate-400">Starter template</span>
@@ -424,7 +555,7 @@ export default function LearningTracksPage() {
                             <p className="flex items-start gap-1.5 font-mono text-xs font-bold text-white">
                               <span className="font-bold text-cyan-400">Q:</span> {qna.question}
                             </p>
-                            <p className="pl-4 text-slate-300">{qna.answer}</p>
+                            <div className="pl-4 text-slate-300">{renderRichText(qna.answer)}</div>
                           </div>
                         ))}
                       </div>
@@ -446,7 +577,7 @@ export default function LearningTracksPage() {
                 <TopicMentor key={topicKey} trackName={selectedTrack.name} topicName={activeTopic.name} />
               </div>
             ) : (
-              <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-slate-800 bg-[#161D2F] p-20">
+              <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border border-slate-800 bg-card p-20">
                 <BookOpen className="mb-4 h-12 w-12 text-slate-500" aria-hidden="true" />
                 <h3 className="mb-1 text-sm font-bold text-white">Select a topic from the curriculum</h3>
                 <p className="text-center text-xs text-slate-400">Work through the topics in order and pass each checkpoint quiz.</p>

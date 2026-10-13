@@ -3,14 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Suspense, lazy } from 'react';
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { Suspense, lazy, useEffect, useState } from 'react';
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { Loader2, LogOut, RefreshCw, WifiOff } from 'lucide-react';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppDataProvider } from './context/AppDataContext';
 import { RouteErrorBoundary } from './components/ErrorBoundary';
 import { Navigation } from './components/Navigation';
+import { CommandPalette } from './components/CommandPalette';
+import { ThemeProvider } from './context/ThemeContext';
+import { toneForPath } from './utils/tones';
 import { AiMentorPanel } from './components/AiMentorPanel';
 import { AdminRoute, ProtectedRoute } from './components/RouteGuards';
 import { PageLoader } from './components/StatusMessages';
@@ -33,24 +36,47 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 /** Signed-in chrome (navigation + mentor) around the padded page container. */
 function AppLayout() {
   const { user } = useAuth();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    if (!user) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [user]);
+
   return (
-    <div className="min-h-screen bg-[#070C16] text-white selection:bg-cyan-400 selection:text-black">
-      <Navigation />
-      <main className="mx-auto max-w-7xl px-4 py-6 md:px-6">
-        <RouteErrorBoundary>
-          <Suspense fallback={<PageLoader />}>
-            <Outlet />
-          </Suspense>
-        </RouteErrorBoundary>
-      </main>
+    <div className="min-h-screen bg-paper text-white" data-tone={toneForPath(pathname)}>
+      <Navigation onOpenPalette={() => setPaletteOpen(true)} />
+      <div id="app-shell" className={user ? 'lg:pl-60' : ''}>
+        <div>
+          <main className={`min-h-screen overflow-hidden bg-paper ${user ? 'lg:border-l lg:border-slate-800' : ''}`}>
+            {/* Bottom room keeps the floating mentor button from covering the last row of content. */}
+            <div className={`mx-auto px-4 pb-24 pt-6 md:px-8 md:pt-8 ${/^\/arena\/[^/]+/.test(pathname) ? 'max-w-[110rem]' : 'max-w-6xl'}`}>
+              <RouteErrorBoundary>
+                <Suspense fallback={<PageLoader />}>
+                  <Outlet />
+                </Suspense>
+              </RouteErrorBoundary>
+            </div>
+          </main>
+        </div>
+      </div>
       {user && <AiMentorPanel />}
+      {user && <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />}
     </div>
   );
 }
 
 function FullScreenLoader() {
   return (
-    <div role="status" className="flex min-h-screen items-center justify-center bg-[#070C16] text-cyan-400">
+    <div role="status" className="flex min-h-screen items-center justify-center bg-paper text-cyan-400">
       <Loader2 className="h-8 w-8 animate-spin" aria-hidden="true" />
       <span className="sr-only">Restoring your session</span>
     </div>
@@ -61,9 +87,9 @@ function FullScreenLoader() {
 function SessionUnavailable() {
   const { sessionError, retrySession, logout } = useAuth();
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#070C16] p-6 text-white">
-      <div className="w-full max-w-md space-y-4 rounded-2xl border border-amber-500/20 bg-slate-950/95 p-6 text-center shadow-2xl">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-400">
+    <div className="flex min-h-screen items-center justify-center bg-paper p-6 text-white">
+      <div className="w-full max-w-md space-y-4 rounded-lg border border-amber-500/20 bg-slate-950/95 p-6 text-center ">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-400">
           <WifiOff className="h-6 w-6" aria-hidden="true" />
         </div>
         <h1 className="font-heading text-xl font-bold">Can't reach the Placify server</h1>
@@ -71,13 +97,13 @@ function SessionUnavailable() {
           Your session is saved, but we could not verify it right now. Check that the server is running and try again.
         </p>
         {sessionError && (
-          <p className="rounded-lg border border-white/5 bg-black/40 p-3 font-mono text-[11px] text-amber-200">{sessionError}</p>
+          <p className="rounded-lg border border-white/5 bg-slate-900 p-3 font-mono text-[11px] text-amber-200">{sessionError}</p>
         )}
         <div className="flex flex-wrap justify-center gap-3">
           <button
             type="button"
             onClick={() => void retrySession()}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-5 py-2.5 text-xs font-black text-black transition hover:bg-cyan-300"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-cyan-400 px-5 py-2.5 text-xs font-bold text-black transition hover:bg-cyan-300"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Retry
@@ -85,7 +111,7 @@ function SessionUnavailable() {
           <button
             type="button"
             onClick={logout}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-white/10"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-white/10"
           >
             <LogOut className="h-4 w-4" aria-hidden="true" />
             Sign out
@@ -142,13 +168,15 @@ function AppRoutes() {
 
 export function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppDataProvider>
-          <AppRoutes />
-        </AppDataProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppDataProvider>
+            <AppRoutes />
+          </AppDataProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

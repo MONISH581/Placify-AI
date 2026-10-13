@@ -234,6 +234,8 @@ export const api = {
     apiFetch<T>(endpoint, { ...options, method: 'POST', body }),
   put: <T>(endpoint: string, body?: unknown, options?: MethodOptions) =>
     apiFetch<T>(endpoint, { ...options, method: 'PUT', body }),
+  patch: <T>(endpoint: string, body?: unknown, options?: MethodOptions) =>
+    apiFetch<T>(endpoint, { ...options, method: 'PATCH', body }),
   delete: <T>(endpoint: string, options?: MethodOptions) => apiFetch<T>(endpoint, { ...options, method: 'DELETE' }),
 };
 

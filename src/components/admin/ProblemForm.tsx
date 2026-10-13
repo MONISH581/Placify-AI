@@ -119,8 +119,8 @@ interface ProblemFormProps {
   onCancel: () => void;
 }
 
-const inputClass = 'w-full rounded-lg border border-slate-800 bg-slate-950/95 px-3 text-xs text-white outline-none focus:border-cyan-500';
-const labelClass = 'mb-1 block font-mono text-[11px] font-bold uppercase tracking-wide text-zinc-400';
+const inputClass = 'w-full rounded-md border-0 bg-slate-950 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:ring-1 focus:ring-cyan-400';
+const labelClass = 'mb-1 block font-mono text-[11px] font-semibold uppercase tracking-widest text-slate-500';
 
 export function ProblemForm({ problem, saving, serverError, onSubmit, onCancel }: ProblemFormProps) {
   const isEdit = problem !== null;
@@ -146,14 +146,14 @@ export function ProblemForm({ problem, saving, serverError, onSubmit, onCancel }
   const idPrefix = `problem-form-${problem?.id ?? 'new'}`;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-800 bg-[#161D2F] p-6 shadow-sm" noValidate>
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-md bg-slate-900 p-4" noValidate>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="font-heading text-lg font-bold text-white">{isEdit ? `Edit: ${problem.title}` : 'Create a problem'}</h2>
+        <h2 className="font-heading text-xl font-bold text-white">{isEdit ? `Edit: ${problem.title}` : 'Create a problem'}</h2>
         {isEdit && (
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1 text-[11px] font-bold text-zinc-300 hover:bg-white/5"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-950"
           >
             <X className="h-3.5 w-3.5" aria-hidden="true" /> Cancel edit
           </button>
@@ -165,7 +165,7 @@ export function ProblemForm({ problem, saving, serverError, onSubmit, onCancel }
           <label htmlFor={`${idPrefix}-title`} className={labelClass}>
             Title
           </label>
-          <input id={`${idPrefix}-title`} value={form.title} maxLength={200} onChange={(e) => update('title', e.target.value)} className={`h-10 ${inputClass}`} />
+          <input id={`${idPrefix}-title`} value={form.title} maxLength={200} onChange={(e) => update('title', e.target.value)} className={inputClass} />
         </div>
         <div>
           <label htmlFor={`${idPrefix}-difficulty`} className={labelClass}>
@@ -175,10 +175,10 @@ export function ProblemForm({ problem, saving, serverError, onSubmit, onCancel }
             id={`${idPrefix}-difficulty`}
             value={form.difficulty}
             onChange={(e) => update('difficulty', e.target.value as Difficulty)}
-            className={`h-10 ${inputClass}`}
+            className={inputClass}
           >
             {DIFFICULTIES.map((difficulty) => (
-              <option key={difficulty} value={difficulty} className="bg-[#161D2F] text-white">
+              <option key={difficulty} value={difficulty} className="bg-card text-white">
                 {difficulty}
               </option>
             ))}
@@ -190,14 +190,14 @@ export function ProblemForm({ problem, saving, serverError, onSubmit, onCancel }
         <label htmlFor={`${idPrefix}-tags`} className={labelClass}>
           Tags (comma separated; include company names like Google, Amazon)
         </label>
-        <input id={`${idPrefix}-tags`} value={form.tags} onChange={(e) => update('tags', e.target.value)} className={`h-10 ${inputClass}`} placeholder="Arrays, Hashing, Google" />
+        <input id={`${idPrefix}-tags`} value={form.tags} onChange={(e) => update('tags', e.target.value)} className={inputClass} placeholder="Arrays, Hashing, Google" />
       </div>
 
       <div>
         <label htmlFor={`${idPrefix}-description`} className={labelClass}>
           Problem statement
         </label>
-        <textarea id={`${idPrefix}-description`} value={form.description} onChange={(e) => update('description', e.target.value)} className={`h-32 py-2 ${inputClass}`} />
+        <textarea id={`${idPrefix}-description`} value={form.description} onChange={(e) => update('description', e.target.value)} className={`h-32 ${inputClass}`} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -205,43 +205,43 @@ export function ProblemForm({ problem, saving, serverError, onSubmit, onCancel }
           <label htmlFor={`${idPrefix}-constraints`} className={labelClass}>
             Constraints
           </label>
-          <textarea id={`${idPrefix}-constraints`} value={form.constraints} onChange={(e) => update('constraints', e.target.value)} className={`h-20 py-2 ${inputClass}`} />
+          <textarea id={`${idPrefix}-constraints`} value={form.constraints} onChange={(e) => update('constraints', e.target.value)} className={`h-20 ${inputClass}`} />
         </div>
         <div>
           <label htmlFor={`${idPrefix}-input-format`} className={labelClass}>
             Input format
           </label>
-          <textarea id={`${idPrefix}-input-format`} value={form.inputFormat} onChange={(e) => update('inputFormat', e.target.value)} className={`h-20 py-2 ${inputClass}`} />
+          <textarea id={`${idPrefix}-input-format`} value={form.inputFormat} onChange={(e) => update('inputFormat', e.target.value)} className={`h-20 ${inputClass}`} />
         </div>
         <div>
           <label htmlFor={`${idPrefix}-output-format`} className={labelClass}>
             Output format
           </label>
-          <textarea id={`${idPrefix}-output-format`} value={form.outputFormat} onChange={(e) => update('outputFormat', e.target.value)} className={`h-20 py-2 ${inputClass}`} />
+          <textarea id={`${idPrefix}-output-format`} value={form.outputFormat} onChange={(e) => update('outputFormat', e.target.value)} className={`h-20 ${inputClass}`} />
         </div>
       </div>
 
       <fieldset className="space-y-2">
         <legend className={labelClass}>Examples (shown in the statement)</legend>
         {form.examples.map((example, index) => (
-          <div key={index} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-800 p-3 md:grid-cols-[1fr_1fr_1fr_auto]">
+          <div key={index} className="grid grid-cols-1 gap-2 rounded-md bg-slate-800 p-3 md:grid-cols-[repeat(3,minmax(0,1fr))_auto]">
             <label className="sr-only" htmlFor={`${idPrefix}-ex-${index}-in`}>
               Example {index + 1} input
             </label>
-            <textarea id={`${idPrefix}-ex-${index}-in`} placeholder="Input" value={example.input} onChange={(e) => updateExample(index, { input: e.target.value })} className={`h-16 py-2 font-mono ${inputClass}`} />
+            <textarea id={`${idPrefix}-ex-${index}-in`} placeholder="Input" value={example.input} onChange={(e) => updateExample(index, { input: e.target.value })} className={`h-16 font-mono ${inputClass}`} />
             <label className="sr-only" htmlFor={`${idPrefix}-ex-${index}-out`}>
               Example {index + 1} output
             </label>
-            <textarea id={`${idPrefix}-ex-${index}-out`} placeholder="Output" value={example.output} onChange={(e) => updateExample(index, { output: e.target.value })} className={`h-16 py-2 font-mono ${inputClass}`} />
+            <textarea id={`${idPrefix}-ex-${index}-out`} placeholder="Output" value={example.output} onChange={(e) => updateExample(index, { output: e.target.value })} className={`h-16 font-mono ${inputClass}`} />
             <label className="sr-only" htmlFor={`${idPrefix}-ex-${index}-exp`}>
               Example {index + 1} explanation
             </label>
-            <textarea id={`${idPrefix}-ex-${index}-exp`} placeholder="Explanation (optional)" value={example.explanation ?? ''} onChange={(e) => updateExample(index, { explanation: e.target.value })} className={`h-16 py-2 ${inputClass}`} />
+            <textarea id={`${idPrefix}-ex-${index}-exp`} placeholder="Explanation (optional)" value={example.explanation ?? ''} onChange={(e) => updateExample(index, { explanation: e.target.value })} className={`h-16 ${inputClass}`} />
             <button
               type="button"
               aria-label={`Remove example ${index + 1}`}
               onClick={() => update('examples', form.examples.filter((_, i) => i !== index))}
-              className="cursor-pointer self-start rounded-lg p-2 text-zinc-400 hover:bg-rose-500/10 hover:text-rose-300"
+              className="cursor-pointer self-start rounded-md p-2 text-slate-400 hover:bg-slate-900 hover:text-rose-400"
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -250,7 +250,7 @@ export function ProblemForm({ problem, saving, serverError, onSubmit, onCancel }
         <button
           type="button"
           onClick={() => update('examples', [...form.examples, { ...EMPTY_EXAMPLE }])}
-          className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-bold text-cyan-300 hover:underline"
+          className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-cyan-400 hover:underline"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Add example
         </button>
@@ -259,7 +259,7 @@ export function ProblemForm({ problem, saving, serverError, onSubmit, onCancel }
       <fieldset className="space-y-2">
         <legend className={labelClass}>Judge test cases</legend>
         {isEdit && (
-          <label className="flex items-start gap-2 text-[11px] text-amber-200">
+          <label className="flex items-start gap-2 text-xs text-amber-400">
             <input type="checkbox" checked={replaceTests} onChange={(e) => setReplaceTests(e.target.checked)} className="mt-0.5" />
             <span>
               Replace all test cases. Hidden test cases are never sent to the browser, so leave this unchecked to keep the
@@ -270,16 +270,16 @@ export function ProblemForm({ problem, saving, serverError, onSubmit, onCancel }
         {replaceTests && (
           <>
             {form.testCases.map((test, index) => (
-              <div key={index} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-800 p-3 md:grid-cols-[1fr_1fr_auto_auto]">
+              <div key={index} className="grid grid-cols-1 gap-2 rounded-md bg-slate-800 p-3 md:grid-cols-[repeat(2,minmax(0,1fr))_auto_auto]">
                 <label className="sr-only" htmlFor={`${idPrefix}-tc-${index}-in`}>
                   Test {index + 1} input
                 </label>
-                <textarea id={`${idPrefix}-tc-${index}-in`} placeholder="Input" value={test.input} onChange={(e) => updateTest(index, { input: e.target.value })} className={`h-16 py-2 font-mono ${inputClass}`} />
+                <textarea id={`${idPrefix}-tc-${index}-in`} placeholder="Input" value={test.input} onChange={(e) => updateTest(index, { input: e.target.value })} className={`h-16 font-mono ${inputClass}`} />
                 <label className="sr-only" htmlFor={`${idPrefix}-tc-${index}-out`}>
                   Test {index + 1} expected output
                 </label>
-                <textarea id={`${idPrefix}-tc-${index}-out`} placeholder="Expected output" value={test.expectedOutput} onChange={(e) => updateTest(index, { expectedOutput: e.target.value })} className={`h-16 py-2 font-mono ${inputClass}`} />
-                <label className="flex items-center gap-1.5 self-start pt-2 text-[11px] text-zinc-300">
+                <textarea id={`${idPrefix}-tc-${index}-out`} placeholder="Expected output" value={test.expectedOutput} onChange={(e) => updateTest(index, { expectedOutput: e.target.value })} className={`h-16 font-mono ${inputClass}`} />
+                <label className="flex items-center gap-1.5 self-start pt-2 text-xs text-slate-300">
                   <input type="checkbox" checked={test.isHidden} onChange={(e) => updateTest(index, { isHidden: e.target.checked })} />
                   Hidden
                 </label>
@@ -287,7 +287,7 @@ export function ProblemForm({ problem, saving, serverError, onSubmit, onCancel }
                   type="button"
                   aria-label={`Remove test case ${index + 1}`}
                   onClick={() => update('testCases', form.testCases.filter((_, i) => i !== index))}
-                  className="cursor-pointer self-start rounded-lg p-2 text-zinc-400 hover:bg-rose-500/10 hover:text-rose-300"
+                  className="cursor-pointer self-start rounded-md p-2 text-slate-400 hover:bg-slate-900 hover:text-rose-400"
                 >
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </button>
@@ -296,7 +296,7 @@ export function ProblemForm({ problem, saving, serverError, onSubmit, onCancel }
             <button
               type="button"
               onClick={() => update('testCases', [...form.testCases, { ...EMPTY_TEST }])}
-              className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-bold text-cyan-300 hover:underline"
+              className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-cyan-400 hover:underline"
             >
               <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Add test case
             </button>
@@ -309,18 +309,18 @@ export function ProblemForm({ problem, saving, serverError, onSubmit, onCancel }
           <label htmlFor={`${idPrefix}-hints`} className={labelClass}>
             Hints (one per line, in unlock order)
           </label>
-          <textarea id={`${idPrefix}-hints`} value={form.hints} onChange={(e) => update('hints', e.target.value)} className={`h-24 py-2 ${inputClass}`} />
+          <textarea id={`${idPrefix}-hints`} value={form.hints} onChange={(e) => update('hints', e.target.value)} className={`h-24 ${inputClass}`} />
         </div>
         <div>
           <label htmlFor={`${idPrefix}-editorial`} className={labelClass}>
             Editorial
           </label>
-          <textarea id={`${idPrefix}-editorial`} value={form.editorial} onChange={(e) => update('editorial', e.target.value)} className={`h-24 py-2 ${inputClass}`} />
+          <textarea id={`${idPrefix}-editorial`} value={form.editorial} onChange={(e) => update('editorial', e.target.value)} className={`h-24 ${inputClass}`} />
         </div>
       </div>
 
       {errors.length > 0 && (
-        <div role="alert" className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-3.5 py-2.5 text-xs text-rose-300">
+        <div role="alert" className="rounded-md bg-slate-800 px-4 py-3 text-sm text-rose-400">
           <p className="font-bold">Please fix the following:</p>
           <ul className="mt-1 list-disc pl-5">
             {errors.map((error) => (
@@ -334,7 +334,7 @@ export function ProblemForm({ problem, saving, serverError, onSubmit, onCancel }
       <button
         type="submit"
         disabled={saving}
-        className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-black text-white transition hover:bg-indigo-500 disabled:opacity-60"
+        className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-cyan-400 px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-cyan-300 disabled:opacity-60"
       >
         {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : isEdit ? <Save className="h-4 w-4" aria-hidden="true" /> : <Plus className="h-4 w-4" aria-hidden="true" />}
         {saving ? 'Saving...' : isEdit ? 'Save changes' : 'Create problem'}

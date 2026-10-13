@@ -1,4 +1,3 @@
-import { Activity } from 'lucide-react';
 import type { ActivityDay } from '../types';
 
 function levelFor(count: number): number {
@@ -9,13 +8,8 @@ function levelFor(count: number): number {
   return 4;
 }
 
-const LEVEL_CLASSES = [
-  'bg-white/5 border border-white/5',
-  'bg-cyan-500/20 border border-cyan-500/10',
-  'bg-cyan-500/35 border border-cyan-500/20',
-  'bg-cyan-500/50 border border-cyan-500/35',
-  'bg-cyan-400/75 border border-cyan-400/50',
-];
+/** One-colour ramp: quiet squares that darken with volume. */
+const LEVEL_CLASSES = ['bg-slate-900', 'bg-cyan-900', 'bg-cyan-700', 'bg-cyan-500', 'bg-cyan-300'];
 
 /** Submission activity for the last N days (server data, oldest first). */
 export function ActivityHeatmap({ activity }: { activity: ActivityDay[] }) {
@@ -23,18 +17,21 @@ export function ActivityHeatmap({ activity }: { activity: ActivityDay[] }) {
   const activeDays = activity.filter((day) => day.count > 0).length;
 
   return (
-    <div className="flex flex-col gap-2.5 rounded-2xl border border-white/5 bg-[#0a101f]/95 p-5 shadow-xl">
-      <div className="mb-1 flex items-center justify-between text-xs">
-        <h3 className="flex items-center gap-1 font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-          <Activity className="h-3.5 w-3.5 text-cyan-400" aria-hidden="true" /> Submission activity
-        </h3>
-        <span className="rounded border border-cyan-800/20 bg-cyan-950/40 px-2 py-0.5 font-mono text-[11px] font-bold uppercase text-cyan-300">
-          {total} in {activity.length} days
+    <section aria-labelledby="activity-heading">
+      <div className="mb-3 flex items-end justify-between">
+        <div>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-slate-500">Consistency</p>
+          <h2 id="activity-heading" className="mt-1 font-heading text-xl font-bold text-white">
+            Activity
+          </h2>
+        </div>
+        <span className="font-mono text-[11px] text-slate-400">
+          {total} submissions in {activity.length} days
         </span>
       </div>
 
       {activity.length === 0 ? (
-        <p className="font-mono text-[11px] text-zinc-400">No activity recorded yet.</p>
+        <p className="text-sm text-slate-400">No activity recorded yet. Submit a solution and it shows up here.</p>
       ) : (
         <div
           className="no-scrollbar grid grid-flow-col grid-rows-7 gap-1 overflow-x-auto py-1"
@@ -51,17 +48,17 @@ export function ActivityHeatmap({ activity }: { activity: ActivityDay[] }) {
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-1 font-mono text-[11px] text-zinc-400">
+      <div className="flex items-center justify-between pt-2 font-mono text-[11px] text-slate-500">
         <span>{activity[0]?.date ?? ''}</span>
         <div className="flex items-center gap-1.5" aria-hidden="true">
           <span>Less</span>
           {LEVEL_CLASSES.map((cls) => (
-            <div key={cls} className={`h-2 w-2 rounded-sm ${cls}`} />
+            <div key={cls} className={`h-2.5 w-2.5 rounded-sm ${cls}`} />
           ))}
           <span>More</span>
         </div>
         <span>Today</span>
       </div>
-    </div>
+    </section>
   );
 }
