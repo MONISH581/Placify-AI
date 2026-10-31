@@ -72,11 +72,12 @@ function resolveCodeRunner(judge0Url: string): CodeRunnerKind {
   if (requested === "judge0") return judge0Url ? "judge0" : "disabled";
   if (requested === "docker") return "docker";
   if (requested === "local") return "local";
+  if (requested === "disabled") return "disabled";
   if (requested && requested !== "auto") {
-    fail(`CODE_RUNNER must be "judge0", "docker", "local" or empty (got "${requested}").`);
+    fail(`CODE_RUNNER must be "judge0", "docker", "local", "disabled" or empty (got "${requested}").`);
   }
   if (judge0Url) return "judge0";
-  return isProduction ? "disabled" : "local";
+  return "local";
 }
 
 function readRunnerImage(): string {
