@@ -57,8 +57,47 @@ async function reportDockerRunner() {
   );
 }
 
+import { spawnSync } from "child_process";
+import { seedDatabase } from "./server/seed";
+
+async function ensureDatabase() {
+  let needsSchema = false;
+  try {
+    const count = await prisma.problem.count();
+    if (count === 0) {
+      console.log("[db] Problem bank is empty. Seeding database...");
+      await seedDatabase(prisma);
+    }
+  } catch {
+    needsSchema = true;
+  }
+
+  if (needsSchema) {
+    console.log("[db] Database tables missing. Running prisma db push...");
+    const prismaCli = path.resolve(process.cwd(), "node_modules", "prisma", "build", "index.js");
+    if (fs.existsSync(prismaCli)) {
+      const res = spawnSync(process.execPath, [prismaCli, "db", "push", "--skip-generate", "--accept-data-loss"], {
+        stdio: "inherit",
+        env: process.env,
+      });
+      if (res.status === 0) {
+        console.log("[db] Prisma schema successfully pushed to SQLite database.");
+      } else {
+        console.error("[db] Warning: prisma db push exited with code", res.status);
+      }
+    } else {
+      console.warn("[db] Prisma CLI not found at", prismaCli);
+    }
+
+    console.log("[db] Seeding problems and demo accounts...");
+    await seedDatabase(prisma);
+    console.log("[db] Database initialization completed.");
+  }
+}
+
 async function startServer() {
   await prisma.$connect();
+  await ensureDatabase();
   const app = createApp();
   await attachClient(app);
   app.use(errorHandler);
