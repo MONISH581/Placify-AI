@@ -95,7 +95,7 @@ export const config = {
   isProduction,
   isTest: NODE_ENV === "test",
   port: readInt("PORT", 3000, 0, 65535),
-  host: readString("HOST", "127.0.0.1") || "127.0.0.1",
+  host: readString("HOST", isProduction ? "0.0.0.0" : "127.0.0.1") || (isProduction ? "0.0.0.0" : "127.0.0.1"),
   jwtSecret: readSecret("JWT_SECRET", 32),
   internalApiKey: readSecret("INTERNAL_API_KEY", 16),
   jwtTtlSeconds: 24 * 60 * 60,

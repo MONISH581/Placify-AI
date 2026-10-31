@@ -205,10 +205,11 @@ async function seedDemoData() {
 
 async function main() {
   await seedProblems();
-  if (isProduction) {
-    console.log("[seed] NODE_ENV=production: skipping demo accounts and sample data");
-  } else {
+  const shouldSeedDemo = !isProduction || process.env.SEED_DEMO_DATA === "true";
+  if (shouldSeedDemo) {
     await seedDemoData();
+  } else {
+    console.log("[seed] NODE_ENV=production: skipping demo accounts and sample data (set SEED_DEMO_DATA=true to include them)");
   }
 }
 

@@ -29,7 +29,7 @@ function securityHeaders(_req: Request, res: Response, next: NextFunction) {
 /** Minimal CORS: only origins listed in ALLOWED_ORIGINS get CORS headers (same-origin needs none). */
 function cors(req: Request, res: Response, next: NextFunction) {
   const origin = req.headers.origin;
-  if (origin && config.allowedOrigins.includes(origin)) {
+  if (origin && (config.allowedOrigins.includes("*") || config.allowedOrigins.includes(origin))) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
