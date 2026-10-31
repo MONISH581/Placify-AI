@@ -1,5 +1,7 @@
 # Placify-AI
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/MONISH581/Placify-AI)
+
 Placify-AI is a placement-preparation platform: a coding arena with a real code runner, learning tracks,
 mock interviews, resume analysis, contests, a discussion forum and ML-based placement-readiness insights.
 
