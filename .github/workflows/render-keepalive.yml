@@ -1,0 +1,47 @@
+name: Render Keep-Alive Cron
+
+# Prevents Render.com free tier web service from spinning down due to inactivity.
+# Render puts free services to sleep after 15 minutes of zero incoming HTTP traffic.
+# This workflow triggers the service every 10 minutes to keep it continuously awake.
+
+on:
+  schedule:
+    # Runs every 10 minutes (at minute 0, 10, 20, 30, 40, 50 of every hour)
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "Target URL to ping (overrides secret/variable if provided)"
+        required: false
+        default: ""
+
+concurrency:
+  group: render-keepalive
+  cancel-in-progress: false
+
+jobs:
+  keepalive:
+    name: Ping Render Web Service
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Trigger Render Service
+        env:
+          INPUT_URL: ${{ github.event.inputs.target_url }}
+          VARS_URL: ${{ vars.RENDER_APP_URL }}
+          SECRETS_URL: ${{ secrets.RENDER_APP_URL }}
+        run: |
+          TARGET="${INPUT_URL:-${VARS_URL:-${SECRETS_URL:-https://placify-ai-pds2.onrender.com}}}"
+          echo "=================================================="
+          echo "Triggering Render keep-alive at $TARGET"
+          echo "=================================================="
+          node scripts/keepalive.js --once "$TARGET" || echo "Ping completed (service might be in the middle of spinup/redeploy)."
